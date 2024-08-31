@@ -1,2 +1,2 @@
 export LD_LIBRARY_PATH="$(pwd)/libtorch/lib:$LD_LIBRARY_PATH" \
-    LIBTORCH="$(pwd)/libtorch" && cargo train --release
+    LIBTORCH="$(pwd)/libtorch" && cargo run -p model --release

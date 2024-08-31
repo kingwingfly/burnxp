@@ -1,5 +1,5 @@
 use burn::{
-    data::{dataloader::DataLoaderBuilder, dataset::vision::MnistDataset},
+    data::dataloader::DataLoaderBuilder,
     optim::AdamConfig,
     prelude::*,
     record::CompactRecorder,
@@ -13,15 +13,18 @@ use burn::{
     },
 };
 
-use crate::{data::MnistBatcher, model::ModelConfig};
+use crate::{
+    data::{PicBatcher, PicDataSet},
+    model::ScoreModelConfig,
+};
 
 #[derive(Config)]
-pub(crate) struct TrainingConfig {
-    model: ModelConfig,
+pub struct TrainingConfig {
+    model: ScoreModelConfig,
     optimizer: AdamConfig,
-    #[config(default = 50)]
+    #[config(default = 100)]
     num_epochs: usize,
-    #[config(default = 64)]
+    #[config(default = 32)]
     batch_size: usize,
     #[config(default = 4)]
     num_workers: usize,
@@ -37,30 +40,27 @@ fn create_artifact_dir(artifact_dir: &str) {
     std::fs::create_dir_all(artifact_dir).ok();
 }
 
-pub(crate) fn train<B: AutodiffBackend>(
-    artifact_dir: &str,
-    config: TrainingConfig,
-    device: B::Device,
-) {
+pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, device: B::Device) {
     create_artifact_dir(artifact_dir);
+
     config
         .save(format!("{artifact_dir}/config.json"))
         .expect("Config should be saved successfully");
 
-    let batcher_train = MnistBatcher::<B>::new(device.clone());
-    let batcher_valid = MnistBatcher::<B::InnerBackend>::new(device.clone());
+    let batcher_train = PicBatcher::<B>::new(device.clone());
+    let batcher_valid = PicBatcher::<B::InnerBackend>::new(device.clone());
 
     let dataloader_train = DataLoaderBuilder::new(batcher_train)
         .batch_size(config.batch_size)
         .shuffle(config.seed)
         .num_workers(config.num_workers)
-        .build(MnistDataset::train());
+        .build(PicDataSet::train());
 
     let dataloader_test = DataLoaderBuilder::new(batcher_valid)
         .batch_size(config.batch_size)
         .shuffle(config.seed)
         .num_workers(config.num_workers)
-        .build(MnistDataset::test());
+        .build(PicDataSet::test());
 
     let learner = LearnerBuilder::new(artifact_dir)
         .metric_train_numeric(AccuracyMetric::new())
@@ -71,7 +71,7 @@ pub(crate) fn train<B: AutodiffBackend>(
             Aggregate::Mean,
             Direction::Highest,
             Split::Valid,
-            StoppingCondition::NoImprovementSince { n_epochs: 10 },
+            StoppingCondition::NoImprovementSince { n_epochs: 50 },
         ))
         .with_file_checkpointer(CompactRecorder::new())
         .devices(vec![device.clone()])

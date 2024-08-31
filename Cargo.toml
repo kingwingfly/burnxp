@@ -1,3 +1,6 @@
 [workspace]
-members = ["model", "tagger"]
+members = ["model", "score"]
 resolver = "2"
+
+[workspace.dependencies]
+burn = { version = "0.14" }

@@ -8,7 +8,6 @@ use train::TrainingConfig;
 
 mod data;
 mod model;
-mod tag;
 mod train;
 
 fn main() {

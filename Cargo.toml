@@ -1,7 +1,3 @@
-[package]
-name = "burn_nn"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-burn = { version = "0.14", features = ["train", "tch", "vision"] }
+[workspace]
+members = ["model", "tagger"]
+resolver = "2"

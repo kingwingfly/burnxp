@@ -537,13 +537,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "burn_nn"
-version = "0.1.0"
-dependencies = [
- "burn",
-]
-
-[[package]]
 name = "bytemuck"
 version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2448,6 +2441,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "model"
+version = "0.1.0"
+dependencies = [
+ "burn",
+]
+
+[[package]]
 name = "naga"
 version = "22.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3905,6 +3905,10 @@ dependencies = [
  "time",
  "winapi",
 ]
+
+[[package]]
+name = "tagger"
+version = "0.1.0"
 
 [[package]]
 name = "target-lexicon"

@@ -28,7 +28,7 @@ impl Dataset<PicData> for PicDataSet {
 impl PicDataSet {
     pub(crate) fn train() -> Self {
         Self {
-            inner: vec![IndicatorSet {
+            inner: [IndicatorSet {
                 age: 1,
                 body: 2,
                 emotion: 3,
@@ -68,7 +68,7 @@ pub(crate) struct PicBatcher<B: Backend> {
 #[derive(Debug, Clone)]
 pub(crate) struct PicBatch<B: Backend> {
     pub(crate) datas: Tensor<B, 2>,
-    pub(crate) target_scores: Tensor<B, 1, Int>,
+    pub(crate) target_scores: Tensor<B, 2>,
 }
 
 impl<B: Backend> PicBatcher<B> {
@@ -83,7 +83,10 @@ impl<B: Backend> Batcher<PicData, PicBatch<B>> for PicBatcher<B> {
             .iter()
             .map(|item| item.indicators.to_tensor().reshape([1, 8]))
             .collect();
-        let target_scores = items.iter().map(|item| item.indicators.score()).collect();
+        let target_scores = items
+            .iter()
+            .map(|item| item.indicators.score().reshape([1, 1]))
+            .collect();
 
         let datas = Tensor::cat(datas, 0).to_device(&self.device);
         let target_scores = Tensor::cat(target_scores, 0).to_device(&self.device);

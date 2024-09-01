@@ -3,9 +3,12 @@ use burn::tensor::backend::AutodiffBackend;
 use burn::{
     config::Config,
     module::Module,
-    train::{ClassificationOutput, TrainOutput, TrainStep, ValidStep},
+    train::{RegressionOutput, TrainOutput, TrainStep, ValidStep},
 };
-use nn::{loss::CrossEntropyLoss, Linear, LinearConfig, Relu};
+use nn::{
+    loss::{HuberLossConfig, Reduction},
+    Linear, LinearConfig, Relu,
+};
 
 use crate::data::PicBatch;
 
@@ -29,25 +32,27 @@ impl<B: Backend> ScoreModel<B> {
     fn forward_classification(
         &self,
         datas: Tensor<B, 2>,
-        target_scores: Tensor<B, 1, Int>,
-    ) -> ClassificationOutput<B> {
+        target_scores: Tensor<B, 2>,
+    ) -> RegressionOutput<B> {
         let output = self.forward(datas);
-        let loss = CrossEntropyLoss::new(None, &output.device())
-            .forward(output.clone(), target_scores.clone());
-
-        ClassificationOutput::new(loss, output, target_scores)
+        let loss = HuberLossConfig::new(0.5).init().forward(
+            output.clone(),
+            target_scores.clone(),
+            Reduction::Auto,
+        );
+        RegressionOutput::new(loss, output, target_scores)
     }
 }
 
-impl<B: AutodiffBackend> TrainStep<PicBatch<B>, ClassificationOutput<B>> for ScoreModel<B> {
-    fn step(&self, batch: PicBatch<B>) -> TrainOutput<ClassificationOutput<B>> {
+impl<B: AutodiffBackend> TrainStep<PicBatch<B>, RegressionOutput<B>> for ScoreModel<B> {
+    fn step(&self, batch: PicBatch<B>) -> TrainOutput<RegressionOutput<B>> {
         let item = self.forward_classification(batch.datas, batch.target_scores);
         TrainOutput::new(self, item.loss.backward(), item)
     }
 }
 
-impl<B: Backend> ValidStep<PicBatch<B>, ClassificationOutput<B>> for ScoreModel<B> {
-    fn step(&self, batch: PicBatch<B>) -> ClassificationOutput<B> {
+impl<B: Backend> ValidStep<PicBatch<B>, RegressionOutput<B>> for ScoreModel<B> {
+    fn step(&self, batch: PicBatch<B>) -> RegressionOutput<B> {
         self.forward_classification(batch.datas, batch.target_scores)
     }
 }
@@ -62,7 +67,7 @@ impl ScoreModelConfig {
     pub(crate) fn init<B: Backend>(&self, device: &B::Device) -> ScoreModel<B> {
         ScoreModel {
             linear1: LinearConfig::new(8, self.hidden_size).init(device),
-            linear2: LinearConfig::new(self.hidden_size, 11).init(device),
+            linear2: LinearConfig::new(self.hidden_size, 1).init(device),
             activation: Relu,
         }
     }

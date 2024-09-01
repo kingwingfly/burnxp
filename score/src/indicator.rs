@@ -1,7 +1,4 @@
-use burn::{
-    prelude::Backend,
-    tensor::{Int, Tensor},
-};
+use burn::{prelude::Backend, tensor::Tensor};
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct IndicatorSet {
@@ -17,7 +14,7 @@ pub(crate) struct IndicatorSet {
 }
 
 impl IndicatorSet {
-    pub(crate) fn to_tensor<B: Backend>(&self) -> Tensor<B, 1> {
+    pub(crate) fn to_tensor<B: Backend>(self) -> Tensor<B, 1> {
         Tensor::from_data(
             [
                 self.age,
@@ -33,7 +30,7 @@ impl IndicatorSet {
         )
     }
 
-    pub(crate) fn score<B: Backend>(&self) -> Tensor<B, 1, Int> {
+    pub(crate) fn score<B: Backend>(self) -> Tensor<B, 1> {
         Tensor::from_data([self.score], &B::Device::default())
     }
 }

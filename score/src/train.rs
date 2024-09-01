@@ -7,7 +7,7 @@ use burn::{
     train::{
         metric::{
             store::{Aggregate, Direction, Split},
-            AccuracyMetric, LossMetric,
+            LossMetric,
         },
         LearnerBuilder, MetricEarlyStoppingStrategy, StoppingCondition,
     },
@@ -22,7 +22,7 @@ use crate::{
 pub struct TrainingConfig {
     model: ScoreModelConfig,
     optimizer: AdamConfig,
-    #[config(default = 100)]
+    #[config(default = 200)]
     num_epochs: usize,
     #[config(default = 32)]
     batch_size: usize,
@@ -63,13 +63,11 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, dev
         .build(PicDataSet::test());
 
     let learner = LearnerBuilder::new(artifact_dir)
-        .metric_train_numeric(AccuracyMetric::new())
-        .metric_valid_numeric(AccuracyMetric::new())
         .metric_train_numeric(LossMetric::new())
         .metric_valid_numeric(LossMetric::new())
-        .early_stopping(MetricEarlyStoppingStrategy::new::<AccuracyMetric<B>>(
+        .early_stopping(MetricEarlyStoppingStrategy::new::<LossMetric<B>>(
             Aggregate::Mean,
-            Direction::Highest,
+            Direction::Lowest,
             Split::Valid,
             StoppingCondition::NoImprovementSince { n_epochs: 50 },
         ))

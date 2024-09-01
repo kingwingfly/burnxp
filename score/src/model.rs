@@ -5,9 +5,10 @@ use burn::{
     module::Module,
     train::{RegressionOutput, TrainOutput, TrainStep, ValidStep},
 };
+use nn::LeakyReluConfig;
 use nn::{
     loss::{HuberLossConfig, Reduction},
-    Linear, LinearConfig, Relu,
+    LeakyRelu, Linear, LinearConfig,
 };
 
 use crate::data::PicBatch;
@@ -16,7 +17,7 @@ use crate::data::PicBatch;
 pub(crate) struct ScoreModel<B: Backend> {
     linear1: Linear<B>,
     linear2: Linear<B>,
-    activation: Relu,
+    activation: LeakyRelu,
 }
 
 impl<B: Backend> ScoreModel<B> {
@@ -66,9 +67,13 @@ pub struct ScoreModelConfig {
 impl ScoreModelConfig {
     pub(crate) fn init<B: Backend>(&self, device: &B::Device) -> ScoreModel<B> {
         ScoreModel {
-            linear1: LinearConfig::new(8, self.hidden_size).init(device),
-            linear2: LinearConfig::new(self.hidden_size, 1).init(device),
-            activation: Relu,
+            linear1: LinearConfig::new(8, self.hidden_size)
+                .with_bias(true)
+                .init(device),
+            linear2: LinearConfig::new(self.hidden_size, 1)
+                .with_bias(true)
+                .init(device),
+            activation: LeakyReluConfig::new().init(),
         }
     }
 }

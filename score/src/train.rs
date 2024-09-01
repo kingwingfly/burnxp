@@ -22,7 +22,7 @@ use crate::{
 pub struct TrainingConfig {
     model: ScoreModelConfig,
     optimizer: AdamConfig,
-    #[config(default = 200)]
+    #[config(default = 500)]
     num_epochs: usize,
     #[config(default = 32)]
     batch_size: usize,
@@ -42,6 +42,8 @@ fn create_artifact_dir(artifact_dir: &str) {
 
 pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, device: B::Device) {
     create_artifact_dir(artifact_dir);
+
+    B::seed(config.seed);
 
     config
         .save(format!("{artifact_dir}/config.json"))

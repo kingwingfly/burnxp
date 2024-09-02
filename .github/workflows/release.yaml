@@ -83,6 +83,7 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-22.04' || matrix.os == 'windows-latest' }}
         run: |
           unzip libtorch.zip
+          rm libtorch.zip
       - name: setup environment Linux
         if: ${{ matrix.os == 'ubuntu-22.04'  }}
         run: |

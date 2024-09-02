@@ -43,13 +43,37 @@ jobs:
       - name: setup cuda
         if: ${{ matrix.os == 'ubuntu-22.04' || matrix.os == 'windows-latest' }}
         uses: Jimver/cuda-toolkit@master
+        with:
+          method: network
+          sub-packages: '["nvcc"]'
+      - name: Cache restore
+        if: ${{ matrix.os == 'ubuntu-22.04' || matrix.os == 'windows-latest' }}
+        uses: actions/cache/restore@v4
+        id: pytorch-lib-restore
+        with:
+          path: |
+            libtorch.zip
+          key: pytorch-lib
+      - name: download pytorch-lib
+        if: steps.pytorch-lib-restore.outputs.cache-hit != 'true' && ${{ matrix.os == 'ubuntu-22.04' || matrix.os == 'windows-latest' }}
+        run: |
+          wget -O libtorch.zip https://download.pytorch.org/libtorch/cu121/libtorch-cxx11-abi-shared-with-deps-2.2.0%2Bcu121.zip
+      - name: Cache save
+        if: steps.pytorch-lib-restore.outputs.cache-hit != 'true' && ${{ matrix.os == 'ubuntu-22.04' || matrix.os == 'windows-latest' }}
+        uses: actions/cache/save@v4
+        id: cache-cargo-save
+        with:
+          path: |
+            libtorch.zip
+          key: ${{ steps.pytorch-lib-restore.outputs.cache-primary-key }}
+      - name: unzip pytorch-lib
+        if: ${{ matrix.os == 'ubuntu-22.04' || matrix.os == 'windows-latest' }}
+        run: |
+          unzip libtorch.zip
       - name: setup environment
         if: ${{ matrix.os == 'ubuntu-22.04' || matrix.os == 'windows-latest' }}
         run: |
           export PATH="${{steps.cuda-toolkit.outputs.CUDA_PATH}}/bin:$PATH"
-          wget -O libtorch.zip https://download.pytorch.org/libtorch/cu121/libtorch-cxx11-abi-shared-with-deps-2.2.0%2Bcu121.zip
-          unzip libtorch.zip
-          rm libtorch.zip
           export LD_LIBRARY_PATH="$(pwd)/libtorch/lib:$LD_LIBRARY_PATH" LIBTORCH="$(pwd)/libtorch"
       - name: setup environment macOS
         if: ${{ matrix.os == 'macos-latest' }}

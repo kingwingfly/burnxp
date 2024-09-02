@@ -28,6 +28,10 @@ jobs:
     strategy:
       matrix:
         include:
+          - os: "macos-latest" # for Arm based macs (M1 and above).
+            target: "aarch64-apple-darwin"
+          - os: "macos-latest" # for Intel based macs.
+            target: "x86_64-apple-darwin"
           - os: "ubuntu-22.04"
             target: x86_64-unknown-linux-gnu
           - os: "windows-latest"
@@ -36,11 +40,30 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: setup cuda
+        if: ${{ matrix.os == 'ubuntu-22.04' || matrix.os == 'windows-latest' }}
+        uses: Jimver/cuda-toolkit@master
+      - name: setup environment
+        if: ${{ matrix.os == 'ubuntu-22.04' || matrix.os == 'windows-latest' }}
+        run: |
+          export PATH="${{steps.cuda-toolkit.outputs.CUDA_PATH}}/bin:$PATH"
+          wget -O libtorch.zip https://download.pytorch.org/libtorch/cu121/libtorch-cxx11-abi-shared-with-deps-2.2.0%2Bcu121.zip
+          unzip libtorch.zip
+          rm libtorch.zip
+          export LD_LIBRARY_PATH="$(pwd)/libtorch/lib:$LD_LIBRARY_PATH" LIBTORCH="$(pwd)/libtorch"
+      - name: setup environment macOS
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: |
+          python3 -m venv pytorch
+          source pytorch/bin/activate
+          pip install torch==2.2.0 numpy==1.26.4 setuptools
+          export LIBTORCH_USE_PYTORCH=1
+          export DYLD_LIBRARY_PATH="$(find pytorch -type d -name "lib" | grep /torch):$DYLD_LIBRARY_PATH"
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
           # (required) Comma-separated list of binary names (non-extension portion of filename) to build and upload.
           # Note that glob pattern is not supported yet.
-          bin: model,tagger
+          bin: model,score
           # (optional) Target triple, default is host triple.
           # This is optional but it is recommended that this always be set to
           # clarify which target you are building for if macOS is included in
@@ -60,7 +83,7 @@ jobs:
           #     - $target - Target triple.
           #     - $tag    - Tag of this release.
           # When multiple binary names are specified, default archive name or $bin variable cannot be used.
-          archive: $bin-$tag-$target
+          archive: burn_xp-$tag-$target
           # (optional) On which platform to distribute the `.tar.gz` file.
           # [default value: unix]
           # [possible values: all, unix, windows, none]

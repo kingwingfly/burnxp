@@ -14,7 +14,7 @@ fn main() {
     type MyBackend = LibTorch<f32, i8>;
     type MyAutodiffBackend = Autodiff<MyBackend>;
     #[cfg(target_os = "macos")]
-    let device = LibTorchDevice::Metal(0);
+    let device = LibTorchDevice::Mps;
     #[cfg(not(target_os = "macos"))]
     let device = LibTorchDevice::Cuda(0);
 

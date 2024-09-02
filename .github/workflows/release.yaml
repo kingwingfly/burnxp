@@ -40,6 +40,18 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: retrieve dist macOS
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: mkdir run && ls dist | grep macOS | xargs -I {} sh -c 'cp dist/{} run/$(echo {} | sed s/_macOS//g)'
+      - name: retrieve dist Linux
+        if: ${{ matrix.os == 'ubuntu-22.04' }}
+        run: mkdir run && ls dist | grep linux | xargs -I {} sh -c 'cp dist/{} run/$(echo {} | sed s/_linux//g)'
+      - name: retrieve dist Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run:
+          New-Item -Path "run" -ItemType Directory && Get-ChildItem -Path "dist" | Where-Object { $_.Name -match "windows" } | ForEach-Object {
+          $newName = $_.Name -replace "_windows", "" && Copy-Item -Path $_.FullName -Destination (Join-Path -Path "run" -ChildPath $newName)
+          }
       - name: setup cuda
         if: ${{ matrix.os == 'ubuntu-22.04' || matrix.os == 'windows-latest' }}
         uses: Jimver/cuda-toolkit@master
@@ -54,6 +66,7 @@ jobs:
           path: |
             libtorch.zip
           key: pytorch-lib
+          enableCrossOsArchive: true
       - name: download pytorch-lib
         if: ${{ (matrix.os == 'ubuntu-22.04' || matrix.os == 'windows-latest') && steps.pytorch-lib-restore.outputs.cache-hit != 'true' }}
         run: |
@@ -89,19 +102,6 @@ jobs:
           pip install torch==2.2.0 numpy==1.26.4 setuptools
           export LIBTORCH_USE_PYTORCH=1
           export DYLD_LIBRARY_PATH="$(find pytorch -type d -name "lib" | grep /torch):$DYLD_LIBRARY_PATH"
-      - name: retrieve dist macOS
-        if: ${{ matrix.os == 'macos-latest' }}
-        run: mkdir run && ls dist | grep macOS | xargs -I {} sh -c 'cp dist/{} run/$(echo {} | sed s/_macOS//g)'
-      - name: retrieve dist Linux
-        if: ${{ matrix.os == 'ubuntu-22.04' }}
-        run: mkdir run && ls dist | grep linux | xargs -I {} sh -c 'cp dist/{} run/$(echo {} | sed s/_linux//g)'
-      - name: retrieve dist Windows
-        if: ${{ matrix.os == 'windows-latest' }}
-        run:
-          mkdir run && Get-ChildItem -Path "dist" | Where-Object { $_.Name -match "windows" } | ForEach-Object {
-          $newName = $_.Name -replace "_windows", ""
-          Copy-Item -Path $_.FullName -Destination (Join-Path -Path "run" -ChildPath $newName)
-          }
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
           # (required) Comma-separated list of binary names (non-extension portion of filename) to build and upload.

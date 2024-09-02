@@ -1,46 +1,28 @@
 WIP
 
-# Prepare
+# Usage
 
-## Pre-requisites:
+**Cuda 12.x should be installed** for non-macOS users.
 
-No matter you decide to use the compiled release or compile the project yourself,
-you need to do following preparation.
+This tool depends on `libtorch` to accelerate, please set it up by provided `setup` scripts.
 
-### 1. Non-macOS
-**Cuda 12.x should be installed**
+## 1. Use compiled release
 
-This tool depends on `libtorch` for cuda accelerating.
+You can download the scorer and model in the [release page](https://github.com/kingwingfly/burnxp/releases).
 
 ```sh
-wget -O libtorch.zip https://download.pytorch.org/libtorch/cu121/libtorch-cxx11-abi-shared-with-deps-2.2.0%2Bcu121.zip
-unzip libtorch.zip
-rm libtorch.zip
+run/setup
+run/xxx
 ```
-You are supposed to put unzipped libtorch directory at the root of the project,
-so that the environment variables can be correctly set by the sh scripts along with the repo.
 
-### 2. MacOS
+## 2. Compile yourself
+
 ```sh
-python3 -m venv pytorch
-source pytorch/bin/activate
-pip install torch==2.2.0 numpy==1.26.4 setuptools
+git clone git@github.com:kingwingfly/burnxp.git
+scripts/setup_<your_os>
+scripts/xxx_<your_os>
 ```
 
-## Use compiled release
-
-You can download the tagger and model in the [release page](https://github.com/kingwingfly/burn_nn/releases).
-
-## Compile yourself
-
-### Train:
-```sh
-git clone git@github.com:kingwingfly/burn_nn.git
-# Non-macOS
-scripts/train.sh
-# MacOS
-scripts/train_macOS.sh
-```
 # License
 
 MIT LICENSE

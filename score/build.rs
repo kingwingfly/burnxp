@@ -15,7 +15,9 @@ impl Envs {
         let Ok(mut env2) = find_libtorch() else {
             return warn_libtorch_not_found();
         };
-        env2 += &format!(":{old}");
+        if !old.is_empty() {
+            env2 += &format!(":{old}");
+        }
         println!("cargo::rustc-env={}={}", ENV1, env1);
         println!("cargo::rustc-env={}={}", ENV2, env2);
     }
@@ -30,13 +32,17 @@ impl Envs {
         else {
             return warn_libtorch_not_found();
         };
-        env1 += &format!(":{old}");
+        if !old.is_empty() {
+            env1 += &format!(":{old}");
+        }
         let old = std::env::var(ENV2).unwrap_or("".to_string());
         let Ok(mut env2) = path_canonicalize(format!("{}/../libtorch", env!("CARGO_MANIFEST_DIR")))
         else {
             return warn_libtorch_not_found();
         };
-        env2 += &format!(":{old}");
+        if !old.is_empty() {
+            env2 += &format!(":{old}");
+        }
         println!("cargo::rustc-env={}={}", ENV1, env1);
         println!("cargo::rustc-env={}={}", ENV2, env2);
     }

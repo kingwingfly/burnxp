@@ -8,10 +8,10 @@ This tool depends on `libtorch` to accelerate, please set it up by provided `set
 
 ## 1. Use compiled release
 
-You can download the scorer and model in the [release page](https://github.com/kingwingfly/burnxp/releases).
+You can download the scorer and tagger in the [release page](https://github.com/kingwingfly/burnxp/releases).
 
 ```sh
-run/setup
+run/setup.xx
 run/xxx
 ```
 

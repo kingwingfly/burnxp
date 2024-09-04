@@ -84,9 +84,23 @@ jobs:
         run: |
           unzip libtorch.zip
           rm libtorch.zip
+      - name: setup environment Linux
+        if: ${{ matrix.os == 'ubuntu-22.04'  }}
+        run: |
+          export PATH="${{steps.cuda-toolkit.outputs.CUDA_PATH}}/bin:$PATH"
+          export LD_LIBRARY_PATH="$(pwd)/libtorch/lib:$LD_LIBRARY_PATH" LIBTORCH="$(pwd)/libtorch"
+      - name: setup environment Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: |
+          $Env:PATH = "${{steps.cuda-toolkit.outputs.CUDA_PATH}}/bin;$Env:PATH"
+          $Env:LIBTORCH = "$(pwd)/libtorch/"
+          $Env:Path += ";$(pwd)/libtorch/;$(pwd)/libtorch/lib/"
       - name: setup environment macOS
         if: ${{ matrix.os == 'macos-latest' }}
-        run: dist/setup_macOS.sh
+        run: |
+          dist/setup_macOS.sh
+          export LIBTORCH_USE_PYTORCH=1
+          export DYLD_LIBRARY_PATH="$(find pytorch -type d -name "lib" | grep /torch):$DYLD_LIBRARY_PATH"
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
           # (required) Comma-separated list of binary names (non-extension portion of filename) to build and upload.

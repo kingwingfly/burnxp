@@ -1,3 +1,3 @@
 $Env:LIBTORCH = "$(pwd)/libtorch/"
 $Env:Path += ";$(pwd)/libtorch/;$(pwd)/libtorch/lib/"
-./model.exe
+cargo run -p score --release

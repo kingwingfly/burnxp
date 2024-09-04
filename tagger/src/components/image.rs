@@ -16,7 +16,10 @@ pub(crate) struct Images {
 impl Images {
     pub(crate) fn new(path: &[&str; 2]) -> Result<Self> {
         let path = [PathBuf::from(path[0]), PathBuf::from(path[1])];
+        #[cfg(not(target_os = "windows"))]
         let mut picker = Picker::from_termios().map_err(|_| anyhow!("Failed to get the picker"))?;
+        #[cfg(target_os = "windows")]
+        let mut picker = Picker::new((7, 14));
         picker.guess_protocol();
         Ok(Self { picker, path })
     }

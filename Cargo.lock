@@ -2457,6 +2457,7 @@ name = "model"
 version = "0.1.0"
 dependencies = [
  "burn",
+ "walkdir",
 ]
 
 [[package]]
@@ -3527,6 +3528,7 @@ name = "score"
 version = "0.1.0"
 dependencies = [
  "burn",
+ "walkdir",
 ]
 
 [[package]]

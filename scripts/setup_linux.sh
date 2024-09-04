@@ -1,1 +1,0 @@
-dist/setup_linux.sh

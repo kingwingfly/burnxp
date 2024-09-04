@@ -1,1 +1,0 @@
-dist/setup_windows.ps1

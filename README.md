@@ -23,6 +23,12 @@ scripts/setup_<your_os>
 scripts/xxx_<your_os>
 ```
 
+# Note
+
+The `tagger` works well in `iTerm2` while maybe not in other terminals (like `Warp`).
+
+A `Tauri` version is under development.
+
 # License
 
 MIT LICENSE

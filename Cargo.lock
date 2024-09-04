@@ -1208,6 +1208,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "dyn-clone"
+version = "1.0.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0d6ef0072f8a535281e4876be788938b528e9a1d43900b82c2569af7da799125"
+
+[[package]]
 name = "dyn-stack"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2004,6 +2010,12 @@ dependencies = [
  "tower-service",
  "tracing",
 ]
+
+[[package]]
+name = "icy_sixel"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86858ae800284d596cfdefcb0ad435c3493c12f35367431bbe9b2b3858c1155b"
 
 [[package]]
 name = "ident_case"
@@ -3100,6 +3112,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "ratatui-image"
+version = "1.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de94276254cb20fb7431726875bd2ac6391a6ffc26f4b8e3d23f79d1286b491e"
+dependencies = [
+ "base64",
+ "dyn-clone",
+ "icy_sixel",
+ "image",
+ "rand",
+ "ratatui",
+ "rustix",
+]
+
+[[package]]
 name = "rav1e"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3911,6 +3938,17 @@ dependencies = [
  "nom",
  "time",
  "winapi",
+]
+
+[[package]]
+name = "tagger"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "crossterm",
+ "image",
+ "ratatui",
+ "ratatui-image",
 ]
 
 [[package]]

@@ -1,6 +1,9 @@
 [workspace]
-members = ["model", "score"]
+members = ["model", "score", "tagger"]
 resolver = "2"
 
 [workspace.dependencies]
 burn = { version = "0.14" }
+ratatui = { version = "*" }
+crossterm = { version = "*" }
+anyhow = { version = "1.0" }

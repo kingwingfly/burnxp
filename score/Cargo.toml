@@ -6,5 +6,5 @@ edition = "2021"
 [dependencies]
 burn = { workspace = true, features = ["train", "tch"] }
 
-[build-dependencies]
+[target.'cfg(target_os = "macos")'.build-dependencies]
 walkdir = "2.5.0"

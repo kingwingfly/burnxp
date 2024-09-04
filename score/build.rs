@@ -1,7 +1,5 @@
 use std::{io, path::PathBuf};
 
-use walkdir::WalkDir;
-
 fn main() {
     Envs::new();
 }
@@ -46,6 +44,7 @@ impl Envs {
 
 #[cfg(target_os = "macos")]
 fn find_libtorch() -> io::Result<String> {
+    use walkdir::WalkDir;
     let path = format!("{}/../pytorch", env!("CARGO_MANIFEST_DIR"));
     for entry in WalkDir::new(path) {
         let entry = entry.unwrap();

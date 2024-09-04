@@ -58,27 +58,10 @@ jobs:
         with:
           method: network
           sub-packages: '["nvcc"]'
-      - name: cache restore
-        if: ${{ matrix.os == 'ubuntu-22.04' || matrix.os == 'windows-latest' }}
-        uses: actions/cache/restore@v4
-        id: pytorch-lib-restore
-        with:
-          path: |
-            libtorch.zip
-          key: pytorch-lib
-          enableCrossOsArchive: true
       - name: download pytorch-lib
-        if: ${{ (matrix.os == 'ubuntu-22.04' || matrix.os == 'windows-latest') && steps.pytorch-lib-restore.outputs.cache-hit != 'true' }}
+        if: ${{ matrix.os == 'ubuntu-22.04' || matrix.os == 'windows-latest' }}
         run: |
           curl -L -o libtorch.zip https://download.pytorch.org/libtorch/cu121/libtorch-cxx11-abi-shared-with-deps-2.2.0%2Bcu121.zip
-      - name: cache save
-        if: ${{ (matrix.os == 'ubuntu-22.04' || matrix.os == 'windows-latest') && steps.pytorch-lib-restore.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@v4
-        id: cache-cargo-save
-        with:
-          path: |
-            libtorch.zip
-          key: ${{ steps.pytorch-lib-restore.outputs.cache-primary-key }}
       - name: unzip pytorch-lib
         if: ${{ matrix.os == 'ubuntu-22.04' || matrix.os == 'windows-latest' }}
         run: |

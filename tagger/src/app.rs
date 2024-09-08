@@ -9,6 +9,7 @@ use mime_guess::MimeGuess;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
 use std::cmp::Ordering;
+use std::collections::HashMap;
 use std::fs::File;
 use std::path::PathBuf;
 use std::thread;
@@ -37,9 +38,19 @@ impl App {
             .collect::<Vec<_>>();
         let total = images.len() * ((images.len() as f64).log2() as usize);
         thread::spawn(move || {
+            let mut compared = HashMap::new();
             images.sort_by(|p1, p2| {
-                req_tx.send([p1.clone(), p2.clone()]).unwrap();
-                resp_rx.recv().unwrap()
+                let cmp = [p1.clone(), p2.clone()];
+                match compared.get(&cmp) {
+                    Some(&ord) => ord,
+                    None => {
+                        req_tx.send(cmp.clone()).unwrap();
+                        let ord = resp_rx.recv().unwrap();
+                        compared.insert(cmp, ord);
+                        compared.insert([p2.clone(), p1.clone()], ord.reverse());
+                        ord
+                    }
+                }
             });
             serde_json::to_writer_pretty(File::create("tag.json").unwrap(), &images).unwrap();
         });

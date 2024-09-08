@@ -1,3 +1,4 @@
+use crate::data::PicBatch;
 use burn::prelude::*;
 use burn::tensor::backend::AutodiffBackend;
 use burn::{
@@ -10,8 +11,6 @@ use nn::{
     loss::{HuberLossConfig, Reduction},
     LeakyRelu, Linear, LinearConfig,
 };
-
-use crate::data::PicBatch;
 
 #[derive(Module, Debug)]
 pub(crate) struct ScoreModel<B: Backend> {

@@ -1,4 +1,4 @@
-use super::Component;
+use super::Render;
 use anyhow::Result;
 use ratatui::{
     layout::Rect,
@@ -12,7 +12,7 @@ pub(crate) struct Title {
     pub(crate) title: String,
 }
 
-impl Component for Title {
+impl Render for Title {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         let title_block = Block::default()
             .borders(Borders::ALL)

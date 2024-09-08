@@ -1,4 +1,4 @@
-use super::Component;
+use super::Render;
 use crate::state::CurrentScreen;
 use anyhow::Result;
 use ratatui::{
@@ -13,7 +13,7 @@ pub(crate) struct Footer {
     pub(crate) current_screen: CurrentScreen,
 }
 
-impl Component for Footer {
+impl Render for Footer {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
@@ -39,7 +39,7 @@ struct Hint {
     pub(crate) current_screen: CurrentScreen,
 }
 
-impl Component for Navigation {
+impl Render for Navigation {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         let current_navigation_text = vec![
             match self.current_screen {
@@ -58,7 +58,7 @@ impl Component for Navigation {
     }
 }
 
-impl Component for Hint {
+impl Render for Hint {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         let hint = {
             match self.current_screen {

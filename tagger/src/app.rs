@@ -1,4 +1,4 @@
-use crate::components::{Component, Footer, Images, Quit, Title};
+use crate::components::{Footer, Images, Quit, Render, Title};
 use crate::state::CurrentScreen;
 use crate::terminal::AutoDropTerminal;
 use crate::utils::centered_rect;
@@ -48,7 +48,7 @@ impl App {
     }
 }
 
-impl Component for App {
+impl Render for App {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         if CurrentScreen::Exiting == self.current_screen {
             let area = centered_rect(60, 25, f.size());

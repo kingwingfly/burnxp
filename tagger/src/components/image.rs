@@ -1,4 +1,4 @@
-use super::Component;
+use super::Render;
 use anyhow::{anyhow, Result};
 use image::ImageReader;
 use ratatui::{
@@ -10,22 +10,22 @@ use std::path::PathBuf;
 
 pub(crate) struct Images {
     picker: Picker,
-    path: [PathBuf; 2],
+    paths: [PathBuf; 2],
 }
 
 impl Images {
     pub(crate) fn new(path: &[&str; 2]) -> Result<Self> {
-        let path = [PathBuf::from(path[0]), PathBuf::from(path[1])];
+        let paths = [PathBuf::from(path[0]), PathBuf::from(path[1])];
         #[cfg(not(target_os = "windows"))]
         let mut picker = Picker::from_termios().map_err(|_| anyhow!("Failed to get the picker"))?;
         #[cfg(target_os = "windows")]
         let mut picker = Picker::new((7, 14));
         picker.guess_protocol();
-        Ok(Self { picker, path })
+        Ok(Self { picker, paths })
     }
 }
 
-impl Component for Images {
+impl Render for Images {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
@@ -34,7 +34,7 @@ impl Component for Images {
         for i in 0..2 {
             Image {
                 picker: &mut self.picker,
-                path: self.path[i].clone(),
+                path: self.paths[i].clone(),
             }
             .render(f, chunks[i])?
         }
@@ -47,7 +47,7 @@ struct Image<'a> {
     path: PathBuf,
 }
 
-impl Component for Image<'_> {
+impl Render for Image<'_> {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         let dyn_img = ImageReader::open(&self.path)?.decode()?;
         let mut image_fit_state = self.picker.new_resize_protocol(dyn_img);

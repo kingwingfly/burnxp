@@ -11,6 +11,6 @@ pub(crate) use image::Images;
 pub(crate) use quit::Quit;
 pub(crate) use title::Title;
 
-pub(crate) trait Component {
+pub(crate) trait Render {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()>;
 }

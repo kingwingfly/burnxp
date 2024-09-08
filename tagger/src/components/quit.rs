@@ -1,4 +1,4 @@
-use super::Component;
+use super::Render;
 use anyhow::Result;
 use ratatui::{
     layout::Rect,
@@ -10,7 +10,7 @@ use ratatui::{
 
 pub(crate) struct Quit;
 
-impl Component for Quit {
+impl Render for Quit {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         let popup_block = Block::default()
             .title("Y/N")

@@ -11,6 +11,7 @@ use ratatui::{
 
 pub(crate) struct Footer {
     pub(crate) current_screen: CurrentScreen,
+    pub(crate) process: (usize, usize),
 }
 
 impl Render for Footer {
@@ -21,6 +22,7 @@ impl Render for Footer {
             .split(area);
         Navigation {
             current_screen: self.current_screen,
+            process: self.process,
         }
         .render(f, chunks[0])?;
         Hint {
@@ -33,6 +35,7 @@ impl Render for Footer {
 
 struct Navigation {
     pub(crate) current_screen: CurrentScreen,
+    pub(crate) process: (usize, usize),
 }
 
 struct Hint {
@@ -46,18 +49,27 @@ impl Render for Navigation {
                 CurrentScreen::Main => {
                     Span::styled("Which is better?", Style::default().fg(Color::Green))
                 }
+
                 CurrentScreen::Finished => {
-                    Span::styled("Finished", Style::default().fg(Color::LightRed))
+                    Span::styled("Finished", Style::default().fg(Color::LightGreen))
+                }
+
+                CurrentScreen::Exiting => {
+                    Span::styled("Exiting", Style::default().fg(Color::LightRed))
                 }
             },
             Span::styled(" | ", Style::default().fg(Color::White)),
             match self.current_screen {
                 CurrentScreen::Main => Span::styled(
-                    "Left(<-) Equal(=) Right(->)",
+                    format!("{}/{} (estimate by n*logn)", self.process.0, self.process.1),
                     Style::default().fg(Color::DarkGray),
                 ),
-                CurrentScreen::Finished => {
-                    Span::styled("Press (q) to exit", Style::default().fg(Color::DarkGray))
+                CurrentScreen::Finished => Span::styled(
+                    "The result has been saved",
+                    Style::default().fg(Color::DarkGray),
+                ),
+                CurrentScreen::Exiting => {
+                    Span::styled("Exiting", Style::default().fg(Color::LightRed))
                 }
             },
         ];
@@ -72,12 +84,16 @@ impl Render for Hint {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         let hint = {
             match self.current_screen {
-                CurrentScreen::Main => {
-                    Span::styled("(q) to quit ", Style::default().fg(Color::Red))
+                CurrentScreen::Main => Span::styled(
+                    "Left(<-) Equal(=) Right(->) quit(q)",
+                    Style::default().fg(Color::Red),
+                ),
+                CurrentScreen::Finished => {
+                    Span::styled("Press (q) to exit", Style::default().fg(Color::LightGreen))
                 }
-                CurrentScreen::Finished => Span::styled(
-                    "The result has been saved",
-                    Style::default().fg(Color::LightGreen),
+                CurrentScreen::Exiting => Span::styled(
+                    "Are you sure you want to exit? (y/n)",
+                    Style::default().fg(Color::LightRed),
                 ),
             }
         };

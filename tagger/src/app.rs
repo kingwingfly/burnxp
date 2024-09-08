@@ -20,21 +20,23 @@ pub struct App {
     req_rx: Receiver<Compare>,
     resp_tx: Sender<Ordering>,
     cmp: Option<Compare>,
+    process: (usize, usize),
 }
 
 impl App {
     pub fn new(root: String) -> Self {
         let (req_tx, req_rx) = bounded::<Compare>(0);
         let (resp_tx, resp_rx) = bounded::<Ordering>(0);
+        let mut images = walkdir::WalkDir::new(root)
+            .into_iter()
+            .filter_map(|res| res.ok())
+            .filter_map(|e| match MimeGuess::from_path(e.path()).first() {
+                Some(mime) if mime.type_() == "image" => Some(e.path().to_path_buf()),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        let total = images.len() * ((images.len() as f64).log2() as usize);
         thread::spawn(move || {
-            let mut images = walkdir::WalkDir::new(root)
-                .into_iter()
-                .filter_map(|res| res.ok())
-                .filter_map(|e| match MimeGuess::from_path(e.path()).first() {
-                    Some(mime) if mime.type_() == "image" => Some(e.path().to_path_buf()),
-                    _ => None,
-                })
-                .collect::<Vec<_>>();
             images.sort_by(|p1, p2| {
                 req_tx.send([p1.clone(), p2.clone()]).unwrap();
                 resp_rx.recv().unwrap()
@@ -46,6 +48,7 @@ impl App {
             req_rx,
             resp_tx,
             cmp: None,
+            process: (0, total),
         }
     }
 
@@ -70,26 +73,27 @@ impl App {
                 match self.current_screen {
                     CurrentScreen::Main => match key.code {
                         KeyCode::Char('q') => {
-                            self.current_screen = CurrentScreen::Finished;
+                            self.current_screen = CurrentScreen::Exiting;
                         }
-                        KeyCode::Left if self.cmp.is_some() => {
-                            self.resp_tx.send(Ordering::Less).unwrap();
-                            self.cmp = self.req_rx.recv().ok();
-                        }
-                        KeyCode::Char('=') if self.cmp.is_some() => {
-                            self.resp_tx.send(Ordering::Equal).unwrap();
-                            self.cmp = self.req_rx.recv().ok();
-                        }
-                        KeyCode::Right if self.cmp.is_some() => {
-                            self.resp_tx.send(Ordering::Greater).unwrap();
+                        KeyCode::Left | KeyCode::Char('=') | KeyCode::Right
+                            if self.cmp.is_some() =>
+                        {
+                            match key.code {
+                                KeyCode::Left => self.resp_tx.send(Ordering::Less).unwrap(),
+                                KeyCode::Char('=') => self.resp_tx.send(Ordering::Equal).unwrap(),
+                                KeyCode::Right => self.resp_tx.send(Ordering::Greater).unwrap(),
+                                _ => {}
+                            }
+                            self.process.0 += 1;
                             self.cmp = self.req_rx.recv().ok();
                         }
                         _ => render = false,
                     },
-                    CurrentScreen::Finished => match key.code {
+                    CurrentScreen::Exiting => match key.code {
                         KeyCode::Char('y') => break Ok(()),
                         _ => self.current_screen = CurrentScreen::Main,
                     },
+                    _ => {}
                 }
             }
         }
@@ -98,7 +102,7 @@ impl App {
 
 impl Render for App {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
-        if CurrentScreen::Finished == self.current_screen {
+        if CurrentScreen::Exiting == self.current_screen {
             let area = centered_rect(60, 25, f.area());
             Quit.render(f, area)?;
             return Ok(());
@@ -119,7 +123,8 @@ impl Render for App {
             Some(ref paths) => {
                 Images::new(paths)?.render(f, chunks[1])?;
                 Footer {
-                    current_screen: self.current_screen,
+                    current_screen: CurrentScreen::Main,
+                    process: self.process,
                 }
                 .render(f, chunks[2])?;
             }
@@ -130,6 +135,7 @@ impl Render for App {
                 .render(f, chunks[1])?;
                 Footer {
                     current_screen: CurrentScreen::Finished,
+                    process: self.process,
                 }
                 .render(f, chunks[2])?;
             }

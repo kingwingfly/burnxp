@@ -3,3 +3,7 @@ libtorch
 pytorch
 run
 .DS_Store
+images/*.jpg
+images/*.png
+images/*.jpeg
+*.json

@@ -43,13 +43,23 @@ impl Render for Navigation {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         let current_navigation_text = vec![
             match self.current_screen {
-                CurrentScreen::Main => Span::styled("Main", Style::default().fg(Color::Green)),
-                CurrentScreen::Exiting => {
-                    Span::styled("Exiting", Style::default().fg(Color::LightRed))
+                CurrentScreen::Main => {
+                    Span::styled("Which is better?", Style::default().fg(Color::Green))
+                }
+                CurrentScreen::Finished => {
+                    Span::styled("Finished", Style::default().fg(Color::LightRed))
                 }
             },
             Span::styled(" | ", Style::default().fg(Color::White)),
-            Span::styled("Hello world", Style::default().fg(Color::DarkGray)),
+            match self.current_screen {
+                CurrentScreen::Main => Span::styled(
+                    "Left(<-) Equal(=) Right(->)",
+                    Style::default().fg(Color::DarkGray),
+                ),
+                CurrentScreen::Finished => {
+                    Span::styled("Press (q) to exit", Style::default().fg(Color::DarkGray))
+                }
+            },
         ];
         let mode_footer = Paragraph::new(Line::from(current_navigation_text))
             .block(Block::default().borders(Borders::ALL));
@@ -65,9 +75,9 @@ impl Render for Hint {
                 CurrentScreen::Main => {
                     Span::styled("(q) to quit ", Style::default().fg(Color::Red))
                 }
-                CurrentScreen::Exiting => Span::styled(
-                    "(y) to quit; any key to back ",
-                    Style::default().fg(Color::Red),
+                CurrentScreen::Finished => Span::styled(
+                    "The result has been saved",
+                    Style::default().fg(Color::LightGreen),
                 ),
             }
         };

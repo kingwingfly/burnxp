@@ -44,6 +44,12 @@ The `tagger` works well in `iTerm2` while maybe not in other terminals (like `Wa
 
 A `Tauri` version will be under development.
 
+# Contributing
+
+Please export all needed environment variables like `scripts/setup` before coding, or your IDE may not work well.
+
+For macOS users, you need also activate python venv before coding.
+
 # License
 
 MIT LICENSE

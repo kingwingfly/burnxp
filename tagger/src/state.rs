@@ -2,5 +2,5 @@
 pub(crate) enum CurrentScreen {
     #[default]
     Main,
-    Exiting,
+    Finished,
 }

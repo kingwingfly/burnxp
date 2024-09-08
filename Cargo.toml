@@ -1,5 +1,5 @@
 [workspace]
-members = ["model", "score", "tagger"]
+members = ["score", "tagger"]
 resolver = "2"
 
 [workspace.package]

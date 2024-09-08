@@ -8,14 +8,13 @@ use ratatui::{
 use ratatui_image::{picker::Picker, Resize, StatefulImage};
 use std::path::PathBuf;
 
-pub(crate) struct Images {
+pub(crate) struct Images<'a> {
     picker: Picker,
-    paths: [PathBuf; 2],
+    paths: &'a [PathBuf; 2],
 }
 
-impl Images {
-    pub(crate) fn new(path: &[&str; 2]) -> Result<Self> {
-        let paths = [PathBuf::from(path[0]), PathBuf::from(path[1])];
+impl<'a> Images<'a> {
+    pub(crate) fn new(paths: &'a [PathBuf; 2]) -> Result<Self> {
         #[cfg(not(target_os = "windows"))]
         let mut picker = Picker::from_termios().map_err(|_| anyhow!("Failed to get the picker"))?;
         #[cfg(target_os = "windows")]
@@ -25,7 +24,7 @@ impl Images {
     }
 }
 
-impl Render for Images {
+impl<'a> Render for Images<'a> {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
@@ -34,7 +33,7 @@ impl Render for Images {
         for i in 0..2 {
             Image {
                 picker: &mut self.picker,
-                path: self.paths[i].clone(),
+                path: &self.paths[i],
             }
             .render(f, chunks[i])?
         }
@@ -44,12 +43,12 @@ impl Render for Images {
 
 struct Image<'a> {
     picker: &'a mut Picker,
-    path: PathBuf,
+    path: &'a PathBuf,
 }
 
 impl Render for Image<'_> {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
-        let dyn_img = ImageReader::open(&self.path)?.decode()?;
+        let dyn_img = ImageReader::open(self.path)?.decode()?;
         let mut image_fit_state = self.picker.new_resize_protocol(dyn_img);
         let image = StatefulImage::new(None).resize(Resize::Fit(None));
         f.render_stateful_widget(image, area, &mut image_fit_state);

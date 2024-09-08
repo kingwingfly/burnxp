@@ -1,5 +1,6 @@
 use anyhow::Result;
 use crossterm::{
+    event::{DisableMouseCapture, EnableMouseCapture},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -18,7 +19,7 @@ impl AutoDropTerminal {
         // setup terminal
         enable_raw_mode()?;
         let mut stderr = std::io::stderr();
-        execute!(stderr, EnterAlternateScreen)?;
+        execute!(stderr, EnterAlternateScreen, DisableMouseCapture)?;
         let backend = CrosstermBackend::new(stderr);
         let terminal = Terminal::new(backend)?;
         Ok(Self { terminal })
@@ -42,6 +43,11 @@ impl DerefMut for AutoDropTerminal {
 impl Drop for AutoDropTerminal {
     fn drop(&mut self) {
         disable_raw_mode().ok();
-        execute!(self.terminal.backend_mut(), LeaveAlternateScreen,).ok();
+        execute!(
+            self.terminal.backend_mut(),
+            LeaveAlternateScreen,
+            EnableMouseCapture
+        )
+        .ok();
     }
 }

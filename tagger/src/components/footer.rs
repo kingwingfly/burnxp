@@ -61,10 +61,7 @@ impl Render for Navigation {
             Span::styled(" | ", Style::default().fg(Color::White)),
             match self.current_screen {
                 CurrentScreen::Main => Span::styled(
-                    format!(
-                        "{}/{} (the worst case n*logn)",
-                        self.process.0, self.process.1
-                    ),
+                    format!("{}/{} O(nlogn)", self.process.0, self.process.1),
                     Style::default().fg(Color::DarkGray),
                 ),
                 CurrentScreen::Finished => Span::styled(

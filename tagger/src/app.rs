@@ -12,6 +12,8 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fs::File;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicUsize, Ordering as AtomicOrdering};
+use std::sync::Arc;
 use std::thread;
 
 type Compare = [PathBuf; 2];
@@ -21,7 +23,7 @@ pub struct App {
     req_rx: Receiver<Compare>,
     resp_tx: Sender<Ordering>,
     cmp: Option<Compare>,
-    process: (usize, usize),
+    process: (Arc<AtomicUsize>, usize),
 }
 
 impl App {
@@ -37,19 +39,24 @@ impl App {
             })
             .collect::<Vec<_>>();
         let total = images.len() * ((images.len() as f64).log2() as usize);
+        let finished = Arc::new(AtomicUsize::default());
+        let finished_c = finished.clone();
         thread::spawn(move || {
             let mut compared = HashMap::new();
             images.sort_by(|p1, p2| {
                 let cmp = [p1.clone(), p2.clone()];
+                finished_c.fetch_add(1, AtomicOrdering::Relaxed);
                 match compared.get(&cmp) {
                     Some(&ord) => ord,
-                    None => {
-                        req_tx.send(cmp.clone()).unwrap();
-                        let ord = resp_rx.recv().unwrap();
-                        compared.insert(cmp, ord);
-                        compared.insert([p2.clone(), p1.clone()], ord.reverse());
-                        ord
-                    }
+                    None => match compared.get(&[p2.clone(), p1.clone()]) {
+                        Some(&ord) => ord.reverse(),
+                        None => {
+                            req_tx.send(cmp.clone()).unwrap();
+                            let ord = resp_rx.recv().expect("Panic as expected.");
+                            compared.insert(cmp, ord);
+                            ord
+                        }
+                    },
                 }
             });
             serde_json::to_writer_pretty(File::create("tag.json").unwrap(), &images).unwrap();
@@ -59,7 +66,7 @@ impl App {
             req_rx,
             resp_tx,
             cmp: None,
-            process: (0, total),
+            process: (finished, total),
         }
     }
 
@@ -95,8 +102,13 @@ impl App {
                                 KeyCode::Right => self.resp_tx.send(Ordering::Greater).unwrap(),
                                 _ => {}
                             }
-                            self.process.0 += 1;
-                            self.cmp = self.req_rx.recv().ok();
+                            match self.req_rx.recv() {
+                                Ok(cmp) => self.cmp = Some(cmp),
+                                _ => {
+                                    self.cmp = None;
+                                    self.current_screen = CurrentScreen::Finished;
+                                }
+                            }
                         }
                         _ => render = false,
                     },
@@ -130,27 +142,23 @@ impl Render for App {
             title: "Tagger".to_string(),
         }
         .render(f, chunks[0])?;
+        let process = (self.process.0.load(AtomicOrdering::Relaxed), self.process.1);
         match self.cmp {
             Some(ref paths) => {
                 Images::new(paths)?.render(f, chunks[1])?;
-                Footer {
-                    current_screen: CurrentScreen::Main,
-                    process: self.process,
-                }
-                .render(f, chunks[2])?;
             }
             None => {
                 Title {
                     title: "The comparation finished.".to_string(),
                 }
                 .render(f, chunks[1])?;
-                Footer {
-                    current_screen: CurrentScreen::Finished,
-                    process: self.process,
-                }
-                .render(f, chunks[2])?;
             }
         }
+        Footer {
+            current_screen: self.current_screen,
+            process,
+        }
+        .render(f, chunks[2])?;
         Ok(())
     }
 }

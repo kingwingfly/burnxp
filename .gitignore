@@ -7,3 +7,4 @@ images/*.jpg
 images/*.png
 images/*.jpeg
 *.json
+*.bin

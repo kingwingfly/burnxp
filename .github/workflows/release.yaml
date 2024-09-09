@@ -82,6 +82,7 @@ jobs:
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
           dist/setup_macOS.sh
+          source pytorch/bin/activate
           export LIBTORCH_USE_PYTORCH=1
           export DYLD_LIBRARY_PATH="$(find pytorch -type d -name "lib" | grep /torch):$DYLD_LIBRARY_PATH"
       - uses: taiki-e/upload-rust-binary-action@v1

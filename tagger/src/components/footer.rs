@@ -47,26 +47,24 @@ impl Render for Navigation {
         let current_navigation_text = vec![
             match self.current_screen {
                 CurrentScreen::Main => {
-                    Span::styled("Which is better?", Style::default().fg(Color::Green))
+                    Span::styled("Which is better?", Style::default().fg(Color::Cyan))
                 }
 
                 CurrentScreen::Finished => {
-                    Span::styled("Finished", Style::default().fg(Color::LightGreen))
+                    Span::styled("Finished", Style::default().fg(Color::Green))
                 }
 
-                CurrentScreen::Exiting => {
-                    Span::styled("Exiting", Style::default().fg(Color::LightRed))
-                }
+                CurrentScreen::Exiting => Span::styled("Exiting", Style::default().fg(Color::Red)),
             },
             Span::styled(" | ", Style::default().fg(Color::White)),
             match self.current_screen {
                 CurrentScreen::Main => Span::styled(
                     format!("{}/{} O(nlogn)", self.process.0, self.process.1),
-                    Style::default().fg(Color::DarkGray),
+                    Style::default().fg(Color::LightCyan),
                 ),
                 CurrentScreen::Finished => Span::styled(
                     "The result has been saved",
-                    Style::default().fg(Color::DarkGray),
+                    Style::default().fg(Color::LightGreen),
                 ),
                 CurrentScreen::Exiting => {
                     Span::styled("Exiting", Style::default().fg(Color::LightRed))

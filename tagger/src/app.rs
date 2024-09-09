@@ -14,7 +14,7 @@ use std::fs::File;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering as AtomicOrdering};
 use std::sync::Arc;
-use std::thread;
+use std::{io, thread};
 
 type Compare = [PathBuf; 2];
 
@@ -27,7 +27,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(root: String) -> Self {
+    pub fn new(root: PathBuf, output: PathBuf, cache: PathBuf) -> Self {
         let (req_tx, req_rx) = bounded::<Compare>(0);
         let (resp_tx, resp_rx) = bounded::<Ordering>(0);
         let mut images = walkdir::WalkDir::new(root)
@@ -42,24 +42,39 @@ impl App {
         let finished = Arc::new(AtomicUsize::default());
         let finished_c = finished.clone();
         thread::spawn(move || {
-            let mut compared = HashMap::new();
+            let mut compared: HashMap<Compare, i8> = File::open(&cache)
+                .and_then(|f| {
+                    bincode::deserialize_from(f)
+                        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid Bincode"))
+                })
+                .unwrap_or_default();
             images.sort_by(|p1, p2| {
                 let cmp = [p1.clone(), p2.clone()];
-                finished_c.fetch_add(1, AtomicOrdering::Relaxed);
+                let finished = finished_c.fetch_add(1, AtomicOrdering::Relaxed);
+                if finished & 0b111 == 0 {
+                    bincode::serialize_into(File::create(&cache).unwrap(), &compared).unwrap();
+                }
                 match compared.get(&cmp) {
-                    Some(&ord) => ord,
+                    Some(&ord) => unsafe { std::mem::transmute::<i8, Ordering>(ord) },
                     None => match compared.get(&[p2.clone(), p1.clone()]) {
-                        Some(&ord) => ord.reverse(),
+                        Some(&ord) => unsafe { std::mem::transmute::<i8, Ordering>(-ord) },
                         None => {
                             req_tx.send(cmp.clone()).unwrap();
-                            let ord = resp_rx.recv().expect("Panic as expected.");
-                            compared.insert(cmp, ord);
-                            ord
+                            match resp_rx.recv() {
+                                Ok(ord) => {
+                                    compared.insert(cmp, ord as i8);
+                                    ord
+                                }
+                                _ => {
+                                    thread::park(); // broken pipe. wait for thread to exit
+                                    Ordering::Equal
+                                }
+                            }
                         }
                     },
                 }
             });
-            serde_json::to_writer_pretty(File::create("tag.json").unwrap(), &images).unwrap();
+            serde_json::to_writer_pretty(File::create(output).unwrap(), &images).unwrap();
         });
         Self {
             current_screen: CurrentScreen::Main,

@@ -127,11 +127,16 @@ impl App {
                         }
                         _ => render = false,
                     },
+                    CurrentScreen::Finished => match key.code {
+                        KeyCode::Char('q') => {
+                            self.current_screen = CurrentScreen::Exiting;
+                        }
+                        _ => render = false,
+                    },
                     CurrentScreen::Exiting => match key.code {
                         KeyCode::Char('y') => break Ok(()),
                         _ => self.current_screen = CurrentScreen::Main,
                     },
-                    _ => {}
                 }
             }
         }

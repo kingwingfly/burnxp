@@ -135,7 +135,12 @@ impl App {
                     },
                     CurrentScreen::Exiting => match key.code {
                         KeyCode::Char('y') => break Ok(()),
-                        _ => self.current_screen = CurrentScreen::Main,
+                        _ => {
+                            self.current_screen = match self.cmp {
+                                Some(_) => CurrentScreen::Main,
+                                None => CurrentScreen::Finished,
+                            }
+                        }
                     },
                 }
             }

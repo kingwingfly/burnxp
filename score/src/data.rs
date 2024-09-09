@@ -1,62 +1,57 @@
-use crate::indicator::IndicatorSet;
 use burn::{
     data::dataloader::{batcher::Batcher, Dataset},
     prelude::*,
 };
+use std::fs::File;
+use std::path::PathBuf;
+
+type Score = f32;
 
 #[derive(Debug, Clone)]
-pub(crate) struct PicData {
-    indicators: IndicatorSet,
+pub(crate) struct ImageData {
+    data: [[f32; 1024 * 1024]; 3],
+    score: f32,
 }
 
-pub(crate) struct PicDataSet {
-    inner: Vec<IndicatorSet>,
+impl ImageData {
+    pub(crate) fn data<B: Backend>(&self) -> Tensor<B, 3> {
+        Tensor::from_data(self.data, &B::Device::default())
+    }
+
+    pub(crate) fn score<B: Backend>(&self) -> Tensor<B, 1> {
+        Tensor::from_data([self.score], &B::Device::default())
+    }
 }
 
-impl Dataset<PicData> for PicDataSet {
-    fn get(&self, index: usize) -> Option<PicData> {
-        self.inner.get(index).map(|indicators| PicData {
-            indicators: *indicators,
+pub(crate) struct ImageDataSet {
+    inner: Vec<(PathBuf, Score)>,
+}
+
+impl ImageDataSet {
+    pub(crate) fn train(path: PathBuf) -> Self {
+        Self {
+            inner: serde_json::from_reader(File::open(path).unwrap()).unwrap(),
+        }
+    }
+
+    pub(crate) fn test(path: PathBuf) -> Self {
+        Self {
+            inner: serde_json::from_reader(File::open(path).unwrap()).unwrap(),
+        }
+    }
+}
+
+impl Dataset<ImageData> for ImageDataSet {
+    fn get(&self, index: usize) -> Option<ImageData> {
+        self.inner.get(index).map(|(_path, score)| ImageData {
+            // todo read image
+            data: [[0.0; 1024 * 1024]; 3],
+            score: *score,
         })
     }
 
     fn len(&self) -> usize {
         self.inner.len()
-    }
-}
-
-impl PicDataSet {
-    pub(crate) fn train() -> Self {
-        Self {
-            inner: [IndicatorSet {
-                age: 1,
-                body: 2,
-                emotion: 3,
-                face: 4,
-                hair: 5,
-                outfit: 6,
-                pose: 7,
-                xp: 8,
-                score: 9,
-            }]
-            .repeat(64),
-        }
-    }
-
-    pub(crate) fn test() -> Self {
-        Self {
-            inner: vec![IndicatorSet {
-                age: 1,
-                body: 2,
-                emotion: 3,
-                face: 4,
-                hair: 5,
-                outfit: 6,
-                pose: 7,
-                xp: 8,
-                score: 9,
-            }],
-        }
     }
 }
 
@@ -67,7 +62,7 @@ pub(crate) struct PicBatcher<B: Backend> {
 
 #[derive(Debug, Clone)]
 pub(crate) struct PicBatch<B: Backend> {
-    pub(crate) datas: Tensor<B, 2>,
+    pub(crate) datas: Tensor<B, 4>,
     pub(crate) target_scores: Tensor<B, 2>,
 }
 
@@ -77,15 +72,15 @@ impl<B: Backend> PicBatcher<B> {
     }
 }
 
-impl<B: Backend> Batcher<PicData, PicBatch<B>> for PicBatcher<B> {
-    fn batch(&self, items: Vec<PicData>) -> PicBatch<B> {
+impl<B: Backend> Batcher<ImageData, PicBatch<B>> for PicBatcher<B> {
+    fn batch(&self, items: Vec<ImageData>) -> PicBatch<B> {
         let datas = items
             .iter()
-            .map(|item| item.indicators.to_tensor().reshape([1, 8]))
+            .map(|item| item.data().reshape([1, 1024, 1024, 3]))
             .collect();
         let target_scores = items
             .iter()
-            .map(|item| item.indicators.score().reshape([1, 1]))
+            .map(|item| item.score().reshape([1, 1]))
             .collect();
 
         let datas = Tensor::cat(datas, 0).to_device(&self.device);

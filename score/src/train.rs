@@ -12,9 +12,10 @@ use burn::{
         LearnerBuilder, MetricEarlyStoppingStrategy, StoppingCondition,
     },
 };
+use std::path::PathBuf;
 
 use crate::{
-    data::{PicBatcher, PicDataSet},
+    data::{ImageDataSet, PicBatcher},
     model::ScoreModelConfig,
 };
 
@@ -22,6 +23,8 @@ use crate::{
 pub struct TrainingConfig {
     model: ScoreModelConfig,
     optimizer: AdamConfig,
+    train_set: PathBuf,
+    valid_set: PathBuf,
     #[config(default = 500)]
     num_epochs: usize,
     #[config(default = 32)]
@@ -56,13 +59,13 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, dev
         .batch_size(config.batch_size)
         .shuffle(config.seed)
         .num_workers(config.num_workers)
-        .build(PicDataSet::train());
+        .build(ImageDataSet::train(config.train_set));
 
-    let dataloader_test = DataLoaderBuilder::new(batcher_valid)
+    let dataloader_valid = DataLoaderBuilder::new(batcher_valid)
         .batch_size(config.batch_size)
         .shuffle(config.seed)
         .num_workers(config.num_workers)
-        .build(PicDataSet::test());
+        .build(ImageDataSet::test(config.valid_set));
 
     let learner = LearnerBuilder::new(artifact_dir)
         .metric_train_numeric(LossMetric::new())
@@ -83,7 +86,7 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, dev
             config.learning_rate,
         );
 
-    let model_trained = learner.fit(dataloader_train, dataloader_test);
+    let model_trained = learner.fit(dataloader_train, dataloader_valid);
 
     model_trained
         .save_file(format!("{artifact_dir}/model"), &CompactRecorder::new())

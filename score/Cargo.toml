@@ -5,6 +5,6 @@ edition = "2021"
 
 [dependencies]
 burn = { workspace = true, features = ["train", "tch"] }
-
-[target.'cfg(target_os = "macos")'.build-dependencies]
-walkdir = "2.5.0"
+serde_json = { workspace = true }
+image = { workspace = true }
+clap = { workspace = true }

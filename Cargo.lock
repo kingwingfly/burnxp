@@ -3211,7 +3211,9 @@ name = "score"
 version = "0.1.0-alpha3"
 dependencies = [
  "burn",
- "walkdir",
+ "clap",
+ "image",
+ "serde_json",
 ]
 
 [[package]]

@@ -10,6 +10,7 @@ use burn::{
 use core::f64::consts::SQRT_2;
 
 #[derive(Module, Debug)]
+#[allow(clippy::large_enum_variant)]
 pub enum ResidualBlock<B: Backend> {
     /// A bottleneck residual block.
     Bottleneck(Bottleneck<B>),

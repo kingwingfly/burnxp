@@ -1,4 +1,4 @@
-use core::f64::consts::SQRT_2;
+#![allow(unused)]
 
 use burn::{
     module::Module,
@@ -9,6 +9,7 @@ use burn::{
     },
     tensor::{backend::Backend, Device, Tensor},
 };
+use core::f64::consts::SQRT_2;
 
 use super::block::{LayerBlock, LayerBlockConfig};
 

@@ -10,8 +10,10 @@ use score::{train, ScoreModelConfig, TrainingConfig};
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
 struct Cli {
+    /// Path to the training set tags.json file produced by the tagger
     #[arg(short, long)]
     train_set: PathBuf,
+    /// Path to the validation set tags.json file produced by the tagger
     #[arg(short, long)]
     valid_set: PathBuf,
 }

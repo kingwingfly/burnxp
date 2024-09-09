@@ -2,6 +2,7 @@
 name = "score"
 version.workspace = true
 edition = "2021"
+description = "A image scorer by ResNet101"
 
 [dependencies]
 burn = { workspace = true, features = ["train", "tch"] }

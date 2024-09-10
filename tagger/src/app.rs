@@ -50,7 +50,7 @@ impl App {
                 }
             }
             bincode_into(&cache, &btree)?;
-            json_into(&output, &btree.into_sorted_vec())?;
+            json_into(&output, &btree)?;
             CMPDISPATCHER.req_tx.send(Event::Finished)?;
             Ok(())
         });

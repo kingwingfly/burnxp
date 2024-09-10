@@ -30,9 +30,7 @@ impl App {
                 _ => None,
             })
             .collect::<Vec<_>>();
-        let total = images.len() * (images.len() as f64).log2() as usize;
         PROCESS.total.store(images.len(), AtomicOrdering::Relaxed);
-        PROCESS.complixity.store(total, AtomicOrdering::Relaxed);
         thread::spawn(move || -> Result<()> {
             let mut btree: BinaryHeap<OrdPath> = BinaryHeap::new();
             // SAFETY: This avoids rebuilding the binary heap.

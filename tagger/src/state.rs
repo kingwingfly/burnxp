@@ -20,14 +20,24 @@ pub(crate) enum CurrentScreen {
 pub(crate) struct Process {
     pub finished: AtomicUsize,
     pub total: AtomicUsize,
-    pub complixity: AtomicUsize,
 }
 
 impl fmt::Display for Process {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let fisnihed = self.finished.load(Ordering::Relaxed);
+        let finished = self.finished.load(Ordering::Relaxed);
         let total = self.total.load(Ordering::Relaxed);
-        let complexity = (total - fisnihed) * (fisnihed as f64).log2() as usize;
-        write!(f, "n/t={}/{} | (t-n)log(n)={}", fisnihed, total, complexity)
+        let complexity = complexity(finished, total);
+        write!(f, "m/n={}/{} | ∑logi={}", finished, total, complexity)
     }
+}
+
+fn complexity(finished: usize, total: usize) -> usize {
+    if total < 3 {
+        return total.max(1) - 1;
+    }
+    let mut res = 0;
+    for i in finished.max(1)..total {
+        res += (i as f64).log2() as usize + 1;
+    }
+    res
 }

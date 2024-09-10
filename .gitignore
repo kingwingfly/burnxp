@@ -1,6 +1,6 @@
 /target
 libtorch
-pytorch
+.venv
 run
 .DS_Store
 images/*.jpg

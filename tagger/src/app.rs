@@ -37,7 +37,7 @@ impl App {
             // It's safe because binary heap has the same memory layout as Vec.
             unsafe {
                 let data_ptr = &mut btree as *mut BinaryHeap<OrdPath> as *mut Vec<OrdPath>;
-                data_ptr.replace(bincode_from(&cache)?);
+                data_ptr.replace(bincode_from(&cache).unwrap_or_default());
             }
             for path in images.into_iter() {
                 if btree.iter().any(|x| x.path == path) {

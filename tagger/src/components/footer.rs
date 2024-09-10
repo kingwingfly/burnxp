@@ -80,7 +80,7 @@ impl Render for Hint {
         let hint = {
             match self.current_screen {
                 CurrentScreen::Main => Span::styled(
-                    "Left(<-) Equal(=) Right(->) quit(q)",
+                    "left(<-) equal(=) right(->) quit(q)",
                     Style::default().fg(Color::Red),
                 ),
                 CurrentScreen::Finished => {

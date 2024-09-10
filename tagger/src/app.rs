@@ -10,7 +10,7 @@ use mime_guess::MimeGuess;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
 use std::cmp::Ordering;
-use std::collections::BinaryHeap;
+use std::collections::{BTreeSet, HashMap};
 use std::path::PathBuf;
 use std::sync::atomic::Ordering as AtomicOrdering;
 use std::thread;
@@ -18,6 +18,8 @@ use std::thread;
 pub struct App {
     current_screen: CurrentScreen,
     cmp: Option<Compare>,
+    cache: HashMap<Compare, i8>,
+    cache_path: PathBuf,
 }
 
 impl App {
@@ -34,20 +36,11 @@ impl App {
         thread::spawn(move || -> Result<()> {
             // SAFETY: This avoids rebuilding the binary heap.
             // It's safe because binary heap has the same memory layout as Vec.
-            let mut btree: BinaryHeap<OrdPath> = unsafe {
-                std::mem::transmute(bincode_from::<Vec<OrdPath>>(&cache).unwrap_or_default())
-            };
+            let mut btree: BTreeSet<OrdPath> = BTreeSet::new();
             for path in images.into_iter() {
-                if btree.iter().any(|x| x.path == path) {
-                    PROCESS.finished.fetch_add(1, AtomicOrdering::Relaxed);
-                    continue;
-                }
-                btree.push(OrdPath::new(path));
-                if PROCESS.finished.fetch_add(1, AtomicOrdering::Relaxed) & 0b111 == 0 {
-                    bincode_into(&cache, &btree)?;
-                }
+                btree.insert(OrdPath::new(path));
+                PROCESS.finished.fetch_add(1, AtomicOrdering::Relaxed);
             }
-            bincode_into(&cache, &btree)?;
             json_into(&output, &btree)?;
             CMPDISPATCHER.req_tx.send(Event::Finished)?;
             Ok(())
@@ -55,6 +48,8 @@ impl App {
         Self {
             current_screen: CurrentScreen::Main,
             cmp: None,
+            cache: bincode_from(&cache).unwrap_or_default(),
+            cache_path: cache,
         }
     }
 
@@ -94,7 +89,10 @@ impl App {
                         _ => continue,
                     },
                     CurrentScreen::Exiting => match key.code {
-                        KeyCode::Char('y') => break 'a Ok(()),
+                        KeyCode::Char('y') => {
+                            bincode_into(&self.cache_path, &self.cache)?;
+                            break 'a Ok(());
+                        }
                         _ => {
                             self.current_screen = match self.cmp {
                                 Some(_) => CurrentScreen::Main,
@@ -109,18 +107,42 @@ impl App {
     }
 
     fn recv_event(&mut self) -> Result<()> {
-        match CMPDISPATCHER.req_rx.recv().unwrap() {
-            Event::Compare(cmp) => self.cmp = Some(cmp),
-            Event::Finished => {
-                self.cmp = None;
-                self.current_screen = CurrentScreen::Finished;
+        loop {
+            match CMPDISPATCHER.req_rx.recv().unwrap() {
+                Event::Compare(mut cmp) => {
+                    if let Some(&ord) = self.cache.get(&cmp) {
+                        CMPDISPATCHER
+                            .resp_tx
+                            .send(unsafe { std::mem::transmute(ord) })?;
+                        continue;
+                    }
+                    cmp.reverse();
+                    if let Some(&ord) = self.cache.get(&cmp) {
+                        CMPDISPATCHER
+                            .resp_tx
+                            .send(unsafe { std::mem::transmute(-ord) })?;
+                        continue;
+                    }
+                    cmp.reverse();
+                    self.cmp = Some(cmp);
+                    break;
+                }
+                Event::Finished => {
+                    self.cmp = None;
+                    self.current_screen = CurrentScreen::Finished;
+                    break;
+                }
             }
         }
         Ok(())
     }
 
-    fn resp_event(&self, ord: Ordering) -> Result<()> {
+    fn resp_event(&mut self, ord: Ordering) -> Result<()> {
+        self.cache.insert(self.cmp.take().unwrap(), ord as i8);
         CMPDISPATCHER.resp_tx.send(ord)?;
+        if self.cache.len() & 0b111 == 0 {
+            bincode_into(&self.cache_path, &self.cache)?;
+        }
         Ok(())
     }
 }

@@ -9,7 +9,7 @@ use ratatui::{
 };
 
 pub(crate) struct Title {
-    pub(crate) title: String,
+    pub title: String,
 }
 
 impl Render for Title {

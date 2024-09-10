@@ -1,5 +1,5 @@
 use super::Render;
-use crate::state::CurrentScreen;
+use crate::state::{CurrentScreen, PROCESS};
 use anyhow::Result;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
@@ -10,8 +10,7 @@ use ratatui::{
 };
 
 pub(crate) struct Footer {
-    pub(crate) current_screen: CurrentScreen,
-    pub(crate) process: (usize, usize),
+    pub current_screen: CurrentScreen,
 }
 
 impl Render for Footer {
@@ -22,7 +21,6 @@ impl Render for Footer {
             .split(area);
         Navigation {
             current_screen: self.current_screen,
-            process: self.process,
         }
         .render(f, chunks[0])?;
         Hint {
@@ -34,12 +32,11 @@ impl Render for Footer {
 }
 
 struct Navigation {
-    pub(crate) current_screen: CurrentScreen,
-    pub(crate) process: (usize, usize),
+    current_screen: CurrentScreen,
 }
 
 struct Hint {
-    pub(crate) current_screen: CurrentScreen,
+    current_screen: CurrentScreen,
 }
 
 impl Render for Navigation {
@@ -59,7 +56,7 @@ impl Render for Navigation {
             Span::styled(" | ", Style::default().fg(Color::White)),
             match self.current_screen {
                 CurrentScreen::Main => Span::styled(
-                    format!("{}/{} O(nlogn)", self.process.0, self.process.1),
+                    format!("{}", *PROCESS),
                     Style::default().fg(Color::LightCyan),
                 ),
                 CurrentScreen::Finished => Span::styled(

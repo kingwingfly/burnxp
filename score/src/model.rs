@@ -16,10 +16,10 @@ pub(crate) struct ScoreModel<B: Backend> {
 
 impl<B: Backend> ScoreModel<B> {
     /// # Shapes
-    ///   - Images [batch_size, indicator_size]
-    ///   - Output [batch_size, score]
+    ///   - Images [batch_size, 1024, 1024, 3]
+    ///   - Output [batch_size, 1]
     fn forward(&self, datas: Tensor<B, 4>) -> Tensor<B, 2> {
-        self.resnet.forward(datas) // [batch_size, score]
+        self.resnet.forward(datas) // [batch_size, 1]
     }
 
     fn forward_regression(

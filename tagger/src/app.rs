@@ -1,36 +1,28 @@
 use crate::components::{Footer, Images, Quit, Render, Title};
-use crate::state::CurrentScreen;
+use crate::event::{Compare, Event, CMPDISPATCHER};
+use crate::sort::OrdPath;
+use crate::state::{CurrentScreen, PROCESS};
 use crate::terminal::AutoDropTerminal;
-use crate::utils::centered_rect;
+use crate::utils::{bincode_from, bincode_into, centered_rect, json_into};
 use anyhow::Result;
-use crossbeam::channel::{bounded, Receiver, Sender};
-use crossterm::event::{self, Event, KeyCode};
+use crossterm::event::{self, Event as TermEvent, KeyCode, KeyEventKind};
 use mime_guess::MimeGuess;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
 use std::cmp::Ordering;
-use std::collections::HashMap;
-use std::fs::File;
+use std::collections::BinaryHeap;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicUsize, Ordering as AtomicOrdering};
-use std::sync::Arc;
-use std::{io, thread};
-
-type Compare = [PathBuf; 2];
+use std::sync::atomic::Ordering as AtomicOrdering;
+use std::thread;
 
 pub struct App {
     current_screen: CurrentScreen,
-    req_rx: Receiver<Compare>,
-    resp_tx: Sender<Ordering>,
     cmp: Option<Compare>,
-    process: (Arc<AtomicUsize>, usize),
 }
 
 impl App {
     pub fn new(root: PathBuf, output: PathBuf, cache: PathBuf) -> Self {
-        let (req_tx, req_rx) = bounded::<Compare>(0);
-        let (resp_tx, resp_rx) = bounded::<Ordering>(0);
-        let mut images = walkdir::WalkDir::new(root)
+        let images = walkdir::WalkDir::new(root)
             .into_iter()
             .filter_map(|res| res.ok())
             .filter_map(|e| match MimeGuess::from_path(e.path()).first() {
@@ -38,68 +30,48 @@ impl App {
                 _ => None,
             })
             .collect::<Vec<_>>();
-        let total = images.len() * ((images.len() as f64).log2() as usize);
-        let finished = Arc::new(AtomicUsize::default());
-        let finished_c = finished.clone();
-        thread::spawn(move || {
-            let mut compared: HashMap<Compare, i8> = File::open(&cache)
-                .and_then(|f| {
-                    bincode::deserialize_from(f)
-                        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid Bincode"))
-                })
-                .unwrap_or_default();
-            images.sort_by(|p1, p2| {
-                let cmp = [p1.clone(), p2.clone()];
-                let finished = finished_c.fetch_add(1, AtomicOrdering::Relaxed);
-                if finished & 0b111 == 0 {
-                    bincode::serialize_into(File::create(&cache).unwrap(), &compared).unwrap();
+        let total = images.len() * (images.len() as f64).log2() as usize;
+        PROCESS.total.store(images.len(), AtomicOrdering::Relaxed);
+        PROCESS.complixity.store(total, AtomicOrdering::Relaxed);
+        thread::spawn(move || -> Result<()> {
+            let mut btree: BinaryHeap<OrdPath> = BinaryHeap::new();
+            // SAFETY: This avoids rebuilding the binary heap.
+            // It's safe because binary heap has the same memory layout as Vec.
+            unsafe {
+                let data_ptr = &mut btree as *mut BinaryHeap<OrdPath> as *mut Vec<OrdPath>;
+                data_ptr.replace(bincode_from(&cache)?);
+            }
+            for path in images.into_iter() {
+                if btree.iter().any(|x| x.path == path) {
+                    PROCESS.finished.fetch_add(1, AtomicOrdering::Relaxed);
+                    continue;
                 }
-                match compared.get(&cmp) {
-                    Some(&ord) => unsafe { std::mem::transmute::<i8, Ordering>(ord) },
-                    None => match compared.get(&[p2.clone(), p1.clone()]) {
-                        Some(&ord) => unsafe { std::mem::transmute::<i8, Ordering>(-ord) },
-                        None => {
-                            req_tx.send(cmp.clone()).unwrap();
-                            match resp_rx.recv() {
-                                Ok(ord) => {
-                                    compared.insert(cmp, ord as i8);
-                                    ord
-                                }
-                                _ => {
-                                    thread::park(); // broken pipe. wait for thread to exit
-                                    Ordering::Equal
-                                }
-                            }
-                        }
-                    },
+                btree.push(OrdPath::new(path));
+                if PROCESS.finished.fetch_add(1, AtomicOrdering::Relaxed) & 0b111 == 0 {
+                    bincode_into(&cache, &btree)?;
                 }
-            });
-            serde_json::to_writer_pretty(File::create(output).unwrap(), &images).unwrap();
+            }
+            bincode_into(&cache, &btree)?;
+            json_into(&output, &btree)?;
+            CMPDISPATCHER.req_tx.send(Event::Finished)?;
+            Ok(())
         });
         Self {
             current_screen: CurrentScreen::Main,
-            req_rx,
-            resp_tx,
             cmp: None,
-            process: (finished, total),
         }
     }
 
     pub fn run(&mut self) -> Result<()> {
         let mut terminal = AutoDropTerminal::new()?;
         // recv the first compare
-        self.cmp = self.req_rx.recv().ok();
-        let mut render = true;
-        loop {
-            if render {
-                terminal.draw(|f| {
-                    self.render(f, f.area()).ok();
-                })?;
-            }
-            render = true;
-            if let Event::Key(key) = event::read()? {
-                if key.kind == event::KeyEventKind::Release {
-                    render = false;
+        self.recv_event()?;
+        'a: loop {
+            terminal.draw(|f| {
+                self.render(f, f.area()).ok();
+            })?;
+            while let TermEvent::Key(key) = event::read()? {
+                if key.kind == KeyEventKind::Release {
                     // Skip events that are not KeyEventKind::Press
                     continue;
                 }
@@ -112,29 +84,21 @@ impl App {
                             if self.cmp.is_some() =>
                         {
                             match key.code {
-                                KeyCode::Left => self.resp_tx.send(Ordering::Less).unwrap(),
-                                KeyCode::Char('=') => self.resp_tx.send(Ordering::Equal).unwrap(),
-                                KeyCode::Right => self.resp_tx.send(Ordering::Greater).unwrap(),
+                                KeyCode::Left => self.resp_event(Ordering::Less)?,
+                                KeyCode::Char('=') => self.resp_event(Ordering::Equal)?,
+                                KeyCode::Right => self.resp_event(Ordering::Greater)?,
                                 _ => {}
                             }
-                            match self.req_rx.recv() {
-                                Ok(cmp) => self.cmp = Some(cmp),
-                                _ => {
-                                    self.cmp = None;
-                                    self.current_screen = CurrentScreen::Finished;
-                                }
-                            }
+                            self.recv_event()?;
                         }
-                        _ => render = false,
+                        _ => continue,
                     },
                     CurrentScreen::Finished => match key.code {
-                        KeyCode::Char('q') => {
-                            self.current_screen = CurrentScreen::Exiting;
-                        }
-                        _ => render = false,
+                        KeyCode::Char('q') => self.current_screen = CurrentScreen::Exiting,
+                        _ => continue,
                     },
                     CurrentScreen::Exiting => match key.code {
-                        KeyCode::Char('y') => break Ok(()),
+                        KeyCode::Char('y') => break 'a Ok(()),
                         _ => {
                             self.current_screen = match self.cmp {
                                 Some(_) => CurrentScreen::Main,
@@ -143,8 +107,25 @@ impl App {
                         }
                     },
                 }
+                break;
             }
         }
+    }
+
+    fn recv_event(&mut self) -> Result<()> {
+        match CMPDISPATCHER.req_rx.recv().unwrap() {
+            Event::Compare(cmp) => self.cmp = Some(cmp),
+            Event::Finished => {
+                self.cmp = None;
+                self.current_screen = CurrentScreen::Finished;
+            }
+        }
+        Ok(())
+    }
+
+    fn resp_event(&self, ord: Ordering) -> Result<()> {
+        CMPDISPATCHER.resp_tx.send(ord)?;
+        Ok(())
     }
 }
 
@@ -167,7 +148,6 @@ impl Render for App {
             title: "Tagger".to_string(),
         }
         .render(f, chunks[0])?;
-        let process = (self.process.0.load(AtomicOrdering::Relaxed), self.process.1);
         match self.cmp {
             Some(ref paths) => {
                 Images::new(paths)?.render(f, chunks[1])?;
@@ -181,7 +161,6 @@ impl Render for App {
         }
         Footer {
             current_screen: self.current_screen,
-            process,
         }
         .render(f, chunks[2])?;
         Ok(())

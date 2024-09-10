@@ -3566,6 +3566,7 @@ dependencies = [
  "mime_guess",
  "ratatui 0.28.1",
  "ratatui-image",
+ "serde",
  "serde_json",
  "walkdir",
 ]

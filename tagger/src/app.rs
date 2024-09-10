@@ -32,13 +32,11 @@ impl App {
             .collect::<Vec<_>>();
         PROCESS.total.store(images.len(), AtomicOrdering::Relaxed);
         thread::spawn(move || -> Result<()> {
-            let mut btree: BinaryHeap<OrdPath> = BinaryHeap::new();
             // SAFETY: This avoids rebuilding the binary heap.
             // It's safe because binary heap has the same memory layout as Vec.
-            unsafe {
-                let data_ptr = &mut btree as *mut BinaryHeap<OrdPath> as *mut Vec<OrdPath>;
-                data_ptr.replace(bincode_from(&cache).unwrap_or_default());
-            }
+            let mut btree: BinaryHeap<OrdPath> = unsafe {
+                std::mem::transmute(bincode_from::<Vec<OrdPath>>(&cache).unwrap_or_default())
+            };
             for path in images.into_iter() {
                 if btree.iter().any(|x| x.path == path) {
                     PROCESS.finished.fetch_add(1, AtomicOrdering::Relaxed);

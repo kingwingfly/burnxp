@@ -9,6 +9,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha4] - 2024-09-10
+
+- ci test
+
 ## [0.1.0-alpha3] - 2024-09-09
 
 - ci test

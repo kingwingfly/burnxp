@@ -43,7 +43,7 @@ impl Render for Navigation {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         let current_navigation_text = vec![
             match self.current_screen {
-                CurrentScreen::Main => {
+                CurrentScreen::Sort => {
                     Span::styled("Which is better?", Style::default().fg(Color::Cyan))
                 }
 
@@ -55,7 +55,7 @@ impl Render for Navigation {
             },
             Span::styled(" | ", Style::default().fg(Color::White)),
             match self.current_screen {
-                CurrentScreen::Main => Span::styled(
+                CurrentScreen::Sort => Span::styled(
                     format!("{}", *PROCESS),
                     Style::default().fg(Color::LightCyan),
                 ),
@@ -79,8 +79,8 @@ impl Render for Hint {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         let hint = {
             match self.current_screen {
-                CurrentScreen::Main => Span::styled(
-                    "left(<-) equal(=) right(->) quit(q)",
+                CurrentScreen::Sort => Span::styled(
+                    "left(<-) right(->) equal(score later) quit(q)",
                     Style::default().fg(Color::Red),
                 ),
                 CurrentScreen::Finished => {

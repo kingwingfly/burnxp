@@ -1,7 +1,8 @@
-/target
+target
 libtorch
 libtorch.zip
 .venv
+.cargo
 run
 .DS_Store
 images/*.jpg

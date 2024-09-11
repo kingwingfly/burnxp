@@ -35,7 +35,8 @@ run/score.xx
 ```sh
 git clone git@github.com:kingwingfly/burnxp.git
 scripts/setup_<your_os>
-scripts/xxx_<your_os>
+# macOS only
+source .venv/bin/activate
 ```
 
 # Note

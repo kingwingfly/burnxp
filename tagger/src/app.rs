@@ -46,7 +46,7 @@ impl App {
             Ok(())
         });
         Self {
-            current_screen: CurrentScreen::Main,
+            current_screen: CurrentScreen::Sort,
             cmp: None,
             cache: bincode_from(&cache).unwrap_or_default(),
             cache_path: cache,
@@ -67,7 +67,7 @@ impl App {
                     continue;
                 }
                 match self.current_screen {
-                    CurrentScreen::Main => match key.code {
+                    CurrentScreen::Sort => match key.code {
                         KeyCode::Char('q') => {
                             self.current_screen = CurrentScreen::Exiting;
                         }
@@ -76,7 +76,6 @@ impl App {
                         {
                             match key.code {
                                 KeyCode::Left => self.resp_event(Ordering::Less)?,
-                                KeyCode::Char('=') => self.resp_event(Ordering::Equal)?,
                                 KeyCode::Right => self.resp_event(Ordering::Greater)?,
                                 _ => {}
                             }
@@ -95,7 +94,7 @@ impl App {
                         }
                         _ => {
                             self.current_screen = match self.cmp {
-                                Some(_) => CurrentScreen::Main,
+                                Some(_) => CurrentScreen::Sort,
                                 None => CurrentScreen::Finished,
                             }
                         }

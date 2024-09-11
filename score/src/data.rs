@@ -87,7 +87,6 @@ impl<B: Backend> Batcher<ImageData, ImageBatch<B>> for PicBatcher<B> {
 
         let datas = Tensor::cat(datas, 0).to_device(&self.device);
         let target_scores = Tensor::cat(target_scores, 0).to_device(&self.device);
-
         ImageBatch {
             datas,
             target_scores,

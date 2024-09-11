@@ -11,7 +11,7 @@ pub(crate) static PROCESS: LazyLock<Process> = LazyLock::new(Process::default);
 #[derive(Default, PartialEq, Clone, Copy)]
 pub(crate) enum CurrentScreen {
     #[default]
-    Main,
+    Sort,
     Finished,
     Exiting,
 }

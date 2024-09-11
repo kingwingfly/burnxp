@@ -1,4 +1,4 @@
-use crate::data::PicBatch;
+use crate::data::ImageBatch;
 use burn::prelude::*;
 use burn::tensor::backend::AutodiffBackend;
 use burn::{
@@ -37,15 +37,15 @@ impl<B: Backend> ScoreModel<B> {
     }
 }
 
-impl<B: AutodiffBackend> TrainStep<PicBatch<B>, RegressionOutput<B>> for ScoreModel<B> {
-    fn step(&self, batch: PicBatch<B>) -> TrainOutput<RegressionOutput<B>> {
+impl<B: AutodiffBackend> TrainStep<ImageBatch<B>, RegressionOutput<B>> for ScoreModel<B> {
+    fn step(&self, batch: ImageBatch<B>) -> TrainOutput<RegressionOutput<B>> {
         let item = self.forward_regression(batch.datas, batch.target_scores);
         TrainOutput::new(self, item.loss.backward(), item)
     }
 }
 
-impl<B: Backend> ValidStep<PicBatch<B>, RegressionOutput<B>> for ScoreModel<B> {
-    fn step(&self, batch: PicBatch<B>) -> RegressionOutput<B> {
+impl<B: Backend> ValidStep<ImageBatch<B>, RegressionOutput<B>> for ScoreModel<B> {
+    fn step(&self, batch: ImageBatch<B>) -> RegressionOutput<B> {
         self.forward_regression(batch.datas, batch.target_scores)
     }
 }

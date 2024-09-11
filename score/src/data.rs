@@ -2,6 +2,7 @@ use burn::{
     data::dataloader::{batcher::Batcher, Dataset},
     prelude::*,
 };
+use image::{imageops::FilterType, ImageReader};
 use std::fs::File;
 use std::path::PathBuf;
 
@@ -9,7 +10,7 @@ type Score = f32;
 
 #[derive(Debug, Clone)]
 pub(crate) struct ImageData {
-    data: [[f32; 1024 * 1024]; 3],
+    data: [u8; 3 * 1024 * 1024],
     score: f32,
 }
 
@@ -43,10 +44,11 @@ impl ImageDataSet {
 
 impl Dataset<ImageData> for ImageDataSet {
     fn get(&self, index: usize) -> Option<ImageData> {
-        self.inner.get(index).map(|(_path, score)| ImageData {
-            // todo read image
-            data: [[0.0; 1024 * 1024]; 3],
-            score: *score,
+        self.inner.get(index).and_then(|(path, score)| {
+            Some(ImageData {
+                data: open_image(path)?,
+                score: *score,
+            })
         })
     }
 
@@ -61,7 +63,7 @@ pub(crate) struct PicBatcher<B: Backend> {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct PicBatch<B: Backend> {
+pub(crate) struct ImageBatch<B: Backend> {
     pub datas: Tensor<B, 4>,
     pub target_scores: Tensor<B, 2>,
 }
@@ -72,11 +74,11 @@ impl<B: Backend> PicBatcher<B> {
     }
 }
 
-impl<B: Backend> Batcher<ImageData, PicBatch<B>> for PicBatcher<B> {
-    fn batch(&self, items: Vec<ImageData>) -> PicBatch<B> {
+impl<B: Backend> Batcher<ImageData, ImageBatch<B>> for PicBatcher<B> {
+    fn batch(&self, items: Vec<ImageData>) -> ImageBatch<B> {
         let datas = items
             .iter()
-            .map(|item| item.data().reshape([1, 1024, 1024, 3]))
+            .map(|item| item.data().reshape([1, 3, 1024, 1024]))
             .collect();
         let target_scores = items
             .iter()
@@ -86,9 +88,30 @@ impl<B: Backend> Batcher<ImageData, PicBatch<B>> for PicBatcher<B> {
         let datas = Tensor::cat(datas, 0).to_device(&self.device);
         let target_scores = Tensor::cat(target_scores, 0).to_device(&self.device);
 
-        PicBatch {
+        ImageBatch {
             datas,
             target_scores,
         }
     }
+}
+
+fn open_image(path: &PathBuf) -> Option<[u8; 3 * 1024 * 1024]> {
+    let img = ImageReader::open(path).ok()?.decode().ok()?;
+    let mut background = image::RgbImage::new(1024, 1024);
+
+    let factor = img.height().max(img.width()) / 1024;
+    let new_width = (img.width() / factor) as i64;
+    let new_height = (img.height() / factor) as i64;
+
+    let img = img.resize(new_width as u32, new_height as u32, FilterType::Nearest);
+    let img = img.to_rgb8();
+
+    image::imageops::overlay(
+        &mut background,
+        &img,
+        512 - new_width / 2,
+        512 - new_height / 2,
+    );
+
+    background.into_raw().try_into().ok()
 }

@@ -62,8 +62,8 @@ pub(crate) struct PicBatcher<B: Backend> {
 
 #[derive(Debug, Clone)]
 pub(crate) struct PicBatch<B: Backend> {
-    pub(crate) datas: Tensor<B, 4>,
-    pub(crate) target_scores: Tensor<B, 2>,
+    pub datas: Tensor<B, 4>,
+    pub target_scores: Tensor<B, 2>,
 }
 
 impl<B: Backend> PicBatcher<B> {

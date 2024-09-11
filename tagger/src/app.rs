@@ -113,14 +113,14 @@ impl App {
                     if let Some(&ord) = self.cache.get(&cmp) {
                         CMPDISPATCHER
                             .resp_tx
-                            .send(unsafe { std::mem::transmute(ord) })?;
+                            .send(unsafe { std::mem::transmute::<i8, Ordering>(ord) })?;
                         continue;
                     }
                     cmp.reverse();
                     if let Some(&ord) = self.cache.get(&cmp) {
                         CMPDISPATCHER
                             .resp_tx
-                            .send(unsafe { std::mem::transmute(-ord) })?;
+                            .send(unsafe { std::mem::transmute::<i8, Ordering>(-ord) })?;
                         continue;
                     }
                     cmp.reverse();

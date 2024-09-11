@@ -1,5 +1,4 @@
 use crate::data::PicBatch;
-use crate::resnet::ResNet;
 use burn::prelude::*;
 use burn::tensor::backend::AutodiffBackend;
 use burn::{
@@ -8,6 +7,7 @@ use burn::{
     train::{RegressionOutput, TrainOutput, TrainStep, ValidStep},
 };
 use nn::loss::{HuberLossConfig, Reduction};
+use resnet_burn::ResNet;
 
 #[derive(Module, Debug)]
 pub(crate) struct ScoreModel<B: Backend> {

@@ -9,3 +9,4 @@ burn = { workspace = true, features = ["train", "tch"] }
 serde_json = { workspace = true }
 image = { workspace = true }
 clap = { workspace = true }
+resnet-burn = { git = "https://github.com/kingwingfly/models", branch = "burn0.14", package = "resnet-burn", default-features = false }

@@ -1,5 +1,6 @@
 /target
 libtorch
+libtorch.zip
 .venv
 run
 .DS_Store

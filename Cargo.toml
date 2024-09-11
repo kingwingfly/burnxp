@@ -7,8 +7,8 @@ version = "0.1.0-alpha5"
 
 [workspace.dependencies]
 burn = { version = "0.14" }
-ratatui = { version = "*" }
-crossterm = { version = "*" }
+ratatui = { version = "0.28" }
+crossterm = { version = "0.28" }
 anyhow = { version = "1.0" }
 image = { version = "0.25.2", default-features = false, features = [
     "jpeg",

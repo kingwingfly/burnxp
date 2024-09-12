@@ -1,5 +1,6 @@
 use crate::components::{Footer, Images, Quit, Render, Title};
 use crate::event::{ComparePair, Event, CMPDISPATCHER};
+use crate::matix::Matrix;
 use crate::sort::{CompareResult, OrdPath};
 use crate::state::{CurrentScreen, PROCESS};
 use crate::terminal::AutoDropTerminal;
@@ -9,7 +10,7 @@ use crossterm::event::{self, Event as TermEvent, KeyCode, KeyEventKind};
 use mime_guess::MimeGuess;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
-use std::collections::{BTreeSet, HashMap};
+use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::sync::atomic::Ordering as AtomicOrdering;
 use std::thread;
@@ -18,7 +19,7 @@ use std::time::Duration;
 pub struct App {
     current_screen: CurrentScreen,
     cmp: Option<ComparePair>,
-    cache: HashMap<ComparePair, CompareResult>,
+    cache: Matrix<PathBuf>,
     cache_path: PathBuf,
 }
 
@@ -129,23 +130,19 @@ impl App {
     fn recv_event(&mut self) -> Result<()> {
         loop {
             match CMPDISPATCHER.req_rx.recv().unwrap() {
-                Event::Compare(mut cmp) => {
-                    if let Some(&ord) = self.cache.get(&cmp) {
+                Event::Compare([k1, k2]) => {
+                    if let Some(&ord) = self.cache.get(&k1, &k2) {
                         CMPDISPATCHER.resp_tx.send(ord)?;
                         continue;
                     }
-                    cmp.reverse();
-                    if let Some(&ord) = self.cache.get(&cmp) {
-                        CMPDISPATCHER.resp_tx.send(ord.reverse())?;
-                        continue;
-                    }
-                    cmp.reverse();
-                    self.cmp = Some(cmp);
+                    self.cmp = Some([k1, k2]);
                     break;
                 }
                 Event::Finished => {
-                    while let Event::Compare(cmp) = CMPDISPATCHER.req_rx.recv().unwrap() {
-                        CMPDISPATCHER.resp_tx.send(*self.cache.get(&cmp).unwrap())?;
+                    while let Event::Compare([k1, k2]) = CMPDISPATCHER.req_rx.recv().unwrap() {
+                        CMPDISPATCHER
+                            .resp_tx
+                            .send(*self.cache.get(&k1, &k2).unwrap())?;
                     }
                     self.cmp = None;
                     self.current_screen = CurrentScreen::Finished;
@@ -156,12 +153,10 @@ impl App {
         Ok(())
     }
 
-    fn resp_event(&mut self, cmp: CompareResult) -> Result<()> {
-        self.cache.insert(self.cmp.take().unwrap(), cmp);
-        CMPDISPATCHER.resp_tx.send(cmp)?;
-        if self.cache.len() & 0b111 == 0 {
-            bincode_into(&self.cache_path, &self.cache)?;
-        }
+    fn resp_event(&mut self, ord: CompareResult) -> Result<()> {
+        let [k1, k2] = self.cmp.take().unwrap();
+        self.cache.insert(k1, k2, ord);
+        CMPDISPATCHER.resp_tx.send(ord)?;
         Ok(())
     }
 }

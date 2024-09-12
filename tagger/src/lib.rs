@@ -1,6 +1,7 @@
 mod app;
 mod components;
 mod event;
+mod matix;
 mod sort;
 mod state;
 mod terminal;

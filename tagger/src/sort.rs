@@ -40,7 +40,7 @@ impl Ord for OrdPath {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[repr(i8)]
 pub(crate) enum CompareResult {
     MuchBetter = 2,

@@ -1,6 +1,6 @@
 use crate::components::{Footer, Images, Quit, Render, Title};
-use crate::event::{Compare, Event, CMPDISPATCHER};
-use crate::sort::OrdPath;
+use crate::event::{ComparePair, Event, CMPDISPATCHER};
+use crate::sort::{CompareResult, OrdPath};
 use crate::state::{CurrentScreen, PROCESS};
 use crate::terminal::AutoDropTerminal;
 use crate::utils::{bincode_from, bincode_into, centered_rect, json_into};
@@ -9,16 +9,16 @@ use crossterm::event::{self, Event as TermEvent, KeyCode, KeyEventKind};
 use mime_guess::MimeGuess;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
-use std::cmp::Ordering;
 use std::collections::{BTreeSet, HashMap};
 use std::path::PathBuf;
 use std::sync::atomic::Ordering as AtomicOrdering;
 use std::thread;
+use std::time::Duration;
 
 pub struct App {
     current_screen: CurrentScreen,
-    cmp: Option<Compare>,
-    cache: HashMap<Compare, i8>,
+    cmp: Option<ComparePair>,
+    cache: HashMap<ComparePair, CompareResult>,
     cache_path: PathBuf,
 }
 
@@ -41,7 +41,22 @@ impl App {
                 btree.insert(OrdPath::new(path));
                 PROCESS.finished.fetch_add(1, AtomicOrdering::Relaxed);
             }
-            json_into(&output, &btree)?;
+            CMPDISPATCHER.req_tx.send(Event::Finished)?;
+            let res = btree.into_iter().fold(vec![], |mut acc, p| {
+                if acc.is_empty() {
+                    return vec![(p.path, 0)];
+                } else {
+                    let last = acc.last().unwrap();
+                    CMPDISPATCHER
+                        .req_tx
+                        .send(Event::Compare([p.path.clone(), last.0.clone()]))
+                        .unwrap();
+                    let delta = CMPDISPATCHER.resp_rx.recv().unwrap() as i8 as isize;
+                    acc.push((p.path, last.1 + delta));
+                    acc
+                }
+            });
+            json_into(&output, &res)?;
             CMPDISPATCHER.req_tx.send(Event::Finished)?;
             Ok(())
         });
@@ -66,18 +81,24 @@ impl App {
                     // Skip events that are not KeyEventKind::Press
                     continue;
                 }
+                if event::poll(Duration::from_millis(100))? {
+                    continue;
+                }
                 match self.current_screen {
                     CurrentScreen::Sort => match key.code {
                         KeyCode::Char('q') => {
                             self.current_screen = CurrentScreen::Exiting;
                         }
-                        KeyCode::Left | KeyCode::Char('=') | KeyCode::Right
-                            if self.cmp.is_some() =>
-                        {
+                        _ if self.cmp.is_some() => {
                             match key.code {
-                                KeyCode::Left => self.resp_event(Ordering::Less)?,
-                                KeyCode::Right => self.resp_event(Ordering::Greater)?,
-                                _ => {}
+                                KeyCode::Up => self.resp_event(CompareResult::MuchBetter)?,
+                                KeyCode::Left => self.resp_event(CompareResult::Better)?,
+                                KeyCode::Right => self.resp_event(CompareResult::Worse)?,
+                                KeyCode::Down => self.resp_event(CompareResult::MuchWorse)?,
+                                KeyCode::Char('=') | KeyCode::Enter => {
+                                    self.resp_event(CompareResult::Same)?
+                                }
+                                _ => continue,
                             }
                             self.recv_event()?;
                         }
@@ -110,16 +131,12 @@ impl App {
             match CMPDISPATCHER.req_rx.recv().unwrap() {
                 Event::Compare(mut cmp) => {
                     if let Some(&ord) = self.cache.get(&cmp) {
-                        CMPDISPATCHER
-                            .resp_tx
-                            .send(unsafe { std::mem::transmute::<i8, Ordering>(ord) })?;
+                        CMPDISPATCHER.resp_tx.send(ord)?;
                         continue;
                     }
                     cmp.reverse();
                     if let Some(&ord) = self.cache.get(&cmp) {
-                        CMPDISPATCHER
-                            .resp_tx
-                            .send(unsafe { std::mem::transmute::<i8, Ordering>(-ord) })?;
+                        CMPDISPATCHER.resp_tx.send(ord.reverse())?;
                         continue;
                     }
                     cmp.reverse();
@@ -127,6 +144,9 @@ impl App {
                     break;
                 }
                 Event::Finished => {
+                    while let Event::Compare(cmp) = CMPDISPATCHER.req_rx.recv().unwrap() {
+                        CMPDISPATCHER.resp_tx.send(*self.cache.get(&cmp).unwrap())?;
+                    }
                     self.cmp = None;
                     self.current_screen = CurrentScreen::Finished;
                     break;
@@ -136,9 +156,9 @@ impl App {
         Ok(())
     }
 
-    fn resp_event(&mut self, ord: Ordering) -> Result<()> {
-        self.cache.insert(self.cmp.take().unwrap(), ord as i8);
-        CMPDISPATCHER.resp_tx.send(ord)?;
+    fn resp_event(&mut self, cmp: CompareResult) -> Result<()> {
+        self.cache.insert(self.cmp.take().unwrap(), cmp);
+        CMPDISPATCHER.resp_tx.send(cmp)?;
         if self.cache.len() & 0b111 == 0 {
             bincode_into(&self.cache_path, &self.cache)?;
         }

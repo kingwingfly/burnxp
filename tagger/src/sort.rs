@@ -31,11 +31,45 @@ impl Ord for OrdPath {
             .send(Event::Compare([self.path.clone(), other.path.clone()]))
             .unwrap();
         match CMPDISPATCHER.resp_rx.recv() {
-            Ok(ord) => ord,
+            Ok(ord) => ord.into(),
             Err(_) => {
                 thread::park();
                 Ordering::Equal
             }
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[repr(i8)]
+pub(crate) enum CompareResult {
+    MuchBetter = 2,
+    Better = 1,
+    Same = 0,
+    Worse = -1,
+    MuchWorse = -2,
+}
+
+impl CompareResult {
+    pub(crate) fn reverse(&self) -> Self {
+        match self {
+            CompareResult::MuchBetter => CompareResult::MuchWorse,
+            CompareResult::Better => CompareResult::Worse,
+            CompareResult::Same => CompareResult::Same,
+            CompareResult::Worse => CompareResult::Better,
+            CompareResult::MuchWorse => CompareResult::MuchBetter,
+        }
+    }
+}
+
+impl From<CompareResult> for Ordering {
+    fn from(value: CompareResult) -> Self {
+        match value {
+            CompareResult::MuchBetter => Ordering::Greater,
+            CompareResult::Better => Ordering::Greater,
+            CompareResult::Same => Ordering::Equal,
+            CompareResult::Worse => Ordering::Less,
+            CompareResult::MuchWorse => Ordering::Less,
         }
     }
 }

@@ -98,7 +98,7 @@ fn open_image(path: &PathBuf) -> Option<[u8; 3 * 1024 * 1024]> {
     let img = ImageReader::open(path).ok()?.decode().ok()?;
     let mut background = image::RgbImage::new(1024, 1024);
 
-    let factor = img.height().max(img.width()) / 1024;
+    let factor = img.height().max(img.width()) >> 10;
     let new_width = (img.width() / factor) as i64;
     let new_height = (img.height() / factor) as i64;
 
@@ -108,8 +108,8 @@ fn open_image(path: &PathBuf) -> Option<[u8; 3 * 1024 * 1024]> {
     image::imageops::overlay(
         &mut background,
         &img,
-        512 - new_width / 2,
-        512 - new_height / 2,
+        512 - (new_width >> 1),
+        512 - (new_height >> 1),
     );
 
     background.into_raw().try_into().ok()

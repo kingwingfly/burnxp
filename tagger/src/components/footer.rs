@@ -60,7 +60,7 @@ impl Render for Navigation {
                     Style::default().fg(Color::LightCyan),
                 ),
                 CurrentScreen::Finished => Span::styled(
-                    "The result has been saved",
+                    "Quit to save the result",
                     Style::default().fg(Color::LightGreen),
                 ),
                 CurrentScreen::Exiting => {

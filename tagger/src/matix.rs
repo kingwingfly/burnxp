@@ -1,21 +1,26 @@
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, hash::Hash};
 
-use crate::sort::CompareResult;
-
-#[derive(Debug, Default, Serialize, Deserialize)]
-pub(crate) struct Matrix<K>
-where
-    K: Eq + Hash + Clone,
-{
-    pub inner: HashMap<K, HashMap<K, CompareResult>>,
+pub(crate) trait Reflexivity {
+    fn reverse(&self) -> Self;
+    fn zero() -> Self;
 }
 
-impl<K> Matrix<K>
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub(crate) struct Matrix<K, V>
 where
     K: Eq + Hash + Clone,
+    V: Reflexivity + PartialEq + Copy,
 {
-    pub(crate) fn insert(&mut self, k1: K, k2: K, v: CompareResult) {
+    pub inner: HashMap<K, HashMap<K, V>>,
+}
+
+impl<K, V> Matrix<K, V>
+where
+    K: Eq + Hash + Clone,
+    V: Reflexivity + PartialEq + Copy + Clone,
+{
+    pub(crate) fn insert(&mut self, k1: K, k2: K, v: V) {
         if k1 == k2 {
             return;
         }
@@ -25,7 +30,7 @@ where
         line1.insert(k2.clone(), v);
         let keys = line1
             .iter()
-            .filter(|(_, v)| **v == CompareResult::Same)
+            .filter(|(_, v)| **v == V::zero())
             .map(|(k, _)| k.clone())
             .collect::<Vec<_>>();
         for k in keys {
@@ -33,10 +38,10 @@ where
         }
     }
 
-    pub(crate) fn get(&self, k1: &K, k2: &K) -> Option<&CompareResult> {
+    pub(crate) fn get(&self, k1: &K, k2: &K) -> Option<V> {
         if k1 == k2 {
-            return Some(&CompareResult::Same);
+            return Some(V::zero());
         }
-        self.inner.get(k1)?.get(k2)
+        self.inner.get(k1)?.get(k2).cloned()
     }
 }

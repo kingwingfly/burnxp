@@ -1,8 +1,8 @@
 use crate::event::{Event, CMPDISPATCHER};
+use crate::matix::Reflexivity;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::path::PathBuf;
-use std::thread;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub(crate) struct OrdPath {
@@ -32,44 +32,33 @@ impl Ord for OrdPath {
             .unwrap();
         match CMPDISPATCHER.resp_rx.recv() {
             Ok(ord) => ord.into(),
-            Err(_) => {
-                thread::park();
-                Ordering::Equal
-            }
+            Err(_) => Ordering::Equal,
         }
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[repr(i8)]
 pub(crate) enum CompareResult {
     MuchBetter = 2,
     Better = 1,
+    #[default]
     Same = 0,
     Worse = -1,
     MuchWorse = -2,
 }
 
-impl CompareResult {
-    pub(crate) fn reverse(&self) -> Self {
-        match self {
-            CompareResult::MuchBetter => CompareResult::MuchWorse,
-            CompareResult::Better => CompareResult::Worse,
-            CompareResult::Same => CompareResult::Same,
-            CompareResult::Worse => CompareResult::Better,
-            CompareResult::MuchWorse => CompareResult::MuchBetter,
-        }
+impl Reflexivity for CompareResult {
+    fn reverse(&self) -> Self {
+        unsafe { std::mem::transmute(-(*self as i8)) }
+    }
+    fn zero() -> Self {
+        CompareResult::Same
     }
 }
 
 impl From<CompareResult> for Ordering {
     fn from(value: CompareResult) -> Self {
-        match value {
-            CompareResult::MuchBetter => Ordering::Greater,
-            CompareResult::Better => Ordering::Greater,
-            CompareResult::Same => Ordering::Equal,
-            CompareResult::Worse => Ordering::Less,
-            CompareResult::MuchWorse => Ordering::Less,
-        }
+        (value as i8).cmp(&0)
     }
 }

@@ -19,7 +19,7 @@ use std::time::Duration;
 pub struct App {
     current_screen: CurrentScreen,
     cmp: Option<ComparePair>,
-    cache: Matrix<PathBuf>,
+    cache: Matrix<PathBuf, CompareResult>,
     cache_path: PathBuf,
 }
 
@@ -131,7 +131,7 @@ impl App {
         loop {
             match CMPDISPATCHER.req_rx.recv().unwrap() {
                 Event::Compare([k1, k2]) => {
-                    if let Some(&ord) = self.cache.get(&k1, &k2) {
+                    if let Some(ord) = self.cache.get(&k1, &k2) {
                         CMPDISPATCHER.resp_tx.send(ord)?;
                         continue;
                     }
@@ -142,7 +142,7 @@ impl App {
                     while let Event::Compare([k1, k2]) = CMPDISPATCHER.req_rx.recv().unwrap() {
                         CMPDISPATCHER
                             .resp_tx
-                            .send(*self.cache.get(&k1, &k2).unwrap())?;
+                            .send(self.cache.get(&k1, &k2).unwrap())?;
                     }
                     self.cmp = None;
                     self.current_screen = CurrentScreen::Finished;

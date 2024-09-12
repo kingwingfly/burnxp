@@ -1,3 +1,4 @@
+use anyhow::Result;
 use burn::{
     data::dataloader::{batcher::Batcher, Dataset},
     prelude::*,
@@ -6,12 +7,12 @@ use image::{imageops::FilterType, ImageReader};
 use std::fs::File;
 use std::path::PathBuf;
 
-type Score = f32;
+type Score = i64;
 
 #[derive(Debug, Clone)]
 pub(crate) struct ImageData {
     data: [u8; 3 * 1024 * 1024],
-    score: f32,
+    score: Score,
 }
 
 impl ImageData {
@@ -29,16 +30,16 @@ pub(crate) struct ImageDataSet {
 }
 
 impl ImageDataSet {
-    pub(crate) fn train(path: PathBuf) -> Self {
-        Self {
-            inner: serde_json::from_reader(File::open(path).unwrap()).unwrap(),
-        }
+    pub(crate) fn train(path: PathBuf) -> Result<Self> {
+        Ok(Self {
+            inner: serde_json::from_reader(File::open(path)?)?,
+        })
     }
 
-    pub(crate) fn test(path: PathBuf) -> Self {
-        Self {
-            inner: serde_json::from_reader(File::open(path).unwrap()).unwrap(),
-        }
+    pub(crate) fn test(path: PathBuf) -> Result<Self> {
+        Ok(Self {
+            inner: serde_json::from_reader(File::open(path)?)?,
+        })
     }
 }
 
@@ -58,7 +59,7 @@ impl Dataset<ImageData> for ImageDataSet {
 }
 
 #[derive(Clone)]
-pub(crate) struct PicBatcher<B: Backend> {
+pub(crate) struct ImageBatcher<B: Backend> {
     device: B::Device,
 }
 
@@ -68,13 +69,13 @@ pub(crate) struct ImageBatch<B: Backend> {
     pub target_scores: Tensor<B, 2>,
 }
 
-impl<B: Backend> PicBatcher<B> {
+impl<B: Backend> ImageBatcher<B> {
     pub(crate) fn new(device: B::Device) -> Self {
         Self { device }
     }
 }
 
-impl<B: Backend> Batcher<ImageData, ImageBatch<B>> for PicBatcher<B> {
+impl<B: Backend> Batcher<ImageData, ImageBatch<B>> for ImageBatcher<B> {
     fn batch(&self, items: Vec<ImageData>) -> ImageBatch<B> {
         let datas = items
             .iter()

@@ -52,7 +52,7 @@ impl App {
                         .req_tx
                         .send(Event::Compare([p.path.clone(), last.0.clone()]))
                         .unwrap();
-                    let delta = CMPDISPATCHER.resp_rx.recv().unwrap() as i8 as isize;
+                    let delta = CMPDISPATCHER.resp_rx.recv().unwrap() as i64;
                     acc.push((p.path, last.1 + delta));
                     acc
                 }

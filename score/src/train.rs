@@ -15,7 +15,7 @@ use burn::{
 use std::path::PathBuf;
 
 use crate::{
-    data::{ImageDataSet, PicBatcher},
+    data::{ImageBatcher, ImageDataSet},
     model::ScoreModelConfig,
 };
 
@@ -37,37 +37,37 @@ pub struct TrainingConfig {
     learning_rate: f64,
 }
 
-fn create_artifact_dir(artifact_dir: &str) {
+fn create_artifact_dir(artifact_dir: &PathBuf) {
     // Remove existing artifacts before to get an accurate learner summary
     std::fs::remove_dir_all(artifact_dir).ok();
     std::fs::create_dir_all(artifact_dir).ok();
 }
 
-pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, device: B::Device) {
-    create_artifact_dir(artifact_dir);
+pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, device: B::Device) {
+    create_artifact_dir(&artifact_dir);
 
     B::seed(config.seed);
 
     config
-        .save(format!("{artifact_dir}/config.json"))
+        .save(artifact_dir.join("config.json"))
         .expect("Config should be saved successfully");
 
-    let batcher_train = PicBatcher::<B>::new(device.clone());
-    let batcher_valid = PicBatcher::<B::InnerBackend>::new(device.clone());
+    let batcher_train = ImageBatcher::<B>::new(device.clone());
+    let batcher_valid = ImageBatcher::<B::InnerBackend>::new(device.clone());
 
     let dataloader_train = DataLoaderBuilder::new(batcher_train)
         .batch_size(config.batch_size)
         .shuffle(config.seed)
         .num_workers(config.num_workers)
-        .build(ImageDataSet::train(config.train_set));
+        .build(ImageDataSet::train(config.train_set).expect("Training set failed to be loaded"));
 
     let dataloader_valid = DataLoaderBuilder::new(batcher_valid)
         .batch_size(config.batch_size)
         .shuffle(config.seed)
         .num_workers(config.num_workers)
-        .build(ImageDataSet::test(config.valid_set));
+        .build(ImageDataSet::test(config.valid_set).expect("Validation set faild to be loaded"));
 
-    let learner = LearnerBuilder::new(artifact_dir)
+    let learner = LearnerBuilder::new(&artifact_dir)
         .metric_train_numeric(LossMetric::new())
         .metric_valid_numeric(LossMetric::new())
         .early_stopping(MetricEarlyStoppingStrategy::new::<LossMetric<B>>(
@@ -89,6 +89,6 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, dev
     let model_trained = learner.fit(dataloader_train, dataloader_valid);
 
     model_trained
-        .save_file(format!("{artifact_dir}/model"), &CompactRecorder::new())
+        .save_file(artifact_dir.join("model"), &CompactRecorder::new())
         .expect("Trained model should be saved successfully");
 }

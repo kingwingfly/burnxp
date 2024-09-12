@@ -1,5 +1,5 @@
 use super::Render;
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use image::ImageReader;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
@@ -16,7 +16,8 @@ pub(crate) struct Images<'a> {
 impl<'a> Images<'a> {
     pub(crate) fn new(paths: &'a [PathBuf; 2]) -> Result<Self> {
         #[cfg(not(target_os = "windows"))]
-        let mut picker = Picker::from_termios().map_err(|_| anyhow!("Failed to get the picker"))?;
+        let mut picker =
+            Picker::from_termios().map_err(|_| anyhow::anyhow!("Failed to get the picker"))?;
         #[cfg(target_os = "windows")]
         let mut picker = Picker::new((7, 14));
         picker.guess_protocol();

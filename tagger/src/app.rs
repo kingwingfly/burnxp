@@ -114,6 +114,9 @@ impl App {
                             bincode_into(&self.cache_path, &self.cache)?;
                             break 'a Ok(());
                         }
+                        KeyCode::Char('Y') => {
+                            break 'a Ok(());
+                        }
                         _ => {
                             self.current_screen = match self.cmp {
                                 Some(_) => CurrentScreen::Sort,

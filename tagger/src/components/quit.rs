@@ -17,7 +17,10 @@ impl Render for Quit {
             .padding(Padding::horizontal(3))
             .borders(Borders::NONE)
             .style(Style::default().bg(Color::DarkGray));
-        let exit_text = Text::styled("Quit? (y/n)", Style::default().fg(Color::Red));
+        let exit_text = Text::styled(
+            "Quit? (y/n) without cache (Y)",
+            Style::default().fg(Color::Red),
+        );
         let exit_paragraph = Paragraph::new(exit_text)
             .block(popup_block)
             .wrap(Wrap { trim: false });

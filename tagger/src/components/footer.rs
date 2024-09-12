@@ -81,7 +81,7 @@ impl Render for Hint {
             match self.current_screen {
                 CurrentScreen::Sort => Span::styled(
                     "left(↑/<-) equal(=/↵) right(->/↓) quit(q)",
-                    Style::default().fg(Color::Red),
+                    Style::default().fg(Color::Green),
                 ),
                 CurrentScreen::Finished => {
                     Span::styled("Press (q) to exit", Style::default().fg(Color::LightGreen))

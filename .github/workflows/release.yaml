@@ -71,7 +71,7 @@ jobs:
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
           scripts/setup_macOS.sh
-          source .venv/bin/activate
+          source venv/bin/activate
 
       - uses: taiki-e/upload-rust-binary-action@v1
         with:

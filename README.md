@@ -34,9 +34,12 @@ run/score.xx
 
 ```sh
 git clone git@github.com:kingwingfly/burnxp.git
-scripts/setup_<your_os>
+scripts/setup_<your_os>.xx
 # macOS only
 source .venv/bin/activate
+
+cargo build -p tagger --release
+cargo build -p score --release
 ```
 
 # Note

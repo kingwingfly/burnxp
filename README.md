@@ -44,7 +44,7 @@ cargo build -p score --release
 
 # Note
 
-The `tagger` works well in `iTerm2` while maybe not in other terminals (like `Warp`).
+The `tagger` works well in `iTerm2` and `wezterm` while maybe not in other terminals (like `Warp`).
 
 A `Tauri` version will be under development.
 

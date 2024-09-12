@@ -19,9 +19,9 @@ where
         if k1 == k2 {
             return;
         }
-        let line2 = self.inner.entry(k2.clone()).or_insert(HashMap::new());
+        let line2 = self.inner.entry(k2.clone()).or_default();
         line2.insert(k1.clone(), v.reverse());
-        let line1 = self.inner.entry(k1.clone()).or_insert(HashMap::new());
+        let line1 = self.inner.entry(k1.clone()).or_default();
         line1.insert(k2.clone(), v);
         let keys = line1
             .iter()
@@ -37,6 +37,6 @@ where
         if k1 == k2 {
             return Some(&CompareResult::Same);
         }
-        self.inner.get(k1).and_then(|m| m.get(k2))
+        self.inner.get(k1)?.get(k2)
     }
 }

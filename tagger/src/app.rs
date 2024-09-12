@@ -45,7 +45,7 @@ impl App {
             CMPDISPATCHER.req_tx.send(Event::Finished)?;
             let res = btree.into_iter().fold(vec![], |mut acc, p| {
                 if acc.is_empty() {
-                    return vec![(p.path, 0)];
+                    vec![(p.path, 0)]
                 } else {
                     let last = acc.last().unwrap();
                     CMPDISPATCHER

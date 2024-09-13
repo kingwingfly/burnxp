@@ -4,24 +4,27 @@ use burn::{
     prelude::*,
 };
 use image::{imageops::FilterType, ImageReader};
-use std::fs::File;
 use std::path::PathBuf;
+use std::{fs::File, path::Path};
+
+const SIZE: usize = 720;
+const HALF: i64 = (SIZE / 2) as i64;
 
 type Score = i64;
 
 #[derive(Debug, Clone)]
 pub(crate) struct ImageData {
-    data: [u8; 3 * 1024 * 1024],
+    data: Vec<f32>,
     score: Score,
 }
 
 impl ImageData {
-    pub(crate) fn data<B: Backend>(&self) -> Tensor<B, 3> {
-        Tensor::from_data(self.data, &B::Device::default())
+    pub(crate) fn data<B: Backend>(&self) -> Tensor<B, 1> {
+        Tensor::from_data(&self.data[..], &B::Device::default())
     }
 
     pub(crate) fn score<B: Backend>(&self) -> Tensor<B, 1> {
-        Tensor::from_data([self.score], &B::Device::default())
+        Tensor::from_data([self.score as i8], &B::Device::default())
     }
 }
 
@@ -47,7 +50,10 @@ impl Dataset<ImageData> for ImageDataSet {
     fn get(&self, index: usize) -> Option<ImageData> {
         self.inner.get(index).and_then(|(path, score)| {
             Some(ImageData {
-                data: open_image(path)?,
+                data: open_image(path)?
+                    .into_iter()
+                    .map(|p| p as f32 / 255.0)
+                    .collect(),
                 score: *score,
             })
         })
@@ -79,15 +85,16 @@ impl<B: Backend> Batcher<ImageData, ImageBatch<B>> for ImageBatcher<B> {
     fn batch(&self, items: Vec<ImageData>) -> ImageBatch<B> {
         let datas = items
             .iter()
-            .map(|item| item.data().reshape([1, 3, 1024, 1024]))
-            .collect();
+            .map(|item| item.data().reshape([1, 3, SIZE, SIZE]))
+            .collect::<Vec<_>>();
         let target_scores = items
             .iter()
             .map(|item| item.score().reshape([1, 1]))
-            .collect();
+            .collect::<Vec<_>>();
 
         let datas = Tensor::cat(datas, 0).to_device(&self.device);
         let target_scores = Tensor::cat(target_scores, 0).to_device(&self.device);
+
         ImageBatch {
             datas,
             target_scores,
@@ -95,23 +102,24 @@ impl<B: Backend> Batcher<ImageData, ImageBatch<B>> for ImageBatcher<B> {
     }
 }
 
-fn open_image(path: &PathBuf) -> Option<[u8; 3 * 1024 * 1024]> {
-    let img = ImageReader::open(path).ok()?.decode().ok()?;
-    let mut background = image::RgbImage::new(1024, 1024);
+fn open_image(path: impl AsRef<Path>) -> Option<Vec<u8>> {
+    let size = SIZE as u32;
+    let img = ImageReader::open(path.as_ref()).ok()?.decode().ok()?;
+    let mut background = image::RgbImage::new(size, size);
 
-    let factor = img.height().max(img.width()) >> 10;
-    let new_width = (img.width() / factor) as i64;
-    let new_height = (img.height() / factor) as i64;
+    let factor = img.height().max(img.width()) / size;
+    let nheight = (img.height() / factor).max(size);
+    let nwidth = (img.width() / factor).max(size);
 
-    let img = img.resize(new_width as u32, new_height as u32, FilterType::Nearest);
+    let img = img.resize(nwidth, nheight, FilterType::Nearest);
     let img = img.to_rgb8();
 
     image::imageops::overlay(
         &mut background,
         &img,
-        512 - (new_width >> 1),
-        512 - (new_height >> 1),
+        HALF - (nwidth / 2) as i64,
+        HALF - (nheight / 2) as i64,
     );
 
-    background.into_raw().try_into().ok()
+    Some(background.into_raw().to_vec())
 }

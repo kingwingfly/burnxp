@@ -19,7 +19,7 @@ struct Cli {
 fn main() -> Result<()> {
     let cli = Cli::parse();
     // create app and run it
-    let mut app = App::new(cli.root, cli.output, cli.cache);
+    let mut app = App::new(cli.root.canonicalize().unwrap(), cli.output, cli.cache);
     app.run()?;
     Ok(())
 }

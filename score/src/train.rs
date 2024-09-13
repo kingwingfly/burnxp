@@ -25,11 +25,11 @@ pub struct TrainingConfig {
     optimizer: AdamConfig,
     train_set: PathBuf,
     valid_set: PathBuf,
-    #[config(default = 500)]
+    #[config(default = 128)]
     num_epochs: usize,
-    #[config(default = 32)]
+    #[config(default = 1)]
     batch_size: usize,
-    #[config(default = 4)]
+    #[config(default = 1)]
     num_workers: usize,
     #[config(default = 42)]
     seed: u64,
@@ -74,7 +74,7 @@ pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, 
             Aggregate::Mean,
             Direction::Lowest,
             Split::Valid,
-            StoppingCondition::NoImprovementSince { n_epochs: 50 },
+            StoppingCondition::NoImprovementSince { n_epochs: 20 },
         ))
         .with_file_checkpointer(CompactRecorder::new())
         .devices(vec![device.clone()])

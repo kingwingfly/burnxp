@@ -35,8 +35,6 @@ impl App {
             .collect::<Vec<_>>();
         PROCESS.total.store(images.len(), AtomicOrdering::Relaxed);
         thread::spawn(move || -> Result<()> {
-            // SAFETY: This avoids rebuilding the binary heap.
-            // It's safe because binary heap has the same memory layout as Vec.
             let mut btree: BTreeSet<OrdPath> = BTreeSet::new();
             for path in images.into_iter() {
                 btree.insert(OrdPath::new(path));

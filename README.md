@@ -13,6 +13,17 @@ according to owner's sexual preferences.
 Based on [ratatui](https://github.com/ratatui/ratatui), `burnxp tagger` can aid in tagging pictures by
 iteractively comparing the degree of compliance with sexual preferences.
 
+## Tagger
+
+![screenshot](images/screenshot.png)
+
+Features:
+- Sort pictures by comparing one by one (clever data structure and algorithm are used to
+guarantee total order and O(nlogn) complexity)
+- L/R/U/D arrow keys for better/worse/much better/much worse
+- Sort, score and group pictures in json format
+- The user input will be cached so that user can continue from where he/she left off
+
 # Usage
 
 **Cuda 12.x should be installed** for non-macOS users.

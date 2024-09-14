@@ -5,8 +5,6 @@ libtorch.zip
 .cargo
 run
 .DS_Store
-images/*.jpg
-images/*.png
-images/*.jpeg
+test_images
 *.json
 *.bin

@@ -7,17 +7,17 @@ use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 use std::ops::Index;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub(crate) struct OrdPaths {
-    paths: Arc<UnsafeCell<Vec<PathBuf>>>,
+    paths: Rc<UnsafeCell<Vec<PathBuf>>>,
 }
 
 impl OrdPaths {
     pub(crate) fn new(paths: impl IntoIterator<Item = impl AsRef<Path>>) -> Self {
         let paths: Vec<PathBuf> = paths.into_iter().map(|p| p.as_ref().to_owned()).collect();
-        let paths = Arc::new(UnsafeCell::new(paths));
+        let paths = Rc::new(UnsafeCell::new(paths));
         Self { paths }
     }
 }
@@ -42,7 +42,7 @@ unsafe impl Sync for OrdPaths {}
 impl Default for OrdPaths {
     fn default() -> Self {
         Self {
-            paths: Arc::new(UnsafeCell::new(Vec::new())),
+            paths: Rc::new(UnsafeCell::new(Vec::new())),
         }
     }
 }

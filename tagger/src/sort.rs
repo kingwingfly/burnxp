@@ -2,29 +2,29 @@ use crate::event::{Event, CMPDISPATCH};
 use crate::matrix::Reflexivity;
 use rand::seq::SliceRandom as _;
 use serde::{Deserialize, Serialize};
-use std::cell::UnsafeCell;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 use std::ops::Index;
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
 
+/// Wrapper around `Vec<PathBuf>` to implement `Ord` and `Hash`.
+/// Should be manually Dropped.
 #[derive(Debug, Clone)]
 pub(crate) struct OrdPaths {
-    paths: Rc<UnsafeCell<Vec<PathBuf>>>,
+    paths: *mut Vec<PathBuf>,
 }
 
 impl OrdPaths {
     pub(crate) fn new(paths: impl IntoIterator<Item = impl AsRef<Path>>) -> Self {
         let paths: Vec<PathBuf> = paths.into_iter().map(|p| p.as_ref().to_owned()).collect();
-        let paths = Rc::new(UnsafeCell::new(paths));
+        let paths = Box::into_raw(Box::new(paths));
         Self { paths }
     }
 }
 
 impl Serialize for OrdPaths {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let path = unsafe { &*self.paths.get() };
+        let path = unsafe { &*self.paths };
         path.serialize(serializer)
     }
 }
@@ -42,7 +42,7 @@ unsafe impl Sync for OrdPaths {}
 impl Default for OrdPaths {
     fn default() -> Self {
         Self {
-            paths: Rc::new(UnsafeCell::new(Vec::new())),
+            paths: Box::into_raw(Box::new(Vec::new())),
         }
     }
 }
@@ -50,20 +50,26 @@ impl Default for OrdPaths {
 impl OrdPaths {
     pub(crate) fn random_one(&self) -> Option<&PathBuf> {
         let mut rng = rand::thread_rng();
-        unsafe { &*self.paths.get() }.choose(&mut rng)
+        unsafe { &*self.paths }.choose(&mut rng)
     }
 
     pub(crate) fn is_empty(&self) -> bool {
-        unsafe { &*self.paths.get() }.is_empty()
+        unsafe { &*self.paths }.is_empty()
     }
 
     pub(crate) fn extend(&self, other: &Self) {
-        let this = unsafe { &mut *self.paths.get() };
+        let this = unsafe { &mut *self.paths };
         let key = other[0].clone();
-        let iter = unsafe { &mut *self.paths.get() }.drain(..);
+        let iter = unsafe { &mut *other.paths }.drain(..);
         this.extend(iter);
-        let other = unsafe { &mut *self.paths.get() };
+        let other = unsafe { &mut *other.paths };
         other.push(key);
+    }
+
+    pub(crate) fn drop(&mut self) {
+        unsafe {
+            let _ = Box::from_raw(self.paths);
+        };
     }
 }
 
@@ -71,7 +77,7 @@ impl Index<usize> for OrdPaths {
     type Output = PathBuf;
 
     fn index(&self, index: usize) -> &Self::Output {
-        unsafe { &*self.paths.get() }.index(index)
+        unsafe { &*self.paths }.index(index)
     }
 }
 

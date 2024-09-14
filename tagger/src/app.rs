@@ -21,7 +21,7 @@ pub struct App {
     cmp: Option<ComparePair>,
     cache: Matrix,
     cache_path: PathBuf,
-    _images: Vec<OrdPaths>,
+    images: Vec<OrdPaths>,
 }
 
 impl App {
@@ -40,8 +40,8 @@ impl App {
         let images_c = images.clone();
         thread::spawn(move || -> Result<()> {
             let mut btree: BTreeSet<OrdPaths> = BTreeSet::new();
-            for path in images_c.into_iter() {
-                btree.insert(path);
+            for paths in images_c.into_iter() {
+                btree.insert(paths);
                 PROCESS.finished.fetch_add(1, AtomicOrdering::Relaxed);
             }
             CMPDISPATCH.req_tx.send(Event::Finished)?;
@@ -68,7 +68,7 @@ impl App {
             cmp: None,
             cache: bincode_from(&cache).unwrap_or_default(),
             cache_path: cache,
-            _images: images,
+            images,
         }
     }
 
@@ -163,7 +163,7 @@ impl App {
         let [k1, k2] = self.cmp.take().unwrap();
         self.cache.insert(&k1, &k2, ord);
         if ord == CompareResult::Same {
-            // If they are the same, k1 will be replaced by k2.
+            // If they are the same, k1 will be replaced with k2 in BTree.
             // Extending ensures data is not lost.
             k2.extend(&k1)
         }
@@ -207,5 +207,13 @@ impl Render for App {
         }
         .render(f, chunks[2])?;
         Ok(())
+    }
+}
+
+impl Drop for App {
+    fn drop(&mut self) {
+        for paths in self.images.iter_mut() {
+            paths.drop();
+        }
     }
 }

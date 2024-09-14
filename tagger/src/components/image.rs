@@ -10,11 +10,11 @@ use std::path::PathBuf;
 
 pub(crate) struct Images<'a> {
     picker: Picker,
-    paths: &'a [PathBuf; 2],
+    paths: &'a [&'a PathBuf; 2],
 }
 
 impl<'a> Images<'a> {
-    pub(crate) fn new(paths: &'a [PathBuf; 2]) -> Result<Self> {
+    pub(crate) fn new(paths: &'a [&'a PathBuf; 2]) -> Result<Self> {
         #[cfg(not(target_os = "windows"))]
         let mut picker =
             Picker::from_termios().map_err(|_| anyhow::anyhow!("Failed to get the picker"))?;
@@ -34,7 +34,7 @@ impl<'a> Render for Images<'a> {
         for i in 0..2 {
             Image {
                 picker: &mut self.picker,
-                path: &self.paths[i],
+                path: self.paths[i],
             }
             .render(f, chunks[i])?
         }

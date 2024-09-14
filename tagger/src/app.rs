@@ -1,7 +1,7 @@
 use crate::components::{Footer, Images, Quit, Render, Title};
-use crate::event::{ComparePair, Event, CMPDISPATCHER};
-use crate::matix::Matrix;
-use crate::sort::{CompareResult, OrdPath};
+use crate::event::{ComparePair, Event, CMPDISPATCH};
+use crate::matrix::Matrix;
+use crate::sort::{CompareResult, OrdPaths};
 use crate::state::{CurrentScreen, PROCESS};
 use crate::terminal::AutoDropTerminal;
 use crate::utils::{bincode_from, bincode_into, centered_rect, json_into};
@@ -19,8 +19,9 @@ use std::time::Duration;
 pub struct App {
     current_screen: CurrentScreen,
     cmp: Option<ComparePair>,
-    cache: Matrix<PathBuf, CompareResult>,
+    cache: Matrix,
     cache_path: PathBuf,
+    _images: Vec<OrdPaths>,
 }
 
 impl App {
@@ -29,34 +30,37 @@ impl App {
             .into_iter()
             .filter_map(|res| res.ok())
             .filter_map(|e| match MimeGuess::from_path(e.path()).first() {
-                Some(mime) if mime.type_() == "image" => Some(e.path().to_path_buf()),
+                Some(mime) if mime.type_() == "image" => {
+                    Some(OrdPaths::new([e.path().to_path_buf()]))
+                }
                 _ => None,
             })
             .collect::<Vec<_>>();
         PROCESS.total.store(images.len(), AtomicOrdering::Relaxed);
+        let images_c = images.clone();
         thread::spawn(move || -> Result<()> {
-            let mut btree: BTreeSet<OrdPath> = BTreeSet::new();
-            for path in images.into_iter() {
-                btree.insert(OrdPath::new(path));
+            let mut btree: BTreeSet<OrdPaths> = BTreeSet::new();
+            for path in images_c.into_iter() {
+                btree.insert(path);
                 PROCESS.finished.fetch_add(1, AtomicOrdering::Relaxed);
             }
-            CMPDISPATCHER.req_tx.send(Event::Finished)?;
-            let res = btree.into_iter().fold(vec![], |mut acc, p| {
+            CMPDISPATCH.req_tx.send(Event::Finished)?;
+            let res: Vec<(i64, OrdPaths)> = btree.into_iter().fold(vec![], |mut acc, node| {
                 if acc.is_empty() {
-                    vec![(p.path, 0)]
+                    vec![(0, node)]
                 } else {
                     let last = acc.last().unwrap();
-                    CMPDISPATCHER
+                    CMPDISPATCH
                         .req_tx
-                        .send(Event::Compare([p.path.clone(), last.0.clone()]))
+                        .send(Event::Compare([node.clone(), last.1.clone()]))
                         .unwrap();
-                    let delta = CMPDISPATCHER.resp_rx.recv().unwrap() as i64;
-                    acc.push((p.path, last.1 + delta));
+                    let delta = CMPDISPATCH.resp_rx.recv().unwrap() as i64;
+                    acc.push((last.0 + delta, node));
                     acc
                 }
             });
             json_into(&output, &res)?;
-            CMPDISPATCHER.req_tx.send(Event::Finished)?;
+            CMPDISPATCH.req_tx.send(Event::Finished)?;
             Ok(())
         });
         Self {
@@ -64,6 +68,7 @@ impl App {
             cmp: None,
             cache: bincode_from(&cache).unwrap_or_default(),
             cache_path: cache,
+            _images: images,
         }
     }
 
@@ -130,18 +135,18 @@ impl App {
 
     fn recv_event(&mut self) -> Result<()> {
         loop {
-            match CMPDISPATCHER.req_rx.recv().unwrap() {
+            match CMPDISPATCH.req_rx.recv().unwrap() {
                 Event::Compare([k1, k2]) => {
                     if let Some(ord) = self.cache.get(&k1, &k2) {
-                        CMPDISPATCHER.resp_tx.send(ord)?;
+                        CMPDISPATCH.resp_tx.send(ord)?;
                         continue;
                     }
                     self.cmp = Some([k1, k2]);
                     break;
                 }
                 Event::Finished => {
-                    while let Event::Compare([k1, k2]) = CMPDISPATCHER.req_rx.recv().unwrap() {
-                        CMPDISPATCHER
+                    while let Event::Compare([k1, k2]) = CMPDISPATCH.req_rx.recv().unwrap() {
+                        CMPDISPATCH
                             .resp_tx
                             .send(self.cache.get(&k1, &k2).unwrap())?;
                     }
@@ -156,8 +161,13 @@ impl App {
 
     fn resp_event(&mut self, ord: CompareResult) -> Result<()> {
         let [k1, k2] = self.cmp.take().unwrap();
-        self.cache.insert(k1, k2, ord);
-        CMPDISPATCHER.resp_tx.send(ord)?;
+        self.cache.insert(&k1, &k2, ord);
+        if ord == CompareResult::Same {
+            // If they are the same, k1 will be replaced by k2.
+            // Extending ensures data is not lost.
+            k2.extend(&k1)
+        }
+        CMPDISPATCH.resp_tx.send(ord)?;
         Ok(())
     }
 }
@@ -182,8 +192,8 @@ impl Render for App {
         }
         .render(f, chunks[0])?;
         match self.cmp {
-            Some(ref paths) => {
-                Images::new(paths)?.render(f, chunks[1])?;
+            Some([ref p1, ref p2]) => {
+                Images::new(&[p1.random_one().unwrap(), &p2[0]])?.render(f, chunks[1])?;
             }
             None => {
                 Title {

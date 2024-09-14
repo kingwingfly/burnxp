@@ -34,15 +34,21 @@ pub(crate) struct ImageDataSet {
 
 impl ImageDataSet {
     pub(crate) fn train(path: PathBuf) -> Result<Self> {
-        Ok(Self {
-            inner: serde_json::from_reader(File::open(path)?)?,
-        })
+        let tags: Vec<(i64, Vec<PathBuf>)> = serde_json::from_reader(File::open(path)?)?;
+        let inner = tags
+            .into_iter()
+            .flat_map(|(score, paths)| paths.into_iter().map(move |path| (path, score)))
+            .collect();
+        Ok(Self { inner })
     }
 
     pub(crate) fn test(path: PathBuf) -> Result<Self> {
-        Ok(Self {
-            inner: serde_json::from_reader(File::open(path)?)?,
-        })
+        let tags: Vec<(i64, Vec<PathBuf>)> = serde_json::from_reader(File::open(path)?)?;
+        let inner = tags
+            .into_iter()
+            .flat_map(|(score, paths)| paths.into_iter().map(move |path| (path, score)))
+            .collect();
+        Ok(Self { inner })
     }
 }
 

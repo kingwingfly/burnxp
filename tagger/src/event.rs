@@ -1,8 +1,8 @@
-use crate::sort::CompareResult;
+use crate::sort::{CompareResult, OrdPaths};
 use crossbeam::channel::{bounded, Receiver, Sender};
-use std::{path::PathBuf, sync::LazyLock};
+use std::sync::LazyLock;
 
-pub(crate) static CMPDISPATCHER: LazyLock<CmpDispatcher> = LazyLock::new(|| {
+pub(crate) static CMPDISPATCH: LazyLock<CmpDispatcher> = LazyLock::new(|| {
     let (req_tx, req_rx) = bounded(0);
     let (resp_tx, resp_rx) = bounded(0);
     CmpDispatcher {
@@ -13,12 +13,15 @@ pub(crate) static CMPDISPATCHER: LazyLock<CmpDispatcher> = LazyLock::new(|| {
     }
 });
 
-pub(crate) type ComparePair = [PathBuf; 2];
+pub(crate) type ComparePair = [OrdPaths; 2];
 
 pub(crate) enum Event {
     Compare(ComparePair),
     Finished,
 }
+
+unsafe impl Send for Event {}
+unsafe impl Sync for Event {}
 
 pub(crate) struct CmpDispatcher {
     pub req_tx: Sender<Event>,

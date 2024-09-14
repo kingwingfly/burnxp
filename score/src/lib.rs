@@ -1,7 +1,7 @@
 mod data;
 mod model;
-mod train;
 mod predict;
+mod train;
 
-pub use model::ScoreModelConfig;
+pub use model::{RnnType, ScoreModelConfig};
 pub use train::{train, TrainingConfig};

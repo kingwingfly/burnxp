@@ -15,7 +15,7 @@ iteractively comparing the degree of compliance with sexual preferences.
 
 ## Tagger
 
-![screenshot](images/screenshot.png)
+![screenshot](images/tagger_screenshot.png)
 
 Features:
 - Sort pictures by comparing one by one (clever data structure and algorithm are used to

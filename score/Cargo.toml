@@ -8,6 +8,7 @@ description = "An image scorer by ResNet101"
 burn = { workspace = true, features = ["train", "tch"] }
 serde_json = { workspace = true }
 image = { workspace = true }
-clap = { workspace = true }
+clap = { workspace = true, features = ["string"] }
 resnet-burn = { git = "https://github.com/kingwingfly/models", branch = "burn0.14", package = "resnet-burn", default-features = false }
 anyhow = { workspace = true }
+serde = { workspace = true }

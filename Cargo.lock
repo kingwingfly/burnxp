@@ -3402,6 +3402,7 @@ dependencies = [
  "clap",
  "image",
  "resnet-burn",
+ "serde",
  "serde_json",
 ]
 

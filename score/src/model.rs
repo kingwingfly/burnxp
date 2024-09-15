@@ -43,8 +43,8 @@ impl<B: Backend> ScoreModel<B> {
 
 impl<B: AutodiffBackend> TrainStep<ImageBatch<B>, RegressionOutput<B>> for ScoreModel<B> {
     fn step(&self, batch: ImageBatch<B>) -> TrainOutput<RegressionOutput<B>> {
-        let item = self.forward_regression(batch.datas, batch.target_scores);
-        TrainOutput::new(self, item.loss.backward(), item)
+        let reg = self.forward_regression(batch.datas, batch.target_scores);
+        TrainOutput::new(self, reg.loss.backward(), reg)
     }
 }
 

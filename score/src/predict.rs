@@ -10,13 +10,14 @@ use burn::{
 };
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 
 #[derive(Debug, Clone, Default, ValueEnum, Serialize, Deserialize)]
 pub enum Output {
     #[default]
     Tui,
     Tty,
+    Json,
 }
 
 #[derive(Config, Debug)]
@@ -44,15 +45,24 @@ pub fn predict<B: Backend>(config: PredictConfig, device: B::Device) {
         .batch_size(config.batch_size)
         .num_workers(config.num_workers)
         .build(ImageDataSet::predict(config.input).expect("Training set failed to be loaded"));
+    let mut output = HashMap::new();
     for batch in dataloader_predict.iter() {
-        let output = model.forward(batch.datas);
-        match config.output {
-            Output::Tui => {
-                todo!()
-            }
-            Output::Tty => {
-                println!("{:?}: {:?}", batch.paths, output);
-            }
+        let scores = model
+            .forward(batch.datas)
+            .into_data()
+            .to_vec::<f32>()
+            .unwrap();
+        output.extend(batch.paths.into_iter().zip(scores));
+    }
+    match config.output {
+        Output::Tui => {
+            todo!()
+        }
+        Output::Tty => {
+            todo!()
+        }
+        Output::Json => {
+            println!("{}", serde_json::to_string_pretty(&output).unwrap());
         }
     }
 }

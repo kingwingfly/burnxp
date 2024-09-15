@@ -28,6 +28,10 @@ guarantee total order and O(nlogn) complexity)
 
 ![train_screenshot](images/train_screenshot.png)
 
+## Predictor
+
+![train_screenshot](images/predict_screenshot.png)
+
 # Usage
 
 **Cuda 12.x should be installed** for non-macOS users.

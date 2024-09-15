@@ -9,6 +9,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha10] - 2024-09-14
+
+- score MVP
+
 ## [0.1.0-alpha9] - 2024-09-14
 
 - tagger MVP

@@ -50,9 +50,9 @@ impl Default for OrdPaths {
 }
 
 impl OrdPaths {
-    pub(crate) fn random_one(&self) -> Option<&PathBuf> {
+    pub(crate) fn random_one(&self) -> &PathBuf {
         let mut rng = rand::thread_rng();
-        unsafe { &*self.paths }.choose(&mut rng)
+        unsafe { &*self.paths }.choose(&mut rng).unwrap()
     }
 
     pub(crate) fn is_empty(&self) -> bool {

@@ -18,27 +18,27 @@ pub(crate) struct Matrix {
 }
 
 impl Matrix {
-    pub(crate) fn insert(&mut self, k1: OrdPaths, k2: OrdPaths, v: CompareResult) {
+    pub(crate) fn insert(&mut self, p1: OrdPaths, p2: OrdPaths, v: CompareResult) {
         // To avoid cloning K leading to double free, do not use entry.
-        let line2 = self.map.entry(k2).or_default();
-        line2.insert(k1, v.reverse());
-        let line1 = self.map.entry(k1).or_default();
-        let keys = line1
+        let line2 = self.map.entry(p2).or_default();
+        line2.insert(p1, v.reverse());
+        let line1 = self.map.entry(p1).or_default();
+        let paths = line1
             .iter()
             .filter(|(_, v)| **v == CompareResult::ZERO)
             .map(|(k, _)| *k)
             .collect::<Vec<_>>();
-        line1.insert(k2, v);
-        for k in keys {
-            self.insert(k, k2, v);
+        line1.insert(p2, v);
+        for p in paths {
+            self.insert(p, p2, v);
         }
     }
 
-    pub(crate) fn get(&self, k1: &OrdPaths, k2: &OrdPaths) -> Option<CompareResult> {
-        self.map.get(k1)?.get(k2).cloned()
+    pub(crate) fn get(&self, p1: &OrdPaths, p2: &OrdPaths) -> Option<CompareResult> {
+        self.map.get(p1)?.get(p2).cloned()
     }
 
-    pub(crate) fn get_key(&self, k: &PathBuf) -> Option<OrdPaths> {
-        self.map.keys().find(|key| &key[0] == k).cloned()
+    pub(crate) fn get_paths(&self, p: &PathBuf) -> Option<OrdPaths> {
+        self.map.keys().find(|paths| &paths[0] == p).cloned()
     }
 }

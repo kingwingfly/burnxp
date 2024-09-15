@@ -34,7 +34,7 @@ impl App {
             .filter_map(|e| match MimeGuess::from_path(e.path()).first() {
                 Some(mime) if mime.type_() == "image" => {
                     let path = e.into_path();
-                    matrix.get_key(&path).or(Some(OrdPaths::new([path])))
+                    matrix.get_paths(&path).or(Some(OrdPaths::new([path])))
                 }
                 _ => None,
             })
@@ -139,19 +139,19 @@ impl App {
     fn recv_event(&mut self) -> Result<()> {
         loop {
             match CMPDISPATCH.req_rx.recv().unwrap() {
-                Event::Compare([k1, k2]) => {
-                    if let Some(ord) = self.matrix.get(&k1, &k2) {
+                Event::Compare([p1, p2]) => {
+                    if let Some(ord) = self.matrix.get(&p1, &p2) {
                         CMPDISPATCH.resp_tx.send(ord)?;
                         continue;
                     }
-                    self.cmp = Some([k1, k2]);
+                    self.cmp = Some([p1, p2]);
                     break;
                 }
                 Event::Finished => {
-                    while let Event::Compare([k1, k2]) = CMPDISPATCH.req_rx.recv().unwrap() {
+                    while let Event::Compare([p1, p2]) = CMPDISPATCH.req_rx.recv().unwrap() {
                         CMPDISPATCH
                             .resp_tx
-                            .send(self.matrix.get(&k1, &k2).unwrap())?;
+                            .send(self.matrix.get(&p1, &p2).unwrap())?;
                     }
                     self.cmp = None;
                     self.current_screen = CurrentScreen::Finished;
@@ -163,12 +163,13 @@ impl App {
     }
 
     fn resp_event(&mut self, ord: CompareResult) -> Result<()> {
-        let [k1, k2] = self.cmp.take().unwrap();
-        self.matrix.insert(k1, k2, ord);
+        let [p1, p2] = self.cmp.take().unwrap();
+        self.matrix.insert(p1, p2, ord);
         if ord == CompareResult::Same {
-            // If they are the same, k1 will be replaced with k2 in BTree.
+            // p2 is the old key, if they are the same, p1 will be discarded in BTree.
             // Extending ensures data is not lost.
-            k2.extend(k1);
+            // [BTreeSet src](https://github.com/rust-lang/rust/blob/6f7229c4da0471f1470bb1f86071848cba3a23d9/library/alloc/src/collections/btree/search.rs#L214-L230)
+            p2.extend(p1);
         }
         CMPDISPATCH.resp_tx.send(ord)?;
         Ok(())
@@ -196,7 +197,8 @@ impl Render for App {
         .render(f, chunks[0])?;
         match self.cmp {
             Some([ref p1, ref p2]) => {
-                Images::new(&[p1.random_one().unwrap(), &p2[0]])?.render(f, chunks[1])?;
+                // p2 is the old key in BTree, randomly choose from it for comparison.
+                Images::new(&[&p1[0], p2.random_one()])?.render(f, chunks[1])?;
             }
             None => {
                 Title {

@@ -29,11 +29,11 @@ enum SubCmd {
         /// Directory to save artifacts
         #[arg(short, long)]
         artifact_dir: PathBuf,
-        #[arg(short, long, default_value = "128")]
+        #[arg(short = 'e', long, default_value = "128")]
         num_epochs: usize,
         #[arg(short, long, default_value = "1")]
         batch_size: usize,
-        #[arg(short, long, default_value = "1")]
+        #[arg(short = 'w', long, default_value = "1")]
         num_workers: usize,
     },
     /// Predict using a ResNet model checkpoint

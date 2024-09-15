@@ -19,7 +19,11 @@ impl<'a> Images<'a> {
         let mut picker =
             Picker::from_termios().map_err(|_| anyhow::anyhow!("Failed to get the picker"))?;
         #[cfg(target_os = "windows")]
-        let mut picker = Picker::new((7, 14));
+        let mut picker = {
+            let mut picker = Picker::new((7, 14));
+            picker.protocol_type = ratatui_image::picker::ProtocolType::Sixel;
+            picker
+        };
         picker.guess_protocol();
         Ok(Self { picker, paths })
     }

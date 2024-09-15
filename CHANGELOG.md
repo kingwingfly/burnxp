@@ -9,7 +9,12 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
-## [0.1.0-alpha10] - 2024-09-14
+## [0.1.0-alpha11] - 2024-09-15
+
+- fix windows setups script mistake
+- try fix windows image display bug
+
+## [0.1.0-alpha10] - 2024-09-15
 
 - score MVP
 

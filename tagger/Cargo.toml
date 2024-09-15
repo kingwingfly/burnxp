@@ -16,7 +16,7 @@ serde_json = { workspace = true }
 bincode = { workspace = true }
 image = { workspace = true }
 clap = { workspace = true }
-walkdir = "2.5.0"
-mime_guess = "2.0.5"
+walkdir = { workspace = true }
+mime_guess = { workspace = true }
 crossbeam = "0.8.4"
 rand = "0.8.5"

@@ -2,8 +2,8 @@ use burn::{
     backend::{libtorch::LibTorchDevice, Autodiff, LibTorch},
     optim::AdamConfig,
 };
-use clap::{Parser, Subcommand, ValueEnum};
-use score::{train, RnnType, ScoreModelConfig, TrainingConfig};
+use clap::{Parser, Subcommand};
+use score::{predict, train, Output, PredictConfig, RnnType, ScoreModelConfig, TrainingConfig};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -50,14 +50,11 @@ enum SubCmd {
         /// Path to the output image
         #[arg(short, long)]
         output: Output,
+        #[arg(short, long, default_value = "1")]
+        batch_size: usize,
+        #[arg(short = 'w', long, default_value = "1")]
+        num_workers: usize,
     },
-}
-
-#[derive(Debug, Clone, Default, ValueEnum)]
-enum Output {
-    #[default]
-    Tui,
-    Tty,
 }
 
 type MyBackend = LibTorch<f32, i8>;
@@ -99,11 +96,13 @@ fn main() {
             checkpoint,
             input,
             output,
-        } => {
-            println!("Predicting with model: {:?}", model);
-            println!("Predicting with checkpoint: {:?}", checkpoint);
-            println!("Input image: {:?}", input);
-            println!("Output image: {:?}", output);
-        }
+            batch_size,
+            num_workers,
+        } => predict::<MyBackend>(
+            PredictConfig::new(model, checkpoint, input, output)
+                .with_batch_size(batch_size)
+                .with_num_workers(num_workers),
+            device,
+        ),
     }
 }

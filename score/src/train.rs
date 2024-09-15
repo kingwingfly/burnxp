@@ -49,7 +49,7 @@ pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, 
     B::seed(config.seed);
 
     config
-        .save(artifact_dir.join("config.json"))
+        .save(artifact_dir.join("train_config.json"))
         .expect("Config should be saved successfully");
 
     let batcher_train = ImageBatcher::<B>::new(device.clone());

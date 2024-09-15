@@ -12,3 +12,5 @@ clap = { workspace = true, features = ["string"] }
 resnet-burn = { git = "https://github.com/kingwingfly/models", branch = "burn0.14", package = "resnet-burn", default-features = false }
 anyhow = { workspace = true }
 serde = { workspace = true }
+walkdir = { workspace = true }
+mime_guess = { workspace = true }

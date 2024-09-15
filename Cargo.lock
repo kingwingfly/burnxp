@@ -3401,9 +3401,11 @@ dependencies = [
  "burn",
  "clap",
  "image",
+ "mime_guess",
  "resnet-burn",
  "serde",
  "serde_json",
+ "walkdir",
 ]
 
 [[package]]

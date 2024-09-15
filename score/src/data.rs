@@ -4,10 +4,11 @@ use burn::{
     prelude::*,
 };
 use image::{imageops::FilterType, ImageReader};
+use mime_guess::MimeGuess;
 use std::path::PathBuf;
 use std::{fs::File, path::Path};
 
-const SIZE: usize = 720;
+pub const SIZE: usize = 720;
 const HALF: i64 = (SIZE / 2) as i64;
 
 type Score = i64;
@@ -16,6 +17,7 @@ type Score = i64;
 pub(crate) struct ImageData {
     data: Vec<f32>,
     score: Score,
+    path: PathBuf,
 }
 
 impl ImageData {
@@ -50,6 +52,18 @@ impl ImageDataSet {
             .collect();
         Ok(Self { inner })
     }
+
+    pub(crate) fn predict(path: PathBuf) -> Result<Self> {
+        let inner = walkdir::WalkDir::new(path)
+            .into_iter()
+            .filter_map(|res| res.ok())
+            .filter_map(|e| match MimeGuess::from_path(e.path()).first() {
+                Some(mime) if mime.type_() == "image" => Some((e.into_path(), 0)),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        Ok(Self { inner })
+    }
 }
 
 impl Dataset<ImageData> for ImageDataSet {
@@ -61,6 +75,7 @@ impl Dataset<ImageData> for ImageDataSet {
                     .map(|p| p as f32 / 255.0)
                     .collect(),
                 score: *score,
+                path: path.clone(),
             })
         })
     }
@@ -79,6 +94,7 @@ pub(crate) struct ImageBatcher<B: Backend> {
 pub(crate) struct ImageBatch<B: Backend> {
     pub datas: Tensor<B, 4>,
     pub target_scores: Tensor<B, 2>,
+    pub paths: Vec<PathBuf>,
 }
 
 impl<B: Backend> ImageBatcher<B> {
@@ -100,15 +116,17 @@ impl<B: Backend> Batcher<ImageData, ImageBatch<B>> for ImageBatcher<B> {
 
         let datas = Tensor::cat(datas, 0).to_device(&self.device);
         let target_scores = Tensor::cat(target_scores, 0).to_device(&self.device);
+        let paths = items.iter().map(|item| item.path.clone()).collect();
 
         ImageBatch {
             datas,
             target_scores,
+            paths,
         }
     }
 }
 
-fn open_image(path: impl AsRef<Path>) -> Option<Vec<u8>> {
+pub fn open_image(path: impl AsRef<Path>) -> Option<Vec<u8>> {
     let size = SIZE as u32;
     let img = ImageReader::open(path.as_ref()).ok()?.decode().ok()?;
     let mut background = image::RgbImage::new(size, size);

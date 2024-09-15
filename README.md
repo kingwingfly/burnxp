@@ -1,5 +1,3 @@
-WIP
-
 # About the Project
 
 This project is one of the components of `the digital me` project (WIP),

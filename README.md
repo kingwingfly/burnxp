@@ -63,7 +63,7 @@ cargo build -p score --release
 
 The `tagger` works well in `iTerm2` and `wezterm` while maybe not in other terminals (like `Warp`).
 
-For Windows users, the `wezterm` even `vscode`'s integrated terminal may work.
+For Windows users, the `wezterm` even `vscode`'s integrated terminal ("terminal.integrated.experimentalImageSupport": true) may work.
 
 A `Tauri` version may be under development.
 

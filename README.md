@@ -5,13 +5,13 @@ WIP
 This project is one of the components of `the digital me` project (WIP),
 which aims to clone oneself to some extent.
 
-This component `burnxp` is for cloning one's `Sexual Preferences`, also known as `XP`(性癖) in Chinese.
+This component `burnxp` is for cloning one's `Aesthetics Preferences`, also known as `XP`(性癖) in Chinese.
 
 Based on [burn](https://github.com/tracel-ai/burn), `burnxp score` can train a model to score pictures
-according to owner's sexual preferences.
+according to owner's sesthetics preferences.
 
 Based on [ratatui](https://github.com/ratatui/ratatui), `burnxp tagger` can aid in tagging pictures by
-iteractively comparing the degree of compliance with sexual preferences.
+iteractively comparing the degree of compliance with sesthetics preferences.
 
 ## Tagger
 

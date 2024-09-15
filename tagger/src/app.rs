@@ -165,7 +165,7 @@ impl App {
         if ord == CompareResult::Same {
             // If they are the same, k1 will be replaced with k2 in BTree.
             // Extending ensures data is not lost.
-            k2.extend(&k1)
+            k2.extend(&k1);
         }
         CMPDISPATCH.resp_tx.send(ord)?;
         Ok(())
@@ -213,7 +213,9 @@ impl Render for App {
 impl Drop for App {
     fn drop(&mut self) {
         for paths in self.images.iter_mut() {
-            paths.drop();
+            unsafe {
+                paths.drop();
+            }
         }
     }
 }

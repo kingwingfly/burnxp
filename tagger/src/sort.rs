@@ -8,7 +8,9 @@ use std::ops::Index;
 use std::path::{Path, PathBuf};
 
 /// Wrapper around `Vec<PathBuf>` to implement `Ord` and `Hash`.
-/// Should be manually Dropped.
+/// # Safety
+/// - Should be manually Dropped.
+/// - Care should be taken when using `extend` method.
 #[derive(Debug, Clone)]
 pub(crate) struct OrdPaths {
     paths: *mut Vec<PathBuf>,
@@ -36,8 +38,8 @@ impl<'de> Deserialize<'de> for OrdPaths {
     }
 }
 
+/// Safety: We only modify it in a single thread, and the rw order is fixed in that thread
 unsafe impl Send for OrdPaths {}
-unsafe impl Sync for OrdPaths {}
 
 impl Default for OrdPaths {
     fn default() -> Self {
@@ -57,6 +59,8 @@ impl OrdPaths {
         unsafe { &*self.paths }.is_empty()
     }
 
+    /// Merge the two paths into one to avoid data loss. The `other` will have only
+    /// the first element remaining, which is its hash key.
     pub(crate) fn extend(&self, other: &Self) {
         let this = unsafe { &mut *self.paths };
         let key = other[0].clone();
@@ -66,7 +70,12 @@ impl OrdPaths {
         other.push(key);
     }
 
-    pub(crate) fn drop(&mut self) {
+    /// Since the BTree will replace the old one with the new one,
+    /// and the old one will be dropped, we need to manually drop
+    /// instead of Drop trait to avoid double free.
+    /// # Safety
+    /// - The pointer should be valid (No others call this method dumplicatedly).
+    pub(crate) unsafe fn drop(&mut self) {
         unsafe {
             let _ = Box::from_raw(self.paths);
         };

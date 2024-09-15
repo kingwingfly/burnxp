@@ -2,7 +2,7 @@
 name = "tagger"
 version.workspace = true
 edition = "2021"
-description = "A image tagger by iteractive comparation"
+description = "A image tagger by iteractive comparisons"
 
 [dependencies]
 ratatui = { workspace = true }

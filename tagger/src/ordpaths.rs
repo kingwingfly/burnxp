@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 /// # Safety
 /// - Should be manually Dropped.
 /// - Care should be taken when using `extend` method.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) struct OrdPaths {
     paths: *mut Vec<PathBuf>,
 }
@@ -61,7 +61,7 @@ impl OrdPaths {
 
     /// Merge the two paths into one to avoid data loss. The `other` will have only
     /// the first element remaining, which is its hash key.
-    pub(crate) fn extend(&self, other: &Self) {
+    pub(crate) fn extend(&self, other: Self) {
         let this = unsafe { &mut *self.paths };
         let key = other[0].clone();
         let iter = unsafe { &mut *other.paths }.drain(..);
@@ -117,7 +117,7 @@ impl Ord for OrdPaths {
         }
         CMPDISPATCH
             .req_tx
-            .send(Event::Compare([self.clone(), other.clone()]))
+            .send(Event::Compare([*self, *other]))
             .unwrap();
         match CMPDISPATCH.resp_rx.recv() {
             Ok(ord) => ord.into(),

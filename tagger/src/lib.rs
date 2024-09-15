@@ -2,7 +2,7 @@ mod app;
 mod components;
 mod event;
 mod matrix;
-mod sort;
+mod ordpaths;
 mod state;
 mod terminal;
 mod utils;

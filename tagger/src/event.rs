@@ -1,4 +1,4 @@
-use crate::sort::{CompareResult, OrdPaths};
+use crate::ordpaths::{CompareResult, OrdPaths};
 use crossbeam::channel::{bounded, Receiver, Sender};
 use std::sync::LazyLock;
 

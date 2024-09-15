@@ -1,7 +1,7 @@
 use crate::components::{Footer, Images, Quit, Render, Title};
 use crate::event::{ComparePair, Event, CMPDISPATCH};
 use crate::matrix::Matrix;
-use crate::sort::{CompareResult, OrdPaths};
+use crate::ordpaths::{CompareResult, OrdPaths};
 use crate::state::{CurrentScreen, PROCESS};
 use crate::terminal::AutoDropTerminal;
 use crate::utils::{bincode_from, bincode_into, centered_rect, json_into};
@@ -19,19 +19,22 @@ use std::time::Duration;
 pub struct App {
     current_screen: CurrentScreen,
     cmp: Option<ComparePair>,
-    cache: Matrix,
+    /// The matrix of comparison
+    matrix: Matrix,
     cache_path: PathBuf,
     images: Vec<OrdPaths>,
 }
 
 impl App {
     pub fn new(root: PathBuf, output: PathBuf, cache: PathBuf) -> Self {
+        let matrix: Matrix = bincode_from(&cache).unwrap_or_default();
         let images = walkdir::WalkDir::new(root)
             .into_iter()
             .filter_map(|res| res.ok())
             .filter_map(|e| match MimeGuess::from_path(e.path()).first() {
                 Some(mime) if mime.type_() == "image" => {
-                    Some(OrdPaths::new([e.path().to_path_buf()]))
+                    let path = e.into_path();
+                    matrix.get_key(&path).or(Some(OrdPaths::new([path])))
                 }
                 _ => None,
             })
@@ -49,13 +52,13 @@ impl App {
                 if acc.is_empty() {
                     vec![(0, node)]
                 } else {
-                    let last = acc.last().unwrap();
+                    let (last_score, last) = *acc.last().unwrap();
                     CMPDISPATCH
                         .req_tx
-                        .send(Event::Compare([node.clone(), last.1.clone()]))
+                        .send(Event::Compare([node, last]))
                         .unwrap();
                     let delta = CMPDISPATCH.resp_rx.recv().unwrap() as i64;
-                    acc.push((last.0 + delta, node));
+                    acc.push((last_score + delta, node));
                     acc
                 }
             });
@@ -66,7 +69,7 @@ impl App {
         Self {
             current_screen: CurrentScreen::Sort,
             cmp: None,
-            cache: bincode_from(&cache).unwrap_or_default(),
+            matrix,
             cache_path: cache,
             images,
         }
@@ -114,7 +117,7 @@ impl App {
                     },
                     CurrentScreen::Exiting => match key.code {
                         KeyCode::Char('y') => {
-                            bincode_into(&self.cache_path, &self.cache)?;
+                            bincode_into(&self.cache_path, &self.matrix)?;
                             break 'a Ok(());
                         }
                         KeyCode::Char('Y') => {
@@ -137,7 +140,7 @@ impl App {
         loop {
             match CMPDISPATCH.req_rx.recv().unwrap() {
                 Event::Compare([k1, k2]) => {
-                    if let Some(ord) = self.cache.get(&k1, &k2) {
+                    if let Some(ord) = self.matrix.get(&k1, &k2) {
                         CMPDISPATCH.resp_tx.send(ord)?;
                         continue;
                     }
@@ -148,7 +151,7 @@ impl App {
                     while let Event::Compare([k1, k2]) = CMPDISPATCH.req_rx.recv().unwrap() {
                         CMPDISPATCH
                             .resp_tx
-                            .send(self.cache.get(&k1, &k2).unwrap())?;
+                            .send(self.matrix.get(&k1, &k2).unwrap())?;
                     }
                     self.cmp = None;
                     self.current_screen = CurrentScreen::Finished;
@@ -161,11 +164,11 @@ impl App {
 
     fn resp_event(&mut self, ord: CompareResult) -> Result<()> {
         let [k1, k2] = self.cmp.take().unwrap();
-        self.cache.insert(&k1, &k2, ord);
+        self.matrix.insert(k1, k2, ord);
         if ord == CompareResult::Same {
             // If they are the same, k1 will be replaced with k2 in BTree.
             // Extending ensures data is not lost.
-            k2.extend(&k1);
+            k2.extend(k1);
         }
         CMPDISPATCH.resp_tx.send(ord)?;
         Ok(())

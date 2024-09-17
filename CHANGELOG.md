@@ -9,6 +9,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha12] - 2024-09-17
+
+- fix ci for windows
+
 ## [0.1.0-alpha11] - 2024-09-15
 
 - fix windows setups script mistake

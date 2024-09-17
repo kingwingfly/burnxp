@@ -9,6 +9,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha17] - 2024-09-18
+
+- fix picker: quiting will mis-cache the last image as dropped
+
 ## [0.1.0-alpha16] - 2024-09-17
 
 - fix: no delete key on mac, use backspace instead

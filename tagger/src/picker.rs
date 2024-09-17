@@ -66,7 +66,7 @@ impl Picker {
             .store(images.len(), AtomicOrdering::Relaxed);
 
         for p in images {
-            if self.cache.insert(p.clone()) {
+            if !self.cache.contains(&p) {
                 self.image = Some(p);
                 'a: loop {
                     terminal.draw(|f| {

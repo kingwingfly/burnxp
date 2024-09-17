@@ -1,5 +1,5 @@
 use super::Render;
-use crate::state::{CurrentScreen, PROCESS};
+use crate::state::{CurrentScreen, TAGGER_PROCESS};
 use anyhow::Result;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
@@ -9,21 +9,21 @@ use ratatui::{
     Frame,
 };
 
-pub(crate) struct Footer {
+pub(crate) struct TaggerFooter {
     pub current_screen: CurrentScreen,
 }
 
-impl Render for Footer {
+impl Render for TaggerFooter {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
             .split(area);
-        Navigation {
+        TaggerNavigation {
             current_screen: self.current_screen,
         }
         .render(f, chunks[0])?;
-        Hint {
+        TaggerHint {
             current_screen: self.current_screen,
         }
         .render(f, chunks[1])?;
@@ -31,32 +31,30 @@ impl Render for Footer {
     }
 }
 
-struct Navigation {
+struct TaggerNavigation {
     current_screen: CurrentScreen,
 }
 
-struct Hint {
+struct TaggerHint {
     current_screen: CurrentScreen,
 }
 
-impl Render for Navigation {
+impl Render for TaggerNavigation {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         let current_navigation_text = vec![
             match self.current_screen {
-                CurrentScreen::Sort => {
+                CurrentScreen::Main => {
                     Span::styled("Which is better?", Style::default().fg(Color::Cyan))
                 }
-
                 CurrentScreen::Finished => {
                     Span::styled("Finished", Style::default().fg(Color::Green))
                 }
-
                 CurrentScreen::Exiting => Span::styled("Exiting", Style::default().fg(Color::Red)),
             },
             Span::styled(" | ", Style::default().fg(Color::White)),
             match self.current_screen {
-                CurrentScreen::Sort => Span::styled(
-                    format!("{}", *PROCESS),
+                CurrentScreen::Main => Span::styled(
+                    format!("{}", *TAGGER_PROCESS),
                     Style::default().fg(Color::LightCyan),
                 ),
                 CurrentScreen::Finished => Span::styled(
@@ -75,11 +73,11 @@ impl Render for Navigation {
     }
 }
 
-impl Render for Hint {
+impl Render for TaggerHint {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         let hint = {
             match self.current_screen {
-                CurrentScreen::Sort => Span::styled(
+                CurrentScreen::Main => Span::styled(
                     "left(↑/<-) equal(=/↵) right(->/↓) quit(q)",
                     Style::default().fg(Color::Green),
                 ),

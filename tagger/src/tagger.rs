@@ -1,8 +1,8 @@
-use crate::components::{Footer, Images, Quit, Render, Title};
+use crate::components::{Images, Quit, Render, TaggerFooter, Title};
 use crate::event::{ComparePair, Event, CMPDISPATCH};
 use crate::matrix::Matrix;
 use crate::ordpaths::{CompareResult, OrdPaths};
-use crate::state::{CurrentScreen, PROCESS};
+use crate::state::{CurrentScreen, TAGGER_PROCESS};
 use crate::terminal::AutoDropTerminal;
 use crate::utils::{bincode_from, bincode_into, centered_rect, json_into};
 use anyhow::Result;
@@ -16,7 +16,8 @@ use std::sync::atomic::Ordering as AtomicOrdering;
 use std::thread;
 use std::time::Duration;
 
-pub struct App {
+#[derive(Debug)]
+pub struct Tagger {
     current_screen: CurrentScreen,
     cmp: Option<ComparePair>,
     /// The matrix of comparison
@@ -25,7 +26,7 @@ pub struct App {
     images: Vec<OrdPaths>,
 }
 
-impl App {
+impl Tagger {
     pub fn new(root: PathBuf, output: PathBuf, cache: PathBuf) -> Self {
         let matrix: Matrix = bincode_from(&cache).unwrap_or_default();
         let images = walkdir::WalkDir::new(root)
@@ -39,13 +40,17 @@ impl App {
                 _ => None,
             })
             .collect::<Vec<_>>();
-        PROCESS.total.store(images.len(), AtomicOrdering::Relaxed);
+        TAGGER_PROCESS
+            .total
+            .store(images.len(), AtomicOrdering::Relaxed);
         let images_c = images.clone();
         thread::spawn(move || -> Result<()> {
             let mut btree: BTreeSet<OrdPaths> = BTreeSet::new();
             for paths in images_c.into_iter() {
                 btree.insert(paths);
-                PROCESS.finished.fetch_add(1, AtomicOrdering::Relaxed);
+                TAGGER_PROCESS
+                    .finished
+                    .fetch_add(1, AtomicOrdering::Relaxed);
             }
             CMPDISPATCH.req_tx.send(Event::Finished)?;
             let res: Vec<(i64, OrdPaths)> = btree.into_iter().fold(vec![], |mut acc, node| {
@@ -67,7 +72,7 @@ impl App {
             Ok(())
         });
         Self {
-            current_screen: CurrentScreen::Sort,
+            current_screen: CurrentScreen::Main,
             cmp: None,
             matrix,
             cache_path: cache,
@@ -92,7 +97,7 @@ impl App {
                     continue;
                 }
                 match self.current_screen {
-                    CurrentScreen::Sort => match key.code {
+                    CurrentScreen::Main => match key.code {
                         KeyCode::Char('q') => {
                             self.current_screen = CurrentScreen::Exiting;
                         }
@@ -125,7 +130,7 @@ impl App {
                         }
                         _ => {
                             self.current_screen = match self.cmp {
-                                Some(_) => CurrentScreen::Sort,
+                                Some(_) => CurrentScreen::Main,
                                 None => CurrentScreen::Finished,
                             }
                         }
@@ -176,7 +181,7 @@ impl App {
     }
 }
 
-impl Render for App {
+impl Render for Tagger {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         if CurrentScreen::Exiting == self.current_screen {
             let area = centered_rect(60, 25, f.area());
@@ -207,7 +212,7 @@ impl Render for App {
                 .render(f, chunks[1])?;
             }
         }
-        Footer {
+        TaggerFooter {
             current_screen: self.current_screen,
         }
         .render(f, chunks[2])?;
@@ -215,7 +220,7 @@ impl Render for App {
     }
 }
 
-impl Drop for App {
+impl Drop for Tagger {
     fn drop(&mut self) {
         for paths in self.images.iter_mut() {
             unsafe {

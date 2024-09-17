@@ -46,14 +46,23 @@ impl<'a> Render for Images<'a> {
     }
 }
 
-struct Image<'a> {
+pub struct Image<'a> {
     picker: &'a mut Picker,
     path: &'a PathBuf,
 }
 
+impl<'a> Image<'a> {
+    pub(crate) fn new(picker: &'a mut Picker, path: &'a PathBuf) -> Result<Self> {
+        Ok(Self { picker, path })
+    }
+}
+
 impl Render for Image<'_> {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
-        let dyn_img = ImageReader::open(self.path)?.decode()?;
+        let dyn_img = match self.path.is_symlink() {
+            true => ImageReader::open(self.path.read_link()?)?.decode()?,
+            false => ImageReader::open(self.path)?.decode()?,
+        };
         let mut image_fit_state = self.picker.new_resize_protocol(dyn_img);
         let image = StatefulImage::new(None).resize(Resize::Fit(None));
         f.render_stateful_widget(image, area, &mut image_fit_state);

@@ -21,6 +21,7 @@ guarantee total order and O(nlogn) complexity)
 - L/R/U/D arrow keys for better/worse/much better/much worse
 - Sort, score and group pictures in json format
 - The user input will be cached so that user can continue from where he/she left off
+- `tagger pick` subcommand can help pick the images to be tagged
 
 ## Trainer
 

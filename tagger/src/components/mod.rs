@@ -1,14 +1,16 @@
-mod footer;
 mod image;
+mod picker_footer;
 mod quit;
+mod tagger_footer;
 mod title;
 
 use anyhow::Result;
 use ratatui::{layout::Rect, Frame};
 
-pub(crate) use footer::Footer;
-pub(crate) use image::Images;
+pub(crate) use image::{Image, Images};
+pub(crate) use picker_footer::PickerFooter;
 pub(crate) use quit::Quit;
+pub(crate) use tagger_footer::TaggerFooter;
 pub(crate) use title::Title;
 
 pub(crate) trait Render {

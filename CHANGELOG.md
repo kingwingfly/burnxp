@@ -9,6 +9,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha15] - 2024-09-17
+
+- tagger now support pick images
+
 ## [0.1.0-alpha14] - 2024-09-17
 
 - cache relative path instead

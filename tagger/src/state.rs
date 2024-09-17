@@ -6,23 +6,24 @@ use std::{
     },
 };
 
-pub(crate) static PROCESS: LazyLock<Process> = LazyLock::new(Process::default);
+pub(crate) static TAGGER_PROCESS: LazyLock<TaggerProcess> = LazyLock::new(TaggerProcess::default);
+pub(crate) static PICKER_PROCESS: LazyLock<PickerProcess> = LazyLock::new(PickerProcess::default);
 
-#[derive(Default, PartialEq, Clone, Copy)]
+#[derive(Default, Debug, PartialEq, Clone, Copy)]
 pub(crate) enum CurrentScreen {
     #[default]
-    Sort,
+    Main,
     Finished,
     Exiting,
 }
 
 #[derive(Default)]
-pub(crate) struct Process {
+pub(crate) struct TaggerProcess {
     pub finished: AtomicUsize,
     pub total: AtomicUsize,
 }
 
-impl fmt::Display for Process {
+impl fmt::Display for TaggerProcess {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let finished = self.finished.load(Ordering::Relaxed);
         let total = self.total.load(Ordering::Relaxed);
@@ -40,4 +41,18 @@ fn complexity(finished: usize, total: usize) -> usize {
         res += (i as f64).log2() as usize + 1;
     }
     res
+}
+
+#[derive(Default)]
+pub(crate) struct PickerProcess {
+    pub finished: AtomicUsize,
+    pub total: AtomicUsize,
+}
+
+impl fmt::Display for PickerProcess {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let finished = self.finished.load(Ordering::Relaxed);
+        let total = self.total.load(Ordering::Relaxed);
+        write!(f, "{}/{} ", finished, total)
+    }
 }

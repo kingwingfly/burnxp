@@ -9,7 +9,7 @@ struct Cli {
     /// The output file path
     #[clap(short, long, default_value = "tags.json")]
     output: PathBuf,
-    /// The path file to cache the comparison results
+    /// The file to cache the comparison results (relative paths are cached)
     #[clap(short, long, default_value = "cache.bin")]
     cache: PathBuf,
     /// The root directory to scan for images
@@ -19,7 +19,7 @@ struct Cli {
 fn main() -> Result<()> {
     let cli = Cli::parse();
     // create app and run it
-    let mut app = App::new(cli.root.canonicalize().unwrap(), cli.output, cli.cache);
+    let mut app = App::new(cli.root, cli.output, cli.cache);
     app.run()?;
     Ok(())
 }

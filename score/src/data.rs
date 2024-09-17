@@ -128,7 +128,13 @@ impl<B: Backend> Batcher<ImageData, ImageBatch<B>> for ImageBatcher<B> {
 
 pub fn open_image(path: impl AsRef<Path>) -> Option<Vec<u8>> {
     let size = SIZE as u32;
-    let img = ImageReader::open(path.as_ref()).ok()?.decode().ok()?;
+    let img = match path.as_ref().is_symlink() {
+        true => ImageReader::open(path.as_ref().read_link().ok()?)
+            .ok()?
+            .decode()
+            .ok()?,
+        false => ImageReader::open(path.as_ref()).ok()?.decode().ok()?,
+    };
     let mut background = image::RgbImage::new(size, size);
 
     let factor = img.height().max(img.width()) / size;

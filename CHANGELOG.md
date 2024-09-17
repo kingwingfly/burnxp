@@ -9,6 +9,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha19] - 2024-09-18
+
+- fix: score open image does not follow symlink
+
 ## [0.1.0-alpha18] - 2024-09-18
 
 - use FilterType::Gaussian instead for better resolution

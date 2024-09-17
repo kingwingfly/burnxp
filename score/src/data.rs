@@ -135,7 +135,7 @@ pub fn open_image(path: impl AsRef<Path>) -> Option<Vec<u8>> {
     let nheight = (img.height() / factor).max(size);
     let nwidth = (img.width() / factor).max(size);
 
-    let img = img.resize(nwidth, nheight, FilterType::Nearest);
+    let img = img.resize(nwidth, nheight, FilterType::Gaussian);
     let img = img.to_rgb8();
 
     image::imageops::overlay(

@@ -5,7 +5,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     Frame,
 };
-use ratatui_image::{picker::Picker, Resize, StatefulImage};
+use ratatui_image::{picker::Picker, FilterType, Resize, StatefulImage};
 use std::path::PathBuf;
 
 pub(crate) struct Images<'a> {
@@ -64,7 +64,7 @@ impl Render for Image<'_> {
             false => ImageReader::open(self.path)?.decode()?,
         };
         let mut image_fit_state = self.picker.new_resize_protocol(dyn_img);
-        let image = StatefulImage::new(None).resize(Resize::Fit(None));
+        let image = StatefulImage::new(None).resize(Resize::Fit(Some(FilterType::Gaussian)));
         f.render_stateful_widget(image, area, &mut image_fit_state);
         Ok(())
     }

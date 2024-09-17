@@ -4,6 +4,10 @@ resolver = "2"
 
 [workspace.package]
 version = "0.1.0-alph17"
+edition = "2021"
+authors = ["Louis <836250617@qq.com>"]
+repository = "https://github.com/kingwingfly/burnxp"
+license = "MIT"
 
 [workspace.dependencies]
 burn = { version = "0.14" }

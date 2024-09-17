@@ -1,8 +1,11 @@
 [package]
 name = "tagger"
 version.workspace = true
-edition = "2021"
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
 description = "A image tagger by iteractive comparisons"
+license = "MIT"
 
 [dependencies]
 ratatui = { workspace = true }

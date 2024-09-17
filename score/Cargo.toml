@@ -1,8 +1,11 @@
 [package]
 name = "score"
 version.workspace = true
-edition = "2021"
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
 description = "An image scorer by ResNet"
+license = "MIT"
 
 [dependencies]
 burn = { workspace = true, features = ["train", "tch"] }

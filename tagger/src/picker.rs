@@ -110,7 +110,7 @@ impl Picker {
                                                 }
                                             }
                                         }
-                                        KeyCode::Delete => {}
+                                        KeyCode::Delete | KeyCode::Backspace => {}
                                         _ => continue,
                                     }
                                     self.cache.insert(self.image.take().unwrap());

@@ -21,7 +21,7 @@ impl<'a> Images<'a> {
         #[cfg(target_os = "windows")]
         let mut picker = {
             let mut picker = Picker::new((7, 14));
-            picker.protocol_type = ratatui_image::picker::ProtocolType::Sixel;
+            picker.protocol_type = ratatui_image::picker::ProtocolType::Iterm2;
             picker
         };
         picker.guess_protocol();

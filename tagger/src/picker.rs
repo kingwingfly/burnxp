@@ -177,7 +177,7 @@ impl Render for Picker {
                     .map_err(|_| anyhow::anyhow!("Failed to get the picker"))?;
                 #[cfg(target_os = "windows")]
                 let mut picker = {
-                    let mut picker = Picker::new((12, 24));
+                    let mut picker = ratatui_image::picker::Picker::new((12, 24));
                     picker.protocol_type = ratatui_image::picker::ProtocolType::Iterm2;
                     picker
                 };

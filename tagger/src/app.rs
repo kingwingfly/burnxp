@@ -88,7 +88,7 @@ impl App {
                     // Skip events that are not KeyEventKind::Press
                     continue;
                 }
-                if event::poll(Duration::from_millis(100))? {
+                if event::poll(Duration::from_millis(50))? {
                     continue;
                 }
                 match self.current_screen {

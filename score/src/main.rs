@@ -26,7 +26,7 @@ enum SubCmd {
         /// Path to the validation set json file produced by the tagger
         #[arg(short, long)]
         valid_set: PathBuf,
-        /// Directory to save artifacts
+        /// Directory to save artifacts (The directory will be recreated if it exists)
         #[arg(short, long)]
         artifact_dir: PathBuf,
         #[arg(short = 'e', long, default_value = "128")]
@@ -35,6 +35,11 @@ enum SubCmd {
         batch_size: usize,
         #[arg(short = 'w', long, default_value = "1")]
         num_workers: usize,
+        #[arg(short, long, default_value = "1.0e-4")]
+        learning_rate: f64,
+        /// Path to the pretrained model checkpoint
+        #[arg(short, long)]
+        pretrained: Option<PathBuf>,
     },
     /// Predict using a ResNet model checkpoint
     Predict {
@@ -76,6 +81,8 @@ fn main() {
             num_epochs,
             batch_size,
             num_workers,
+            learning_rate,
+            pretrained,
         } => {
             train::<MyAutodiffBackend>(
                 artifact_dir,
@@ -87,7 +94,9 @@ fn main() {
                 )
                 .with_num_epochs(num_epochs)
                 .with_batch_size(batch_size)
-                .with_num_workers(num_workers),
+                .with_num_workers(num_workers)
+                .with_learning_rate(learning_rate)
+                .with_pretrained(pretrained),
                 device,
             );
         }

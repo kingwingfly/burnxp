@@ -9,6 +9,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha20] - 2024-09-19
+
+- improve: allow pretained model to be used
+
 ## [0.1.0-alpha19] - 2024-09-18
 
 - fix: score open image does not follow symlink

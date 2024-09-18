@@ -2,7 +2,7 @@ use burn::{
     data::dataloader::DataLoaderBuilder,
     optim::AdamConfig,
     prelude::*,
-    record::CompactRecorder,
+    record::{CompactRecorder, Recorder},
     tensor::backend::AutodiffBackend,
     train::{
         metric::{
@@ -25,6 +25,7 @@ pub struct TrainingConfig {
     optimizer: AdamConfig,
     train_set: PathBuf,
     valid_set: PathBuf,
+    pretrained: Option<PathBuf>,
     #[config(default = 128)]
     num_epochs: usize,
     #[config(default = 1)]
@@ -81,7 +82,17 @@ pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, 
         .num_epochs(config.num_epochs)
         .summary()
         .build(
-            config.model.init::<B>(&device),
+            {
+                let mut model = config.model.init::<B>(&device);
+                if let Some(pretrain) = config.pretrained {
+                    model = model.load_record(
+                        CompactRecorder::new()
+                            .load(pretrain, &device)
+                            .expect("Please offer a valid pretrained model. If it's in the artifact directory, it is removed when recreating the directory."),
+                    )
+                }
+                model
+            },
             config.optimizer.init(),
             config.learning_rate,
         );

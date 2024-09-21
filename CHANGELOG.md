@@ -9,6 +9,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha24] - 2024-09-22
+
+- fix: memory leak of `Matrix`'s inner map keys
+
 ## [0.1.0-alpha23] - 2024-09-21
 
 - counter not increase when recovering from cache

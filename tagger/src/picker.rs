@@ -64,6 +64,9 @@ impl Picker {
     pub fn run(&mut self) -> Result<()> {
         let mut terminal = AutoDropTerminal::new()?;
         loop {
+            PICKER_PROCESS
+                .finished
+                .fetch_add(1, AtomicOrdering::Relaxed);
             self.image = self.images.pop();
             if self.image.is_some() && self.cache.contains(self.image.as_ref().unwrap()) {
                 continue;
@@ -144,9 +147,6 @@ impl Picker {
                     break;
                 }
             }
-            PICKER_PROCESS
-                .finished
-                .fetch_add(1, AtomicOrdering::Relaxed);
         }
     }
 }

@@ -9,6 +9,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha23] - 2024-09-21
+
+- counter not increase when recovering from cache
+
 ## [0.1.0-alpha22] - 2024-09-21
 
 - fix picker: cache won't be saved after finishing

@@ -9,6 +9,11 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha22] - 2024-09-21
+
+- fix picker: cache won't be saved after finishing
+- improve picker: finish screen will show when finishing
+
 ## [0.1.0-alpha21] - 2024-09-21
 
 - fix: a bug when handling duplicate file name

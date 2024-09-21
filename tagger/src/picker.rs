@@ -22,8 +22,8 @@ pub struct Picker {
     current_screen: CurrentScreen,
     image: Option<PathBuf>,
     method: Method,
-    from: PathBuf,
     to: PathBuf,
+    images: Vec<PathBuf>,
     /// cache those judged
     cache: HashSet<PathBuf>,
     cache_path: PathBuf,
@@ -39,20 +39,7 @@ pub enum Method {
 impl Picker {
     pub fn new(method: Method, cache: PathBuf, from: PathBuf, to: PathBuf) -> Self {
         fs::create_dir_all(&to).unwrap();
-        Self {
-            method,
-            from,
-            to,
-            cache: json_from(&cache).unwrap_or_default(),
-            cache_path: cache,
-            ..Default::default()
-        }
-    }
-
-    pub fn run(&mut self) -> Result<()> {
-        let mut terminal = AutoDropTerminal::new()?;
-
-        let images = walkdir::WalkDir::new(&self.from)
+        let images = walkdir::WalkDir::new(from)
             .into_iter()
             .filter_map(|res| res.ok())
             .filter_map(|e| match MimeGuess::from_path(e.path()).first() {
@@ -60,94 +47,107 @@ impl Picker {
                 _ => None,
             })
             .collect::<Vec<_>>();
-
         PICKER_PROCESS
             .total
             .store(images.len(), AtomicOrdering::Relaxed);
 
-        for p in images {
-            if !self.cache.contains(&p) {
-                self.image = Some(p);
-                'a: loop {
-                    terminal.draw(|f| {
-                        self.render(f, f.area()).ok();
-                    })?;
-                    while let TermEvent::Key(key) = event::read()? {
-                        if key.kind == KeyEventKind::Release {
-                            // Skip events that are not KeyEventKind::Press
-                            continue;
-                        }
-                        if event::poll(Duration::from_millis(50))? {
-                            continue;
-                        }
-                        match self.current_screen {
-                            CurrentScreen::Main => match key.code {
-                                KeyCode::Char('q') => {
-                                    self.current_screen = CurrentScreen::Exiting;
-                                }
-                                _ if self.image.is_some() => {
-                                    match key.code {
-                                        KeyCode::Enter => {
-                                            let from = self.image.as_ref().unwrap();
-                                            let mut to = self.to.join(from.file_name().unwrap());
-                                            let mut i = 0;
-                                            while to.exists() {
-                                                let name = from.file_name().unwrap();
-                                                let new_name =
-                                                    format!("{}_{}", i, name.to_string_lossy());
-                                                to = self.to.join(new_name);
-                                                i += 1;
+        Self {
+            method,
+            to,
+            cache: json_from(&cache).unwrap_or_default(),
+            cache_path: cache,
+            images,
+            ..Default::default()
+        }
+    }
+
+    pub fn run(&mut self) -> Result<()> {
+        let mut terminal = AutoDropTerminal::new()?;
+        loop {
+            self.image = self.images.pop();
+            if self.image.is_some() && self.cache.contains(self.image.as_ref().unwrap()) {
+                continue;
+            } else if self.image.is_none() {
+                self.current_screen = CurrentScreen::Finished;
+            }
+
+            'a: loop {
+                terminal.draw(|f| {
+                    self.render(f, f.area()).ok();
+                })?;
+                while let TermEvent::Key(key) = event::read()? {
+                    if key.kind == KeyEventKind::Release {
+                        // Skip events that are not KeyEventKind::Press
+                        continue;
+                    }
+                    if event::poll(Duration::from_millis(50))? {
+                        continue;
+                    }
+                    match self.current_screen {
+                        CurrentScreen::Main => match key.code {
+                            KeyCode::Char('q') => {
+                                self.current_screen = CurrentScreen::Exiting;
+                            }
+                            _ if self.image.is_some() => {
+                                match key.code {
+                                    KeyCode::Enter => {
+                                        let from = self.image.as_ref().unwrap();
+                                        let mut to = self.to.join(from.file_name().unwrap());
+                                        let mut i = 0;
+                                        while to.exists() {
+                                            let name = from.file_name().unwrap();
+                                            let new_name =
+                                                format!("{}_{}", i, name.to_string_lossy());
+                                            to = self.to.join(new_name);
+                                            i += 1;
+                                        }
+                                        match self.method {
+                                            Method::Cp => {
+                                                fs::copy(from, to)?;
                                             }
-                                            match self.method {
-                                                Method::Cp => {
-                                                    fs::copy(from, to)?;
-                                                }
-                                                Method::Ln => {
-                                                    #[cfg(target_family = "unix")]
-                                                    std::os::unix::fs::symlink(from, to)?;
-                                                    #[cfg(target_family = "windows")]
-                                                    std::os::windows::fs::symlink_file(from, to)?;
-                                                }
+                                            Method::Ln => {
+                                                #[cfg(target_family = "unix")]
+                                                std::os::unix::fs::symlink(from, to)?;
+                                                #[cfg(target_family = "windows")]
+                                                std::os::windows::fs::symlink_file(from, to)?;
                                             }
                                         }
-                                        KeyCode::Delete | KeyCode::Backspace => {}
-                                        _ => continue,
                                     }
-                                    self.cache.insert(self.image.take().unwrap());
-                                    break 'a;
+                                    KeyCode::Delete | KeyCode::Backspace => {}
+                                    _ => continue,
                                 }
-                                _ => continue,
-                            },
-                            CurrentScreen::Finished => match key.code {
-                                KeyCode::Char('q') => self.current_screen = CurrentScreen::Exiting,
-                                _ => continue,
-                            },
-                            CurrentScreen::Exiting => match key.code {
-                                KeyCode::Char('y') => {
-                                    json_into(&self.cache_path, &self.cache)?;
-                                    return Ok(());
+                                self.cache.insert(self.image.take().unwrap());
+                                break 'a;
+                            }
+                            _ => continue,
+                        },
+                        CurrentScreen::Finished => match key.code {
+                            KeyCode::Char('q') => self.current_screen = CurrentScreen::Exiting,
+                            _ => continue,
+                        },
+                        CurrentScreen::Exiting => match key.code {
+                            KeyCode::Char('y') => {
+                                json_into(&self.cache_path, &self.cache)?;
+                                return Ok(());
+                            }
+                            KeyCode::Char('Y') => {
+                                return Ok(());
+                            }
+                            _ => {
+                                self.current_screen = match self.image {
+                                    Some(_) => CurrentScreen::Main,
+                                    None => CurrentScreen::Finished,
                                 }
-                                KeyCode::Char('Y') => {
-                                    return Ok(());
-                                }
-                                _ => {
-                                    self.current_screen = match self.image {
-                                        Some(_) => CurrentScreen::Main,
-                                        None => CurrentScreen::Finished,
-                                    }
-                                }
-                            },
-                        }
-                        break;
+                            }
+                        },
                     }
+                    break;
                 }
             }
             PICKER_PROCESS
                 .finished
                 .fetch_add(1, AtomicOrdering::Relaxed);
         }
-        json_into(&self.cache_path, &self.cache)?;
-        Ok(())
     }
 }
 

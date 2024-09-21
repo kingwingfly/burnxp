@@ -9,6 +9,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha21] - 2024-09-21
+
+- fix: a bug when handling duplicate file name
+
 ## [0.1.0-alpha20] - 2024-09-19
 
 - improve: allow pretained model to be used

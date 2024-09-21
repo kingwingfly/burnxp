@@ -95,7 +95,7 @@ impl Picker {
                                                 let name = from.file_name().unwrap();
                                                 let new_name =
                                                     format!("{}_{}", i, name.to_string_lossy());
-                                                to = PathBuf::from(new_name);
+                                                to = self.to.join(new_name);
                                                 i += 1;
                                             }
                                             match self.method {

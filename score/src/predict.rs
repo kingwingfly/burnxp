@@ -59,7 +59,9 @@ pub fn predict<B: Backend>(config: PredictConfig, device: B::Device) {
             todo!()
         }
         Output::Tty => {
-            todo!()
+            for (path, score) in output.into_iter() {
+                println!("{}\t{}", path.to_string_lossy(), score);
+            }
         }
         Output::Json => {
             println!("{}", serde_json::to_string_pretty(&output).unwrap());

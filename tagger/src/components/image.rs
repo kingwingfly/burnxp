@@ -1,3 +1,5 @@
+use crate::components::Title;
+
 use super::Render;
 use anyhow::Result;
 use image::ImageReader;
@@ -59,13 +61,21 @@ impl<'a> Image<'a> {
 
 impl Render for Image<'_> {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
-        let dyn_img = match self.path.is_symlink() {
-            true => ImageReader::open(self.path.read_link()?)?.decode()?,
-            false => ImageReader::open(self.path)?.decode()?,
-        };
-        let mut image_fit_state = self.picker.new_resize_protocol(dyn_img);
-        let image = StatefulImage::new(None).resize(Resize::Fit(Some(FilterType::Gaussian)));
-        f.render_stateful_widget(image, area, &mut image_fit_state);
-        Ok(())
+        fn inner(this: &mut Image<'_>, f: &mut Frame<'_>, area: Rect) -> Result<()> {
+            let dyn_img = match this.path.is_symlink() {
+                true => ImageReader::open(this.path.read_link()?)?.decode()?,
+                false => ImageReader::open(this.path)?.decode()?,
+            };
+            let mut image_fit_state = this.picker.new_resize_protocol(dyn_img);
+            let image = StatefulImage::new(None).resize(Resize::Fit(Some(FilterType::Gaussian)));
+            f.render_stateful_widget(image, area, &mut image_fit_state);
+            Ok(())
+        }
+        inner(self, f, area).or_else(|e| {
+            Title {
+                title: format!("{}: {}", self.path.display(), e),
+            }
+            .render(f, area)
+        })
     }
 }

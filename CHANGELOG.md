@@ -9,6 +9,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha25] - 2024-09-22
+
+- improve: show path and error if failed to load image
+
 ## [0.1.0-alpha24] - 2024-09-22
 
 - fix: memory leak of `Matrix`'s inner map keys

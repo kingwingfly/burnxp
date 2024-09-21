@@ -146,7 +146,7 @@ impl Picker {
                 .finished
                 .fetch_add(1, AtomicOrdering::Relaxed);
         }
-
+        json_into(&self.cache_path, &self.cache)?;
         Ok(())
     }
 }

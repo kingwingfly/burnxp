@@ -4,7 +4,7 @@ use ratatui::{
     layout::Rect,
     style::{Color, Style},
     text::Text,
-    widgets::{Block, Borders, Paragraph},
+    widgets::{Block, Borders, Paragraph, Wrap},
     Frame,
 };
 
@@ -18,7 +18,8 @@ impl Render for Title {
             .borders(Borders::ALL)
             .style(Style::default());
         let title = Paragraph::new(Text::styled(&self.title, Style::default().fg(Color::Green)))
-            .block(title_block);
+            .block(title_block)
+            .wrap(Wrap { trim: true });
         f.render_widget(title, area);
         Ok(())
     }

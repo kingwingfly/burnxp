@@ -9,6 +9,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha28] - 2024-09-25
+
+- improve: real-time output of `score predict` tty mode
+
 ## [0.1.0-alpha27] - 2024-09-24
 
 - fix score: dataloader panic if image is zero size

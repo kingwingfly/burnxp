@@ -59,11 +59,27 @@ pub fn predict<B: Backend>(config: PredictConfig, device: B::Device) {
             todo!()
         }
         Output::Tty => {
-            for (path, score) in output.into_iter() {
-                println!("{}\t{}", path.to_string_lossy(), score);
+            for batch in dataloader_predict.iter() {
+                let scores = model
+                    .forward(batch.datas)
+                    .into_data()
+                    .to_vec::<f32>()
+                    .unwrap();
+                for (path, score) in batch.paths.into_iter().zip(scores) {
+                    println!("{}\t{}", path.to_string_lossy(), score);
+                }
             }
         }
         Output::Json => {
+            let mut output = HashMap::new();
+            for batch in dataloader_predict.iter() {
+                let scores = model
+                    .forward(batch.datas)
+                    .into_data()
+                    .to_vec::<f32>()
+                    .unwrap();
+                output.extend(batch.paths.into_iter().zip(scores));
+            }
             println!("{}", serde_json::to_string_pretty(&output).unwrap());
         }
     }

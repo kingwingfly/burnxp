@@ -34,6 +34,7 @@ enum SubCmd {
         num_epochs: usize,
         #[arg(short, long, default_value = "1")]
         batch_size: usize,
+        /// Number of workers for data loading
         #[arg(short = 'w', long, default_value = "1")]
         num_workers: usize,
         #[arg(short, long, default_value = "1.0e-4")]

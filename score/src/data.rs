@@ -138,6 +138,10 @@ pub fn open_image(path: impl AsRef<Path>) -> Option<Vec<u8>> {
     let mut background = image::RgbImage::new(size, size);
 
     let factor = img.height().max(img.width()) / size;
+    if factor == 0 {
+        // an invalid image
+        return None;
+    }
     let nheight = (img.height() / factor).max(size);
     let nwidth = (img.width() / factor).max(size);
 

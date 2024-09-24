@@ -45,15 +45,7 @@ pub fn predict<B: Backend>(config: PredictConfig, device: B::Device) {
         .batch_size(config.batch_size)
         .num_workers(config.num_workers)
         .build(ImageDataSet::predict(config.input).expect("Training set failed to be loaded"));
-    let mut output = HashMap::new();
-    for batch in dataloader_predict.iter() {
-        let scores = model
-            .forward(batch.datas)
-            .into_data()
-            .to_vec::<f32>()
-            .unwrap();
-        output.extend(batch.paths.into_iter().zip(scores));
-    }
+
     match config.output {
         Output::Tui => {
             todo!()
@@ -66,7 +58,7 @@ pub fn predict<B: Backend>(config: PredictConfig, device: B::Device) {
                     .to_vec::<f32>()
                     .unwrap();
                 for (path, score) in batch.paths.into_iter().zip(scores) {
-                    println!("{}\t{}", path.to_string_lossy(), score);
+                    println!("{}\t'{}'", score, path.to_string_lossy(),);
                 }
             }
         }

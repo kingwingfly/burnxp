@@ -1,5 +1,5 @@
 use super::Render;
-use anyhow::Result;
+use anyhow::{bail, Result};
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Style, Stylize},
@@ -21,6 +21,9 @@ impl Render for Histogram {
         f.render_widget("Histogram".bold().into_centered_line(), title);
 
         let height = histogram.height as usize;
+        if height == 0 {
+            bail!("The height given to the histogram is 0.");
+        }
         let group_size = self.data.len() / height + 1;
         let mut data = vec![0; height];
         for (score, num) in self.data.iter() {

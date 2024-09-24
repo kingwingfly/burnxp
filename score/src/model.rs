@@ -5,6 +5,7 @@ use burn::tensor::backend::AutodiffBackend;
 use burn::{
     config::Config,
     module::Module,
+    nn::{LeakyRelu, LeakyReluConfig, Linear, LinearConfig},
     train::{RegressionOutput, TrainOutput, TrainStep, ValidStep},
 };
 use clap::builder::OsStr;
@@ -16,6 +17,8 @@ use serde::Deserialize;
 #[derive(Module, Debug)]
 pub(crate) struct ScoreModel<B: Backend> {
     resnet: ResNet<B>,
+    leaky_relu: LeakyRelu,
+    fc: Linear<B>,
 }
 
 impl<B: Backend> ScoreModel<B> {
@@ -23,7 +26,9 @@ impl<B: Backend> ScoreModel<B> {
     ///   - Images [batch_size, 1024, 1024, 3]
     ///   - Output [batch_size, 1]
     pub fn forward(&self, datas: Tensor<B, 4>) -> Tensor<B, 2> {
-        self.resnet.forward(datas) // [batch_size, 1]
+        let x = self.resnet.forward(datas); // [batch_size, 1]
+        let x = self.leaky_relu.forward(x);
+        self.fc.forward(x)
     }
 
     fn forward_regression(
@@ -32,7 +37,7 @@ impl<B: Backend> ScoreModel<B> {
         target_scores: Tensor<B, 2>,
     ) -> RegressionOutput<B> {
         let output = self.forward(datas);
-        let loss = HuberLossConfig::new(0.5).init().forward(
+        let loss = HuberLossConfig::new(10.0).init().forward(
             output.clone(),
             target_scores.clone(),
             Reduction::Auto,
@@ -62,13 +67,17 @@ pub struct ScoreModelConfig {
 impl ScoreModelConfig {
     pub(crate) fn init<B: Backend>(&self, device: &B::Device) -> ScoreModel<B> {
         let resnet = match self.rnn_type {
-            RnnType::Layer18 => ResNet::resnet18(1, device),
-            RnnType::Layer34 => ResNet::resnet34(1, device),
-            RnnType::Layer50 => ResNet::resnet50(1, device),
-            RnnType::Layer101 => ResNet::resnet101(1, device),
-            RnnType::Layer152 => ResNet::resnet152(1, device),
+            RnnType::Layer18 => ResNet::resnet18(512, device),
+            RnnType::Layer34 => ResNet::resnet34(512, device),
+            RnnType::Layer50 => ResNet::resnet50(512, device),
+            RnnType::Layer101 => ResNet::resnet101(512, device),
+            RnnType::Layer152 => ResNet::resnet152(512, device),
         };
-        ScoreModel { resnet }
+        ScoreModel {
+            resnet,
+            leaky_relu: LeakyReluConfig::new().init(),
+            fc: LinearConfig::new(512, 1).init(device),
+        }
     }
 }
 

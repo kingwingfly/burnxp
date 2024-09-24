@@ -22,13 +22,13 @@ enum SubCmd {
         #[arg(short, long, default_value=RnnType::Layer101)]
         model: RnnType,
         /// Path to the training set json file produced by the tagger divide
-        #[arg(short, long)]
+        #[arg(short, long, default_value = "train.json")]
         train_set: PathBuf,
         /// Path to the validation set json file produced by the tagger divide
-        #[arg(short, long)]
+        #[arg(short, long, default_value = "valid.json")]
         valid_set: PathBuf,
         /// Directory to save artifacts (The directory will be recreated if it exists)
-        #[arg(short, long)]
+        #[arg(short, long, default_value = "burnxp_artifact")]
         artifact_dir: PathBuf,
         #[arg(short, long, default_value = "128")]
         num_epochs: usize,
@@ -54,14 +54,15 @@ enum SubCmd {
         /// Path to the model checkpoint
         #[arg(short, long)]
         checkpoint: PathBuf,
-        /// Path to the test set root directory
+        /// Root of test images directory
         #[arg(short, long)]
         input: PathBuf,
-        /// Path to the output image
-        #[arg(short, long)]
+        /// Method to output the scores
+        #[arg(short, long, default_value = "tty")]
         output: Output,
         #[arg(short, long, default_value = "1")]
         batch_size: usize,
+        /// Number of workers for data loading
         #[arg(short = 'w', long, default_value = "1")]
         num_workers: usize,
     },

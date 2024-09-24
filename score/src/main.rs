@@ -60,10 +60,10 @@ enum SubCmd {
         /// Method to output the scores
         #[arg(short, long, default_value = "tty")]
         output: Output,
-        #[arg(short, long, default_value = "1")]
+        #[arg(short, long, default_value = "32")]
         batch_size: usize,
         /// Number of workers for data loading
-        #[arg(short = 'w', long, default_value = "1")]
+        #[arg(short = 'w', long, default_value = "8")]
         num_workers: usize,
     },
     /// generate auto completion script

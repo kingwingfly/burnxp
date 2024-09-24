@@ -26,9 +26,9 @@ pub struct PredictConfig {
     checkpoint: PathBuf,
     input: PathBuf,
     output: Output,
-    #[config(default = 1)]
+    #[config(default = 32)]
     batch_size: usize,
-    #[config(default = 1)]
+    #[config(default = 8)]
     num_workers: usize,
 }
 

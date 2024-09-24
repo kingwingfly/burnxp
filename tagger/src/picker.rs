@@ -33,7 +33,8 @@ pub struct Picker {
 pub enum Method {
     #[default]
     Cp,
-    Ln,
+    SoftLink,
+    HardLink,
 }
 
 impl Picker {
@@ -105,15 +106,20 @@ impl Picker {
                                             i += 1;
                                         }
                                         match self.method {
-                                            Method::Cp => {
-                                                fs::copy(from, to)?;
-                                            }
-                                            Method::Ln => {
+                                            Method::Cp => fs::copy(from, to).map(|_| {})?,
+                                            Method::SoftLink => {
                                                 #[cfg(target_family = "unix")]
-                                                std::os::unix::fs::symlink(from, to)?;
+                                                std::os::unix::fs::symlink(
+                                                    from.canonicalize()?,
+                                                    to,
+                                                )?;
                                                 #[cfg(target_family = "windows")]
-                                                std::os::windows::fs::symlink_file(from, to)?;
+                                                std::os::windows::fs::symlink_file(
+                                                    from.canonicalize()?,
+                                                    to,
+                                                )?;
                                             }
+                                            Method::HardLink => fs::hard_link(from, to)?,
                                         }
                                     }
                                     KeyCode::Delete | KeyCode::Backspace => {}

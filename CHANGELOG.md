@@ -15,6 +15,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 - improve score: preset more default arguments
 - improve score: more metrics to show
 - fix tagger observe: panic if height of terminal is zero
+- fix tagger pick: now abusolute path is used for softlink
+- enhance tagger pick: add hardlink support
 
 ## [0.1.0-alpha26] - 2024-09-24
 

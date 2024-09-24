@@ -29,8 +29,8 @@ enum SubCmd {
         /// The file to cache the decided results
         #[clap(short, long, default_value = "cache.json")]
         cache: PathBuf,
-        /// The method to use, cp for copy, ln for symlink
-        #[clap(short, long, default_value = "ln")]
+        /// The file ops method to use (note: hardlink is not allowed between different file systems)
+        #[clap(short, long, default_value = "softlink")]
         method: Method,
         /// The root directory to scan for images and move from
         from: PathBuf,

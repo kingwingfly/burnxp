@@ -30,7 +30,7 @@ enum SubCmd {
         /// Directory to save artifacts (The directory will be recreated if it exists)
         #[arg(short, long)]
         artifact_dir: PathBuf,
-        #[arg(short = 'e', long, default_value = "128")]
+        #[arg(short, long, default_value = "128")]
         num_epochs: usize,
         #[arg(short, long, default_value = "1")]
         batch_size: usize,
@@ -39,6 +39,7 @@ enum SubCmd {
         #[arg(short, long, default_value = "1.0e-4")]
         learning_rate: f64,
         /// Number of epochs before allowing early stopping
+        #[arg(short, long, default_value = "20")]
         early_stopping: usize,
         /// Path to the pretrained model checkpoint
         #[arg(short, long)]

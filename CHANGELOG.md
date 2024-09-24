@@ -13,6 +13,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - fix score: dataloader panic if image is zero size
 - improve score: preset more default arguments
+- improve score: more metrics to show
 
 ## [0.1.0-alpha26] - 2024-09-24
 

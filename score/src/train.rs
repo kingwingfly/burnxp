@@ -7,7 +7,7 @@ use burn::{
     train::{
         metric::{
             store::{Aggregate, Direction, Split},
-            LossMetric,
+            CpuMemory, CpuTemperature, CpuUse, CudaMetric, LossMetric,
         },
         LearnerBuilder, MetricEarlyStoppingStrategy, StoppingCondition,
     },
@@ -73,6 +73,10 @@ pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, 
     let learner = LearnerBuilder::new(&artifact_dir)
         .metric_train_numeric(LossMetric::new())
         .metric_valid_numeric(LossMetric::new())
+        .metric_train(CudaMetric::new())
+        .metric_train(CpuUse::new())
+        .metric_train(CpuTemperature::new())
+        .metric_train(CpuMemory::new())
         .early_stopping(MetricEarlyStoppingStrategy::new::<LossMetric<B>>(
             Aggregate::Mean,
             Direction::Lowest,

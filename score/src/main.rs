@@ -16,7 +16,7 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum SubCmd {
-    /// Train a model
+    /// Train a RNN model with tags produced by the tagger.
     Train {
         /// Model type
         #[arg(short, long, default_value=RnnType::Layer101)]

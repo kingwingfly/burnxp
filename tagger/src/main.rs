@@ -102,7 +102,7 @@ fn main() -> Result<()> {
             observer.run()?;
         }
         SubCmd::GenCompletion { shell } => {
-            generate(shell, &mut Cli::command(), "score", &mut std::io::stdout());
+            generate(shell, &mut Cli::command(), "tagger", &mut std::io::stdout());
         }
     }
 

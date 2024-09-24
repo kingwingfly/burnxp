@@ -1,6 +1,6 @@
 # About the Project
 
-This project is one of the components of `the digital me` project (WIP),
+This project is one of the components of `the digital me` (WIP),
 which aims to clone oneself to some extent.
 
 This component `burnxp` is for cloning one's `Aesthetics Preferences`, also known as `XP`(性癖) in Chinese.
@@ -14,6 +14,7 @@ iteractively comparing the degree of compliance with sesthetics preferences.
 ## Tagger
 
 ![tagger_screenshot](images/tagger_screenshot.png)
+![tagger_screenshot2](images/tagger_observe_screenshot.png)
 
 Features:
 - Sort pictures by comparing one by one (clever data structure and algorithm are used to
@@ -22,6 +23,8 @@ guarantee total order and O(nlogn) complexity)
 - Sort, score and group pictures in json format
 - The user input will be cached so that user can continue from where he/she left off
 - `tagger pick` subcommand can help pick the images to be tagged
+- `tagger divide` subcommand can help divide the images into train-set and valid-set
+- `tagger observe` subcommand can help observe the distribution of scores
 
 ## Trainer
 
@@ -62,7 +65,7 @@ cargo build -p score --release
 
 # Note
 
-The `tagger` works well in `iTerm2` and `wezterm` while maybe not in other terminals (like `Warp`).
+The `tagger` works well in `kitty` `iTerm2` and `wezterm` while maybe not in other terminals (like `Warp`).
 
 For Windows, I tried my best to make it work, but Windows is just a piece of \*\*;
 

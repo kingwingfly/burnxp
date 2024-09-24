@@ -12,9 +12,9 @@ burn = { workspace = true, features = ["train", "tch"] }
 serde_json = { workspace = true }
 image = { workspace = true }
 clap = { workspace = true, features = ["string"] }
+clap_complete = { workspace = true }
 resnet-burn = { git = "https://github.com/kingwingfly/models", branch = "burn0.14", package = "resnet-burn", default-features = false }
 anyhow = { workspace = true }
 serde = { workspace = true }
 walkdir = { workspace = true }
 mime_guess = { workspace = true }
-tabled = "0.15"

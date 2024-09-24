@@ -2,7 +2,8 @@ use burn::{
     backend::{libtorch::LibTorchDevice, Autodiff, LibTorch},
     optim::AdamConfig,
 };
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory as _, Parser, Subcommand};
+use clap_complete::{generate, Shell};
 use score::{predict, train, Output, PredictConfig, RnnType, ScoreModelConfig, TrainingConfig};
 use std::path::PathBuf;
 
@@ -20,10 +21,10 @@ enum SubCmd {
         /// Model type
         #[arg(short, long, default_value=RnnType::Layer101)]
         model: RnnType,
-        /// Path to the training set json file produced by the tagger
+        /// Path to the training set json file produced by the tagger divide
         #[arg(short, long)]
         train_set: PathBuf,
-        /// Path to the validation set json file produced by the tagger
+        /// Path to the validation set json file produced by the tagger divide
         #[arg(short, long)]
         valid_set: PathBuf,
         /// Directory to save artifacts (The directory will be recreated if it exists)
@@ -37,6 +38,8 @@ enum SubCmd {
         num_workers: usize,
         #[arg(short, long, default_value = "1.0e-4")]
         learning_rate: f64,
+        /// Number of epochs before allowing early stopping
+        early_stopping: usize,
         /// Path to the pretrained model checkpoint
         #[arg(short, long)]
         pretrained: Option<PathBuf>,
@@ -60,6 +63,11 @@ enum SubCmd {
         #[arg(short = 'w', long, default_value = "1")]
         num_workers: usize,
     },
+    /// generate auto completion script
+    GenCompletion {
+        /// shell name
+        shell: Shell,
+    },
 }
 
 type MyBackend = LibTorch<f32, i8>;
@@ -82,6 +90,7 @@ fn main() {
             batch_size,
             num_workers,
             learning_rate,
+            early_stopping,
             pretrained,
         } => {
             train::<MyAutodiffBackend>(
@@ -96,7 +105,8 @@ fn main() {
                 .with_batch_size(batch_size)
                 .with_num_workers(num_workers)
                 .with_learning_rate(learning_rate)
-                .with_pretrained(pretrained),
+                .with_pretrained(pretrained)
+                .with_early_stopping(early_stopping),
                 device,
             );
         }
@@ -113,5 +123,8 @@ fn main() {
                 .with_num_workers(num_workers),
             device,
         ),
+        SubCmd::GenCompletion { shell } => {
+            generate(shell, &mut Cli::command(), "score", &mut std::io::stdout());
+        }
     }
 }

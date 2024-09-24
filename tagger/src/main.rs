@@ -1,7 +1,8 @@
 use anyhow::Result;
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory as _, Parser, Subcommand};
+use clap_complete::{generate, Shell};
 use std::path::PathBuf;
-use tagger::{Method, Picker, Tagger};
+use tagger::{Divider, Method, Observer, Picker, Tagger};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
@@ -36,6 +37,33 @@ enum SubCmd {
         /// The directory to move the images to
         to: PathBuf,
     },
+    /// Divide tags.json into train set and validation set in certain ratio
+    Divide {
+        /// The ratio of the training set
+        #[clap(short, long, default_value = "4")]
+        train: usize,
+        /// The ratio of the validation set
+        #[clap(short, long, default_value = "1")]
+        valid: usize,
+        /// The path to save the training set
+        #[clap(short, long, default_value = "train.json")]
+        train_path: PathBuf,
+        /// The path to save the validation set
+        #[clap(short, long, default_value = "valid.json")]
+        valid_path: PathBuf,
+        /// The path to the tags produced by the tagger tag subcommand
+        path: PathBuf,
+    },
+    /// Observe the consistency of the tags produced by the tagger
+    Observe {
+        /// The path to the tags produced by the tagger tag subcommand
+        path: PathBuf,
+    },
+    /// generate auto completion script
+    GenCompletion {
+        /// shell name
+        shell: Shell,
+    },
 }
 
 fn main() -> Result<()> {
@@ -58,6 +86,23 @@ fn main() -> Result<()> {
         } => {
             let mut picker = Picker::new(method, cache, from, to);
             picker.run()?;
+        }
+        SubCmd::Divide {
+            train,
+            valid,
+            train_path,
+            valid_path,
+            path,
+        } => {
+            let divider = Divider::new(path, train, valid, train_path, valid_path)?;
+            divider.devide()?;
+        }
+        SubCmd::Observe { path } => {
+            let mut observer = Observer::new(path)?;
+            observer.run()?;
+        }
+        SubCmd::GenCompletion { shell } => {
+            generate(shell, &mut Cli::command(), "score", &mut std::io::stdout());
         }
     }
 

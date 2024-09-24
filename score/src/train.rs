@@ -36,6 +36,8 @@ pub struct TrainingConfig {
     seed: u64,
     #[config(default = 1.0e-4)]
     learning_rate: f64,
+    #[config(default = 20)]
+    early_stopping: usize,
 }
 
 fn create_artifact_dir(artifact_dir: &PathBuf) {
@@ -75,7 +77,7 @@ pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, 
             Aggregate::Mean,
             Direction::Lowest,
             Split::Valid,
-            StoppingCondition::NoImprovementSince { n_epochs: 20 },
+            StoppingCondition::NoImprovementSince { n_epochs: config.early_stopping },
         ))
         .with_file_checkpointer(CompactRecorder::new())
         .devices(vec![device.clone()])

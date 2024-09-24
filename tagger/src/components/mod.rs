@@ -1,3 +1,4 @@
+mod histogram;
 mod image;
 mod picker_footer;
 mod quit;
@@ -7,6 +8,7 @@ mod title;
 use anyhow::Result;
 use ratatui::{layout::Rect, Frame};
 
+pub(crate) use histogram::Histogram;
 pub(crate) use image::{Image, Images};
 pub(crate) use picker_footer::PickerFooter;
 pub(crate) use quit::Quit;

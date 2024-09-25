@@ -9,6 +9,11 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha30] - 2024-09-25
+
+- fix: `open_image` now canonicalizes path before opening
+- fix: `Image Component` now canonicalizes path before opening
+
 ## [0.1.0-alpha29] - 2024-09-25
 
 - remove unnecessary layers in model

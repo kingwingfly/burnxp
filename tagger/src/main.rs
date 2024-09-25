@@ -26,7 +26,7 @@ enum SubCmd {
     },
     /// Pick images
     Pick {
-        /// The file to cache the decided results
+        /// The file to cache the paths of the images which have been picked or rejected
         #[clap(short, long, default_value = "cache.json")]
         cache: PathBuf,
         /// The file ops method to use (note: hardlink is not allowed between different file systems)

@@ -3,7 +3,7 @@ use burn::{
     data::dataloader::{batcher::Batcher, Dataset},
     prelude::*,
 };
-use image::{imageops::FilterType, ImageReader};
+use image::imageops::FilterType;
 use mime_guess::MimeGuess;
 use std::path::PathBuf;
 use std::{fs::File, path::Path};
@@ -128,13 +128,11 @@ impl<B: Backend> Batcher<ImageData, ImageBatch<B>> for ImageBatcher<B> {
 
 pub fn open_image(path: impl AsRef<Path>) -> Option<Vec<u8>> {
     let size = SIZE as u32;
-    let img = match path.as_ref().is_symlink() {
-        true => ImageReader::open(path.as_ref().read_link().ok()?)
-            .ok()?
-            .decode()
-            .ok()?,
-        false => ImageReader::open(path.as_ref()).ok()?.decode().ok()?,
-    };
+    let img = image::open(match path.as_ref().is_symlink() {
+        true => path.as_ref().read_link().ok()?,
+        false => path.as_ref().to_path_buf(),
+    })
+    .ok()?;
     let mut background = image::RgbImage::new(size, size);
 
     let factor = img.height().max(img.width()) / size;
@@ -142,8 +140,8 @@ pub fn open_image(path: impl AsRef<Path>) -> Option<Vec<u8>> {
         // an invalid image
         return None;
     }
-    let nheight = (img.height() / factor).max(size);
-    let nwidth = (img.width() / factor).max(size);
+    let nheight = (img.height() / factor).min(size);
+    let nwidth = (img.width() / factor).min(size);
 
     let img = img.resize(nwidth, nheight, FilterType::Gaussian);
     let img = img.to_rgb8();

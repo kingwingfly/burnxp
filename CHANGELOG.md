@@ -12,6 +12,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 ## [0.1.0-alpha29] - 2024-09-25
 
 - remove unnecessary layers in model
+- fix score: a vital bug of data loader, it used to resize images in a wrong way
 
 ## [0.1.0-alpha28] - 2024-09-25
 

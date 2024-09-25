@@ -27,18 +27,25 @@ impl Render for Histogram {
         let group_size = self.data.len() / height + 1;
         let mut data = vec![0; height];
         for (score, num) in self.data.iter() {
-            data[*score as usize / group_size] += num
+            data[(*score as usize / group_size).min(height - 1)] += num
         }
-        let data = data
+        let mut data = data
             .into_iter()
             .enumerate()
             .map(|(i, num)| {
                 (
-                    format!("{}-{}", i * group_size, (i + 1) * group_size - 1),
+                    if group_size > 1 {
+                        format!("{}-{}", i * group_size, (i + 1) * group_size - 1)
+                    } else {
+                        format!("{}", i)
+                    },
                     num,
                 )
             })
             .collect::<Vec<_>>();
+        while let Some((_, 0)) = data.last() {
+            data.pop();
+        }
 
         f.render_widget(barchart(&data), histogram);
 

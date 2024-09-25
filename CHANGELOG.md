@@ -13,6 +13,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - fix: `open_image` now canonicalizes path before opening
 - fix: `Image Component` now canonicalizes path before opening
+- fix: `tagger observe` panic if the height of the terminal is too small
 
 ## [0.1.0-alpha29] - 2024-09-25
 

@@ -60,7 +60,7 @@ impl OrdPaths {
     }
 
     /// Merge the two paths into one to avoid data loss. The `other` will have only
-    /// the first element remaining, which is its hash key.
+    /// the first element remained, which is its hash key.
     pub(crate) fn extend(&self, other: Self) {
         let this = unsafe { &mut *self.paths };
         let key = other[0].clone();
@@ -75,7 +75,7 @@ impl OrdPaths {
     /// instead of Drop trait to avoid double free.
     /// # Safety
     /// - The pointer should be valid (No others call this method dumplicatedly).
-    pub(crate) unsafe fn drop(&mut self) {
+    pub(crate) unsafe fn drop(&self) {
         unsafe {
             let _ = Box::from_raw(self.paths);
         };

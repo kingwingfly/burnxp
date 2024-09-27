@@ -19,7 +19,7 @@ enum SubCmd {
     /// Train a RNN model with tags produced by the tagger.
     Train {
         /// Model type
-        #[arg(short, long, default_value=RnnType::Layer101)]
+        #[arg(short, long, default_value=RnnType::default())]
         model: RnnType,
         /// Path to the training set json file produced by the tagger divide
         #[arg(short, long, default_value = "train.json")]

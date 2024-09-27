@@ -9,11 +9,12 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
-## [0.1.0-alpha30] - 2024-09-25
+## [0.1.0-alpha30] - 2024-09-28
 
-- fix: `open_image` now canonicalizes path before opening
+- fix: `data_loader open_image` now canonicalizes path before opening
 - fix: `Image Component` now canonicalizes path before opening
 - fix: `tagger observe` panic if the height of the terminal is too small
+- improve: default ratio of `tagger divide` is 9:1 now
 
 ## [0.1.0-alpha29] - 2024-09-25
 

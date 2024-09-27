@@ -30,7 +30,7 @@ enum SubCmd {
         #[clap(short, long, default_value = "cache.json")]
         cache: PathBuf,
         /// The file ops method to use (note: hardlink is not allowed between different file systems)
-        #[clap(short, long, default_value = "softlink")]
+        #[clap(short, long, default_value = "soft-link")]
         method: Method,
         /// The root directory to scan for images and move from
         from: PathBuf,
@@ -40,7 +40,7 @@ enum SubCmd {
     /// Divide tags.json into train set and validation set in certain ratio
     Divide {
         /// The ratio of the training set
-        #[clap(short, long, default_value = "4")]
+        #[clap(short, long, default_value = "9")]
         train: usize,
         /// The ratio of the validation set
         #[clap(short, long, default_value = "1")]

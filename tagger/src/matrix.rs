@@ -19,7 +19,6 @@ pub(crate) struct Matrix {
 
 impl Matrix {
     pub(crate) fn insert(&mut self, p1: OrdPaths, p2: OrdPaths, v: CompareResult) {
-        // To avoid cloning K leading to double free, do not use entry.
         let line2 = self.map.entry(p2).or_default();
         line2.insert(p1[0].clone(), v.reverse());
         let line1 = self.map.entry(p1).or_default();
@@ -30,11 +29,26 @@ impl Matrix {
             .collect::<Vec<_>>();
         line1.insert(p2[0].clone(), v);
         for p in paths {
-            let mut p1 = OrdPaths::new([p]);
+            let p1 = OrdPaths::new([p]);
             self.insert(p1, p2, v);
+            // Safety: p1 comes from p, which is already in the map.
+            // Thus p1 will never be inserted (i.e. only be used as query key), and is safe to be dropped.
             unsafe {
                 p1.drop();
             }
+        }
+    }
+
+    /// Remove the line and column of the given path.
+    /// The memory of it will be freed.
+    #[allow(unused)]
+    pub(crate) fn remove(&mut self, p: OrdPaths) {
+        self.map.remove(&p);
+        for line in self.map.values_mut() {
+            line.remove(&p[0]);
+        }
+        unsafe {
+            p.drop();
         }
     }
 

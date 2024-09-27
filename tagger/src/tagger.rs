@@ -222,7 +222,7 @@ impl Render for Tagger {
 
 impl Drop for Tagger {
     fn drop(&mut self) {
-        for paths in self.images.iter_mut() {
+        for paths in self.images.iter() {
             unsafe {
                 paths.drop();
             }

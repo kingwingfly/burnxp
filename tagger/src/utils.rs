@@ -33,7 +33,6 @@ pub(crate) fn bincode_from<T: DeserializeOwned>(path: &PathBuf) -> io::Result<T>
     })
 }
 
-#[allow(unused)]
 pub(crate) fn json_from<T: DeserializeOwned>(path: &PathBuf) -> io::Result<T> {
     File::open(path).and_then(|f| {
         serde_json::from_reader(f).map_err(|_| io::Error::from(io::ErrorKind::InvalidData))

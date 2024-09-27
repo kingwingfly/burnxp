@@ -3208,7 +3208,7 @@ checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
 [[package]]
 name = "resnet-burn"
 version = "0.1.0"
-source = "git+https://github.com/kingwingfly/models?branch=burn0.14#6837309ec091652da4e58c7507f050a98da5fe79"
+source = "git+https://github.com/kingwingfly/models?branch=main#042ba6a28917e386e2b2fd112fc19e78f2181385"
 dependencies = [
  "burn",
  "burn-import",

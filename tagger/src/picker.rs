@@ -138,6 +138,8 @@ impl Picker {
                                 self.page =
                                     self.page.clamp(0, self.images.len().saturating_sub(1) / 9);
                                 self.current_screen = CurrentScreen::Main;
+                                self.chosen = [false; 9];
+                                self.buffer.clear();
                                 break 'l;
                             }
                             _ => continue,

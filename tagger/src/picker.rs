@@ -1,5 +1,5 @@
 use crate::{
-    components::{Image, PickerFooter, Quit, Render, Title},
+    components::{Grid, PickerFooter, Quit, Render, Title},
     state::{CurrentScreen, PICKER_PROCESS},
     terminal::AutoDropTerminal,
     utils::{centered_rect, json_from, json_into},
@@ -20,7 +20,9 @@ use std::{
 #[derive(Debug, Default)]
 pub struct Picker {
     current_screen: CurrentScreen,
-    image: Option<PathBuf>,
+    buffer: Vec<PathBuf>,
+    chosen: [bool; 9],
+    page: usize,
     method: Method,
     to: PathBuf,
     images: Vec<PathBuf>,
@@ -55,6 +57,7 @@ impl Picker {
         Self {
             method,
             to,
+            buffer: Vec::with_capacity(9),
             cache: json_from(&cache).unwrap_or_default(),
             cache_path: cache,
             images,
@@ -67,15 +70,19 @@ impl Picker {
         loop {
             PICKER_PROCESS
                 .finished
-                .fetch_add(1, AtomicOrdering::Relaxed);
-            self.image = self.images.pop();
-            if self.image.is_some() && self.cache.contains(self.image.as_ref().unwrap()) {
-                continue;
-            } else if self.image.is_none() {
+                .store(9 * self.page, AtomicOrdering::Relaxed);
+            if 9 * self.page > self.images.len() - 1 {
                 self.current_screen = CurrentScreen::Finished;
+            } else {
+                self.buffer = self.images.chunks(9).nth(self.page).unwrap().to_vec();
+                for (i, p) in self.buffer.iter().enumerate() {
+                    if self.cache.contains(p) {
+                        self.chosen[i] = true;
+                    }
+                }
             }
 
-            'a: loop {
+            'l: loop {
                 terminal.draw(|f| {
                     self.render(f, f.area()).ok();
                 })?;
@@ -92,42 +99,26 @@ impl Picker {
                             KeyCode::Char('q') => {
                                 self.current_screen = CurrentScreen::Exiting;
                             }
-                            _ if self.image.is_some() => {
-                                match key.code {
-                                    KeyCode::Enter => {
-                                        let from = self.image.as_ref().unwrap();
-                                        let mut to = self.to.join(from.file_name().unwrap());
-                                        let mut i = 0;
-                                        while to.exists() {
-                                            let name = from.file_name().unwrap();
-                                            let new_name =
-                                                format!("{}_{}", i, name.to_string_lossy());
-                                            to = self.to.join(new_name);
-                                            i += 1;
-                                        }
-                                        match self.method {
-                                            Method::Cp => fs::copy(from, to).map(|_| {})?,
-                                            Method::SoftLink => {
-                                                #[cfg(target_family = "unix")]
-                                                std::os::unix::fs::symlink(
-                                                    from.canonicalize()?,
-                                                    to,
-                                                )?;
-                                                #[cfg(target_family = "windows")]
-                                                std::os::windows::fs::symlink_file(
-                                                    from.canonicalize()?,
-                                                    to,
-                                                )?;
-                                            }
-                                            Method::HardLink => fs::hard_link(from, to)?,
+                            _ if !self.buffer.is_empty() => match key.code {
+                                KeyCode::Char(c) if c.is_numeric() => {
+                                    let i = c.to_digit(10).unwrap() as usize;
+                                    if i > 0 && i <= self.buffer.len() {
+                                        self.chosen[i - 1] = !self.chosen[i - 1];
+                                    }
+                                }
+                                KeyCode::Enter => {
+                                    for (i, &c) in self.chosen.iter().enumerate() {
+                                        if c {
+                                            self.cache.insert(self.buffer[i].clone());
                                         }
                                     }
-                                    KeyCode::Delete | KeyCode::Backspace => {}
-                                    _ => continue,
+                                    self.page += 1;
+                                    self.chosen = [false; 9];
+                                    self.buffer.clear();
+                                    break 'l;
                                 }
-                                self.cache.insert(self.image.take().unwrap());
-                                break 'a;
-                            }
+                                _ => continue,
+                            },
                             _ => continue,
                         },
                         CurrentScreen::Finished => match key.code {
@@ -137,15 +128,44 @@ impl Picker {
                         CurrentScreen::Exiting => match key.code {
                             KeyCode::Char('y') => {
                                 json_into(&self.cache_path, &self.cache)?;
+                                for from in self.cache.iter() {
+                                    let mut to = self.to.join(from.file_name().unwrap());
+                                    if to.exists()
+                                        && to.canonicalize().unwrap()
+                                            == from.canonicalize().unwrap()
+                                    {
+                                        continue;
+                                    }
+                                    let mut i = 0;
+                                    while to.exists() {
+                                        let name = from.file_name().unwrap();
+                                        let new_name = format!("{}_{}", i, name.to_string_lossy());
+                                        to = self.to.join(new_name);
+                                        i += 1;
+                                    }
+                                    match self.method {
+                                        Method::Cp => fs::copy(from, to).map(|_| {})?,
+                                        Method::SoftLink => {
+                                            #[cfg(target_family = "unix")]
+                                            std::os::unix::fs::symlink(from.canonicalize()?, to)?;
+                                            #[cfg(target_family = "windows")]
+                                            std::os::windows::fs::symlink_file(
+                                                from.canonicalize()?,
+                                                to,
+                                            )?;
+                                        }
+                                        Method::HardLink => fs::hard_link(from, to)?,
+                                    }
+                                }
                                 return Ok(());
                             }
                             KeyCode::Char('Y') => {
                                 return Ok(());
                             }
                             _ => {
-                                self.current_screen = match self.image {
-                                    Some(_) => CurrentScreen::Main,
-                                    None => CurrentScreen::Finished,
+                                self.current_screen = match self.buffer.is_empty() {
+                                    false => CurrentScreen::Main,
+                                    true => CurrentScreen::Finished,
                                 }
                             }
                         },
@@ -176,21 +196,9 @@ impl Render for Picker {
             title: "Picker".to_string(),
         }
         .render(f, chunks[0])?;
-        match self.image {
-            Some(ref path) => {
-                #[cfg(not(target_os = "windows"))]
-                let mut picker = ratatui_image::picker::Picker::from_termios()
-                    .map_err(|_| anyhow::anyhow!("Failed to get the picker"))?;
-                #[cfg(target_os = "windows")]
-                let mut picker = {
-                    let mut picker = ratatui_image::picker::Picker::new((12, 24));
-                    picker.protocol_type = ratatui_image::picker::ProtocolType::Iterm2;
-                    picker
-                };
-                picker.guess_protocol();
-                Image::new(&mut picker, path)?.render(f, chunks[1])?;
-            }
-            None => {
+        match self.buffer.is_empty() {
+            false => Grid::new(self.buffer.as_slice(), self.chosen)?.render(f, chunks[1])?,
+            true => {
                 Title {
                     title: "The picking finished.".to_string(),
                 }

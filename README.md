@@ -14,6 +14,7 @@ iteractively comparing the degree of compliance with sesthetics preferences.
 ## Tagger
 
 ![tagger_screenshot](images/tagger_screenshot.png)
+![tagger_screenshot1](images/tagger_picker_screenshot.png)
 ![tagger_screenshot2](images/tagger_observe_screenshot.png)
 
 Features:

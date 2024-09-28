@@ -9,7 +9,7 @@ use anyhow::Result;
 use ratatui::{layout::Rect, Frame};
 
 pub(crate) use histogram::Histogram;
-pub(crate) use image::{Image, Images};
+pub(crate) use image::{Grid, Images};
 pub(crate) use picker_footer::PickerFooter;
 pub(crate) use quit::Quit;
 pub(crate) use tagger_footer::TaggerFooter;

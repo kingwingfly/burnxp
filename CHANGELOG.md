@@ -9,6 +9,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha31] - 2024-09-28
+
+- improve: a more efficient image picker
+
 ## [0.1.0-alpha30] - 2024-09-28
 
 - fix: `data_loader open_image` now canonicalizes path before opening

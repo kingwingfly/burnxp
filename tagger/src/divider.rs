@@ -22,6 +22,7 @@ impl Divider {
         train_path: PathBuf,
         valid_path: PathBuf,
     ) -> Result<Self> {
+        assert!(train + valid > 0, "expected train + valid > 0");
         let to_divide: Set = json_from(&path)?;
         Ok(Self {
             to_divide,

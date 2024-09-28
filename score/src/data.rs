@@ -93,7 +93,7 @@ pub(crate) struct ImageBatcher<B: Backend> {
 #[derive(Debug, Clone)]
 pub(crate) struct ImageBatch<B: Backend> {
     pub datas: Tensor<B, 4>,
-    pub target_scores: Tensor<B, 2>,
+    pub targets: Tensor<B, 2>,
     pub paths: Vec<PathBuf>,
 }
 
@@ -109,18 +109,18 @@ impl<B: Backend> Batcher<ImageData, ImageBatch<B>> for ImageBatcher<B> {
             .iter()
             .map(|item| item.data().reshape([1, 3, SIZE, SIZE]))
             .collect::<Vec<_>>();
-        let target_scores = items
+        let targets = items
             .iter()
             .map(|item| item.score().reshape([1, 1]))
             .collect::<Vec<_>>();
 
         let datas = Tensor::cat(datas, 0).to_device(&self.device);
-        let target_scores = Tensor::cat(target_scores, 0).to_device(&self.device);
+        let targets = Tensor::cat(targets, 0).to_device(&self.device);
         let paths = items.iter().map(|item| item.path.clone()).collect();
 
         ImageBatch {
             datas,
-            target_scores,
+            targets,
             paths,
         }
     }

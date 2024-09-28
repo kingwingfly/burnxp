@@ -25,28 +25,28 @@ impl<B: Backend> ScoreModel<B> {
     fn forward_regression(
         &self,
         datas: Tensor<B, 4>,
-        target_scores: Tensor<B, 2>,
+        targets: Tensor<B, 2>,
     ) -> RegressionOutput<B> {
         let output = self.forward(datas);
-        let loss = HuberLossConfig::new(10.0).init().forward(
+        let loss = HuberLossConfig::new(8.0).init().forward(
             output.clone(),
-            target_scores.clone(),
-            Reduction::Auto,
+            targets.clone(),
+            Reduction::Mean,
         );
-        RegressionOutput::new(loss, output, target_scores)
+        RegressionOutput::new(loss, output, targets)
     }
 }
 
 impl<B: AutodiffBackend> TrainStep<ImageBatch<B>, RegressionOutput<B>> for ScoreModel<B> {
     fn step(&self, batch: ImageBatch<B>) -> TrainOutput<RegressionOutput<B>> {
-        let reg = self.forward_regression(batch.datas, batch.target_scores);
+        let reg = self.forward_regression(batch.datas, batch.targets);
         TrainOutput::new(self, reg.loss.backward(), reg)
     }
 }
 
 impl<B: Backend> ValidStep<ImageBatch<B>, RegressionOutput<B>> for ScoreModel<B> {
     fn step(&self, batch: ImageBatch<B>) -> RegressionOutput<B> {
-        self.forward_regression(batch.datas, batch.target_scores)
+        self.forward_regression(batch.datas, batch.targets)
     }
 }
 

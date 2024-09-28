@@ -43,9 +43,7 @@ impl Render for PickerNavigation {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         let current_navigation_text = vec![
             match self.current_screen {
-                CurrentScreen::Main => {
-                    Span::styled("Picker or not?", Style::default().fg(Color::Cyan))
-                }
+                CurrentScreen::Main => Span::styled("Picke", Style::default().fg(Color::Cyan)),
                 CurrentScreen::Finished => {
                     Span::styled("Finished", Style::default().fg(Color::Green))
                 }
@@ -78,7 +76,7 @@ impl Render for PickerHint {
         let hint = {
             match self.current_screen {
                 CurrentScreen::Main => Span::styled(
-                    "Pick(Enter) not(Delete) quit(q)",
+                    "Pick(Enter) choose(1-9) quit(q)",
                     Style::default().fg(Color::Green),
                 ),
                 CurrentScreen::Finished => {

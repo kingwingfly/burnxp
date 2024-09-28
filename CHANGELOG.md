@@ -12,6 +12,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 ## [0.1.0-alpha31] - 2024-09-28
 
 - improve: a more efficient image picker
+- bump deps
 
 ## [0.1.0-alpha30] - 2024-09-28
 

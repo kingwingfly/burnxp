@@ -1,5 +1,6 @@
 mod histogram;
 mod image;
+mod input;
 mod picker_footer;
 mod quit;
 mod tagger_footer;
@@ -10,6 +11,7 @@ use ratatui::{layout::Rect, Frame};
 
 pub(crate) use histogram::Histogram;
 pub(crate) use image::{Grid, Images};
+pub(crate) use input::NumInput;
 pub(crate) use picker_footer::PickerFooter;
 pub(crate) use quit::Quit;
 pub(crate) use tagger_footer::TaggerFooter;

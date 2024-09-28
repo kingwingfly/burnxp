@@ -17,7 +17,7 @@ impl Render for PickerFooter {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+            .constraints([Constraint::Percentage(33), Constraint::Percentage(67)])
             .split(area);
         PickerNavigation {
             current_screen: self.current_screen,
@@ -76,7 +76,7 @@ impl Render for PickerHint {
         let hint = {
             match self.current_screen {
                 CurrentScreen::Main => Span::styled(
-                    "Pick(Enter) choose(1-9) quit(q)",
+                    "Pick(Enter) Choose(1-9) Jump(j) Last(<-) Next(->) quit(q)",
                     Style::default().fg(Color::Green),
                 ),
                 CurrentScreen::Finished => {

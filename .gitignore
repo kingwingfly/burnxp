@@ -1,6 +1,8 @@
 target
 libtorch
 libtorch.zip
+burnxp_artifact
+picked
 .venv
 .cargo
 run

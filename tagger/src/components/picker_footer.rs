@@ -8,6 +8,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
+use std::sync::atomic::Ordering;
 
 pub(crate) struct PickerFooter {
     pub current_screen: CurrentScreen,
@@ -52,7 +53,11 @@ impl Render for PickerNavigation {
             Span::styled(" | ", Style::default().fg(Color::White)),
             match self.current_screen {
                 CurrentScreen::Main => Span::styled(
-                    format!("{}", *PICKER_PROCESS),
+                    format!(
+                        "{} page: {}",
+                        *PICKER_PROCESS,
+                        PICKER_PROCESS.finished.load(Ordering::Relaxed) / 9,
+                    ),
                     Style::default().fg(Color::LightCyan),
                 ),
                 CurrentScreen::Finished => Span::styled(

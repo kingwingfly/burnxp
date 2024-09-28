@@ -13,9 +13,18 @@ iteractively comparing the degree of compliance with sesthetics preferences.
 
 ## Tagger
 
-![tagger_screenshot](images/tagger_screenshot.png)
-![tagger_screenshot1](images/tagger_picker_screenshot.png)
-![tagger_screenshot2](images/tagger_observe_screenshot.png)
+<table>
+    <tr>
+        <td>
+            <img src="images/tagger_screenshot.png" height="260px"/><br />
+            <img src="images/tagger_observe_screenshot.png" height="260px"/>
+        </td>
+        <td>
+            <img src="images/tagger_picker_screenshot.png" height="520px"/>
+        </td>
+    </tr>
+</table>
+
 
 Features:
 - Sort pictures by comparing one by one (clever data structure and algorithm are used to

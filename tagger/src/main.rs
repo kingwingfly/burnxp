@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::{CommandFactory as _, Parser, Subcommand};
 use clap_complete::{generate, Shell};
 use std::path::PathBuf;
-use tagger::{Divider, Method, Observer, Picker, Tagger};
+use tagger::{Divider, Method, Observer, Picker, Scorer};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
@@ -13,31 +13,31 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum SubCmd {
-    /// Tag images
-    Tag {
-        /// The output file path
-        #[clap(short, long, default_value = "tags.json")]
-        output: PathBuf,
+    /// Score image-groups
+    Score {
         /// The file to cache the comparison results (relative paths are cached)
         #[clap(short, long, default_value = "cache.bin")]
         cache: PathBuf,
+        /// The output file path
+        #[clap(short, long, default_value = "scores.json")]
+        output: PathBuf,
         /// The root directory to scan for images
         root: PathBuf,
     },
     /// Pick images
     Pick {
-        /// The file to cache the paths of the images which have been picked or rejected
+        /// The file to cache the paths of the images which have been picked
         #[clap(short, long, default_value = "cache.json")]
         cache: PathBuf,
         /// The file ops method to use (note: hardlink is not allowed between different file systems)
         #[clap(short, long, default_value = "soft-link")]
         method: Method,
-        /// The root directory to scan for images and move from
+        /// The root directory to scan for images and mv/cp from
         from: PathBuf,
-        /// The directory to move the images to
+        /// The directory to mv/cp the images to
         to: PathBuf,
     },
-    /// Divide tags.json into train set and validation set in certain ratio
+    /// Divide scores.json into train set and validation set in certain ratio
     Divide {
         /// The ratio of the training set
         #[clap(short, long, default_value = "9")]
@@ -45,18 +45,18 @@ enum SubCmd {
         /// The ratio of the validation set
         #[clap(short, long, default_value = "1")]
         valid: usize,
-        /// The path to save the training set
+        /// The output path of the training set
         #[clap(short, long, default_value = "train.json")]
         train_path: PathBuf,
-        /// The path to save the validation set
+        /// The output path of the validation set
         #[clap(short, long, default_value = "valid.json")]
         valid_path: PathBuf,
-        /// The path to the tags produced by the tagger tag subcommand
+        /// The path to the scores produced by the tagger score subcommand
         path: PathBuf,
     },
-    /// Observe the consistency of the tags produced by the tagger
+    /// Observe the consistency of the scores produced by the scorer
     Observe {
-        /// The path to the tags produced by the tagger tag subcommand
+        /// The path to the scores produced by the tagger score subcommand
         path: PathBuf,
     },
     /// generate auto completion script
@@ -68,15 +68,14 @@ enum SubCmd {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    // create app and run it
     match cli.subcmd {
-        SubCmd::Tag {
+        SubCmd::Score {
             output,
             cache,
             root,
         } => {
-            let mut tagger = Tagger::new(root, output, cache);
-            tagger.run()?;
+            let mut scorer = Scorer::new(root, output, cache);
+            scorer.run()?;
         }
         SubCmd::Pick {
             cache,

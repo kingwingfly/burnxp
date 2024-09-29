@@ -37,6 +37,7 @@ pub enum Method {
     Cp,
     SoftLink,
     HardLink,
+    Move,
 }
 
 impl Picker {
@@ -170,6 +171,7 @@ impl Picker {
                                             )?;
                                         }
                                         Method::HardLink => fs::hard_link(from, to)?,
+                                        Method::Move => fs::rename(from, to)?,
                                     }
                                 }
                                 return Ok(());

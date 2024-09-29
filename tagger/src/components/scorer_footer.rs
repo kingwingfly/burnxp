@@ -9,11 +9,11 @@ use ratatui::{
     Frame,
 };
 
-pub(crate) struct TaggerFooter {
+pub(crate) struct ScorerFooter {
     pub current_screen: CurrentScreen,
 }
 
-impl Render for TaggerFooter {
+impl Render for ScorerFooter {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)

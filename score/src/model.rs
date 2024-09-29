@@ -1,13 +1,12 @@
 use crate::data::ImageBatch;
 use burn::prelude::*;
-use burn::serde::Serialize;
 use burn::tensor::backend::AutodiffBackend;
 use burn::train::{RegressionOutput, TrainOutput, TrainStep, ValidStep};
 use clap::builder::OsStr;
 use clap::ValueEnum;
 use nn::loss::{HuberLossConfig, Reduction};
 use resnet_burn::ResNet;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Module, Debug)]
 pub(crate) struct ScoreModel<B: Backend> {
@@ -22,31 +21,27 @@ impl<B: Backend> ScoreModel<B> {
         self.resnet.forward(datas) // [batch_size, 1]
     }
 
-    fn forward_regression(
-        &self,
-        datas: Tensor<B, 4>,
-        targets: Tensor<B, 2>,
-    ) -> RegressionOutput<B> {
-        let output = self.forward(datas);
+    fn forward_regression(&self, batch: ImageBatch<B>) -> RegressionOutput<B> {
+        let output = self.forward(batch.datas);
         let loss = HuberLossConfig::new(8.0).init().forward(
             output.clone(),
-            targets.clone(),
+            batch.targets.clone(),
             Reduction::Mean,
         );
-        RegressionOutput::new(loss, output, targets)
+        RegressionOutput::new(loss, output, batch.targets)
     }
 }
 
 impl<B: AutodiffBackend> TrainStep<ImageBatch<B>, RegressionOutput<B>> for ScoreModel<B> {
     fn step(&self, batch: ImageBatch<B>) -> TrainOutput<RegressionOutput<B>> {
-        let reg = self.forward_regression(batch.datas, batch.targets);
+        let reg = self.forward_regression(batch);
         TrainOutput::new(self, reg.loss.backward(), reg)
     }
 }
 
 impl<B: Backend> ValidStep<ImageBatch<B>, RegressionOutput<B>> for ScoreModel<B> {
     fn step(&self, batch: ImageBatch<B>) -> RegressionOutput<B> {
-        self.forward_regression(batch.datas, batch.targets)
+        self.forward_regression(batch)
     }
 }
 

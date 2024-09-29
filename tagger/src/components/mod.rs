@@ -3,7 +3,7 @@ mod image;
 mod input;
 mod picker_footer;
 mod quit;
-mod tagger_footer;
+mod scorer_footer;
 mod title;
 
 use anyhow::Result;
@@ -14,7 +14,7 @@ pub(crate) use image::{Grid, Images};
 pub(crate) use input::NumInput;
 pub(crate) use picker_footer::PickerFooter;
 pub(crate) use quit::Quit;
-pub(crate) use tagger_footer::TaggerFooter;
+pub(crate) use scorer_footer::ScorerFooter;
 pub(crate) use title::Title;
 
 pub(crate) trait Render {

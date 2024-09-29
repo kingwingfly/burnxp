@@ -1,4 +1,4 @@
-use crate::components::{Images, Quit, Render, TaggerFooter, Title};
+use crate::components::{Images, Quit, Render, ScorerFooter, Title};
 use crate::event::{ComparePair, Event, CMPDISPATCH};
 use crate::matrix::Matrix;
 use crate::ordpaths::{CompareResult, OrdPaths};
@@ -17,7 +17,7 @@ use std::thread;
 use std::time::Duration;
 
 #[derive(Debug)]
-pub struct Tagger {
+pub struct Scorer {
     current_screen: CurrentScreen,
     cmp: Option<ComparePair>,
     /// The matrix of comparison
@@ -26,7 +26,7 @@ pub struct Tagger {
     images: Vec<OrdPaths>,
 }
 
-impl Tagger {
+impl Scorer {
     pub fn new(root: PathBuf, output: PathBuf, cache: PathBuf) -> Self {
         let matrix: Matrix = bincode_from(&cache).unwrap_or_default();
         let images = walkdir::WalkDir::new(root)
@@ -181,7 +181,7 @@ impl Tagger {
     }
 }
 
-impl Render for Tagger {
+impl Render for Scorer {
     fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         if CurrentScreen::Exiting == self.current_screen {
             let area = centered_rect(60, 25, f.area());
@@ -212,7 +212,7 @@ impl Render for Tagger {
                 .render(f, chunks[1])?;
             }
         }
-        TaggerFooter {
+        ScorerFooter {
             current_screen: self.current_screen,
         }
         .render(f, chunks[2])?;
@@ -220,7 +220,7 @@ impl Render for Tagger {
     }
 }
 
-impl Drop for Tagger {
+impl Drop for Scorer {
     fn drop(&mut self) {
         for paths in self.images.iter() {
             unsafe {

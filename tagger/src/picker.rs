@@ -111,10 +111,7 @@ impl Picker {
                                         }
                                     }
                                 }
-                                KeyCode::Char('j') => {
-                                    self.current_screen = CurrentScreen::Finished;
-                                }
-
+                                KeyCode::Char('j') => self.buffer.clear(), // empty means jump page
                                 _ => {
                                     match key.code {
                                         KeyCode::Enter | KeyCode::Right => self.page += 1,
@@ -126,10 +123,6 @@ impl Picker {
                                     break 'l;
                                 }
                             },
-                            _ => continue,
-                        },
-                        CurrentScreen::Finished => match key.code {
-                            KeyCode::Char('q') => self.current_screen = CurrentScreen::Exiting,
                             KeyCode::Char(c) if c.is_numeric() => {
                                 self.page = self.page * 10 + c.to_digit(10).unwrap() as usize;
                             }
@@ -139,9 +132,12 @@ impl Picker {
                                     self.page.clamp(0, self.images.len().saturating_sub(1) / 9);
                                 self.current_screen = CurrentScreen::Main;
                                 self.chosen = [false; 9];
-                                self.buffer.clear();
                                 break 'l;
                             }
+                            _ => continue,
+                        },
+                        CurrentScreen::Finished => match key.code {
+                            KeyCode::Char('q') => self.current_screen = CurrentScreen::Exiting,
                             _ => continue,
                         },
                         CurrentScreen::Exiting => match key.code {
@@ -203,7 +199,7 @@ impl Render for Picker {
             Quit.render(f, area)?;
             return Ok(());
         }
-        if CurrentScreen::Finished == self.current_screen && !self.buffer.is_empty() {
+        if CurrentScreen::Main == self.current_screen && self.buffer.is_empty() {
             let area = centered_rect(60, 25, f.area());
             NumInput { num: self.page }.render(f, area)?;
             return Ok(());

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
-    widgets::Paragraph,
+    widgets::{Block, Paragraph},
     Frame,
 };
 
@@ -18,9 +18,9 @@ impl Render for NumInput {
             .direction(Direction::Vertical)
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
             .split(area);
-        let title = Paragraph::new("Page to go:");
+        let title = Paragraph::new("Page to go:").block(Block::default());
         f.render_widget(title, chunks[0]);
-        let input = Paragraph::new(format!("{}", self.num));
+        let input = Paragraph::new(format!("{}", self.num)).block(Block::default());
         f.render_widget(input, chunks[1]);
         Ok(())
     }

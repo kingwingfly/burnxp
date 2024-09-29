@@ -54,9 +54,10 @@ impl Render for PickerNavigation {
             match self.current_screen {
                 CurrentScreen::Main => Span::styled(
                     format!(
-                        "{} page: {}",
+                        "{} page: {}/{}",
                         *PICKER_PROCESS,
                         PICKER_PROCESS.finished.load(Ordering::Relaxed) / 9,
+                        PICKER_PROCESS.total.load(Ordering::Relaxed) / 9,
                     ),
                     Style::default().fg(Color::LightCyan),
                 ),

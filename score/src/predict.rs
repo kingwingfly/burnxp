@@ -1,6 +1,6 @@
 use crate::{
     data::{ImageBatcher, ImageDataSet},
-    RnnType, ScoreModelConfig,
+    ResNetType, ScoreModelConfig,
 };
 use burn::{
     config::Config,
@@ -22,7 +22,7 @@ pub enum Output {
 
 #[derive(Config, Debug)]
 pub struct PredictConfig {
-    model: RnnType,
+    model: ResNetType,
     checkpoint: PathBuf,
     input: PathBuf,
     output: Output,

@@ -47,24 +47,24 @@ impl<B: Backend> ValidStep<ImageBatch<B>, RegressionOutput<B>> for ScoreModel<B>
 
 #[derive(Config, Debug)]
 pub struct ScoreModelConfig {
-    rnn_type: RnnType,
+    rnn_type: ResNetType,
 }
 
 impl ScoreModelConfig {
     pub(crate) fn init<B: Backend>(&self, device: &B::Device) -> ScoreModel<B> {
         let resnet = match self.rnn_type {
-            RnnType::Layer18 => ResNet::resnet18(1, device),
-            RnnType::Layer34 => ResNet::resnet34(1, device),
-            RnnType::Layer50 => ResNet::resnet50(1, device),
-            RnnType::Layer101 => ResNet::resnet101(1, device),
-            RnnType::Layer152 => ResNet::resnet152(1, device),
+            ResNetType::Layer18 => ResNet::resnet18(1, device),
+            ResNetType::Layer34 => ResNet::resnet34(1, device),
+            ResNetType::Layer50 => ResNet::resnet50(1, device),
+            ResNetType::Layer101 => ResNet::resnet101(1, device),
+            ResNetType::Layer152 => ResNet::resnet152(1, device),
         };
         ScoreModel { resnet }
     }
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, ValueEnum)]
-pub enum RnnType {
+pub enum ResNetType {
     Layer18 = 18,
     Layer34 = 34,
     Layer50 = 50,
@@ -73,8 +73,8 @@ pub enum RnnType {
     Layer152 = 152,
 }
 
-impl From<RnnType> for OsStr {
-    fn from(value: RnnType) -> Self {
+impl From<ResNetType> for OsStr {
+    fn from(value: ResNetType) -> Self {
         format!("layer{:?}", value as usize).into()
     }
 }

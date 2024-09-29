@@ -4,7 +4,7 @@ use burn::{
 };
 use clap::{CommandFactory as _, Parser, Subcommand};
 use clap_complete::{generate, Shell};
-use score::{predict, train, Output, PredictConfig, RnnType, ScoreModelConfig, TrainingConfig};
+use score::{predict, train, Output, PredictConfig, ResNetType, ScoreModelConfig, TrainingConfig};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -16,11 +16,11 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum SubCmd {
-    /// Train a RNN model with scores produced by the tagger.
+    /// Train a ResNet model with scores produced by the tagger.
     Train {
         /// Model type
-        #[arg(short, long, default_value=RnnType::default())]
-        model: RnnType,
+        #[arg(short, long, default_value=ResNetType::default())]
+        model: ResNetType,
         /// Path to the training set json file produced by the tagger divide
         #[arg(short, long, default_value = "train.json")]
         train_set: PathBuf,
@@ -49,8 +49,8 @@ enum SubCmd {
     /// Predict using a ResNet model checkpoint
     Predict {
         /// Model type
-        #[arg(short, long, default_value=RnnType::Layer101)]
-        model: RnnType,
+        #[arg(short, long, default_value=ResNetType::Layer101)]
+        model: ResNetType,
         /// Path to the model checkpoint
         #[arg(short, long)]
         checkpoint: PathBuf,

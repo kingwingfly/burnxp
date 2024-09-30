@@ -1,28 +1,26 @@
-use super::Render;
-use anyhow::{bail, Result};
 use ratatui::{
+    buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Style, Stylize},
     text::Line,
-    widgets::{Bar, BarChart, BarGroup},
-    Frame,
+    widgets::{Bar, BarChart, BarGroup, Widget},
 };
 
 pub(crate) struct Histogram {
     pub data: Vec<(i64, usize)>,
 }
 
-impl Render for Histogram {
-    fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
+impl Widget for Histogram {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let [title, histogram] = Layout::vertical([Constraint::Length(1), Constraint::Fill(1)])
             .spacing(1)
             .areas(area);
 
-        f.render_widget("Histogram".bold().into_centered_line(), title);
+        "Histogram".bold().into_centered_line().render(title, buf);
 
         let height = histogram.height as usize;
         if height == 0 {
-            bail!("The height given to the histogram is 0.");
+            return;
         }
         let group_size = self.data.len() / height + 1;
         let mut data = vec![0; height];
@@ -46,10 +44,7 @@ impl Render for Histogram {
         while let Some((_, 0)) = data.last() {
             data.pop();
         }
-
-        f.render_widget(barchart(&data), histogram);
-
-        Ok(())
+        barchart(&data).render(histogram, buf);
     }
 }
 

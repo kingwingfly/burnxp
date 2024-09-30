@@ -1,17 +1,15 @@
-use super::Render;
-use anyhow::Result;
 use ratatui::{
+    buffer::Buffer,
     layout::Rect,
     style::{Color, Style},
     text::Text,
-    widgets::{Block, Borders, Padding, Paragraph, Wrap},
-    Frame,
+    widgets::{Block, Borders, Padding, Paragraph, Widget, Wrap},
 };
 
 pub(crate) struct Quit;
 
-impl Render for Quit {
-    fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
+impl Widget for Quit {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let popup_block = Block::default()
             .title("Y/N")
             .padding(Padding::horizontal(3))
@@ -24,7 +22,6 @@ impl Render for Quit {
         let exit_paragraph = Paragraph::new(exit_text)
             .block(popup_block)
             .wrap(Wrap { trim: false });
-        f.render_widget(exit_paragraph, area);
-        Ok(())
+        exit_paragraph.render(area, buf);
     }
 }

@@ -1,12 +1,10 @@
-use super::Render;
 use crate::state::{CurrentScreen, PICKER_PROCESS};
-use anyhow::Result;
 use ratatui::{
+    buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph},
-    Frame,
+    widgets::{Block, Borders, Paragraph, Widget},
 };
 use std::sync::atomic::Ordering;
 
@@ -14,21 +12,21 @@ pub(crate) struct PickerFooter {
     pub current_screen: CurrentScreen,
 }
 
-impl Render for PickerFooter {
-    fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
+impl Widget for PickerFooter {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(33), Constraint::Percentage(67)])
             .split(area);
+
         PickerNavigation {
             current_screen: self.current_screen,
         }
-        .render(f, chunks[0])?;
+        .render(chunks[0], buf);
         PickerHint {
             current_screen: self.current_screen,
         }
-        .render(f, chunks[1])?;
-        Ok(())
+        .render(chunks[1], buf);
     }
 }
 
@@ -40,8 +38,8 @@ struct PickerHint {
     current_screen: CurrentScreen,
 }
 
-impl Render for PickerNavigation {
-    fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
+impl Widget for PickerNavigation {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let current_navigation_text = vec![
             match self.current_screen {
                 CurrentScreen::Main => Span::styled("Picke", Style::default().fg(Color::Cyan)),
@@ -72,13 +70,12 @@ impl Render for PickerNavigation {
         ];
         let mode_footer = Paragraph::new(Line::from(current_navigation_text))
             .block(Block::default().borders(Borders::ALL));
-        f.render_widget(mode_footer, area);
-        Ok(())
+        mode_footer.render(area, buf);
     }
 }
 
-impl Render for PickerHint {
-    fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
+impl Widget for PickerHint {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let hint = {
             match self.current_screen {
                 CurrentScreen::Main => Span::styled(
@@ -95,7 +92,6 @@ impl Render for PickerHint {
             }
         };
         let key_notes_footer = Paragraph::new(hint).block(Block::default().borders(Borders::ALL));
-        f.render_widget(key_notes_footer, area);
-        Ok(())
+        key_notes_footer.render(area, buf);
     }
 }

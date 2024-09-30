@@ -8,7 +8,7 @@ description = "A image tagger by iteractive comparisons"
 license = "MIT"
 
 [dependencies]
-ratatui = { workspace = true }
+ratatui = { workspace = true, features = ["unstable-widget-ref"] }
 crossterm = { workspace = true }
 anyhow = { workspace = true }
 ratatui-image = { workspace = true }

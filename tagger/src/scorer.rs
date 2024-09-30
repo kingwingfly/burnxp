@@ -1,4 +1,4 @@
-use crate::components::{Images, Quit, Render, ScorerFooter, Title};
+use crate::components::{Images, Quit, ScorerFooter, Title};
 use crate::event::{ComparePair, Event, CMPDISPATCH};
 use crate::matrix::Matrix;
 use crate::ordpaths::{CompareResult, OrdPaths};
@@ -8,8 +8,9 @@ use crate::utils::{bincode_from, bincode_into, centered_rect, json_into};
 use anyhow::Result;
 use crossterm::event::{self, Event as TermEvent, KeyCode, KeyEventKind};
 use mime_guess::MimeGuess;
+use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
-use ratatui::Frame;
+use ratatui::widgets::{Widget, WidgetRef};
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::sync::atomic::Ordering as AtomicOrdering;
@@ -86,7 +87,7 @@ impl Scorer {
         self.recv_event()?;
         'a: loop {
             terminal.draw(|f| {
-                self.render(f, f.area()).ok();
+                f.render_widget(&*self, f.area());
             })?;
             while let TermEvent::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Release {
@@ -181,12 +182,12 @@ impl Scorer {
     }
 }
 
-impl Render for Scorer {
-    fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
+impl WidgetRef for Scorer {
+    fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         if CurrentScreen::Exiting == self.current_screen {
-            let area = centered_rect(60, 25, f.area());
-            Quit.render(f, area)?;
-            return Ok(());
+            let area = centered_rect(60, 25, area);
+            Quit.render(area, buf);
+            return;
         }
         let chunks = Layout::default()
             .direction(Direction::Vertical)
@@ -197,26 +198,25 @@ impl Render for Scorer {
             ])
             .split(area);
         Title {
-            title: "Tagger".to_string(),
+            title: "Scorer".to_string(),
         }
-        .render(f, chunks[0])?;
+        .render(chunks[0], buf);
         match self.cmp {
             Some([ref p1, ref p2]) => {
                 // p2 is the old key in BTree, randomly choose from it for comparison.
-                Images::new(&[&p1[0], p2.random_one()])?.render(f, chunks[1])?;
+                Images::new(&[&p1[0], p2.random_one()]).render(chunks[1], buf);
             }
             None => {
                 Title {
                     title: "The comparation finished.".to_string(),
                 }
-                .render(f, chunks[1])?;
+                .render(chunks[1], buf);
             }
         }
         ScorerFooter {
             current_screen: self.current_screen,
         }
-        .render(f, chunks[2])?;
-        Ok(())
+        .render(chunks[2], buf);
     }
 }
 

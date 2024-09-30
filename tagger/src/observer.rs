@@ -1,12 +1,16 @@
 use crate::{
-    components::{Histogram, Quit, Render},
+    components::{Histogram, Quit},
     state::CurrentScreen,
     terminal::AutoDropTerminal,
     utils::{centered_rect, json_from},
 };
 use anyhow::Result;
 use crossterm::event::{self, Event as TermEvent, KeyCode, KeyEventKind};
-use ratatui::{layout::Rect, Frame};
+use ratatui::{
+    buffer::Buffer,
+    layout::Rect,
+    widgets::{Widget, WidgetRef},
+};
 use std::{path::PathBuf, time::Duration};
 
 type Set = Vec<(Score, Vec<PathBuf>)>;
@@ -31,7 +35,7 @@ impl Observer {
         let mut terminal = AutoDropTerminal::new()?;
         loop {
             terminal.draw(|f| {
-                self.render(f, f.area()).ok();
+                f.render_widget(&*self, f.area());
             })?;
             while let TermEvent::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Release {
@@ -62,19 +66,18 @@ impl Observer {
     }
 }
 
-impl Render for Observer {
-    fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
+impl WidgetRef for Observer {
+    fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         if CurrentScreen::Exiting == self.current_screen {
-            let area = centered_rect(60, 25, f.area());
-            Quit.render(f, area)?;
-            return Ok(());
+            let area = centered_rect(60, 25, area);
+            Quit.render(area, buf);
+            return;
         }
-
         let data = self
             .data
             .iter()
             .map(|(score, paths)| (*score, paths.len()))
             .collect();
-        Histogram { data }.render(f, area)
+        Histogram { data }.render(area, buf);
     }
 }

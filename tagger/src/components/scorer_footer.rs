@@ -1,20 +1,18 @@
-use super::Render;
 use crate::state::{CurrentScreen, TAGGER_PROCESS};
-use anyhow::Result;
 use ratatui::{
+    buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph},
-    Frame,
+    widgets::{Block, Borders, Paragraph, Widget},
 };
 
 pub(crate) struct ScorerFooter {
     pub current_screen: CurrentScreen,
 }
 
-impl Render for ScorerFooter {
-    fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
+impl Widget for ScorerFooter {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
@@ -22,12 +20,11 @@ impl Render for ScorerFooter {
         TaggerNavigation {
             current_screen: self.current_screen,
         }
-        .render(f, chunks[0])?;
+        .render(chunks[0], buf);
         TaggerHint {
             current_screen: self.current_screen,
         }
-        .render(f, chunks[1])?;
-        Ok(())
+        .render(chunks[1], buf);
     }
 }
 
@@ -39,8 +36,8 @@ struct TaggerHint {
     current_screen: CurrentScreen,
 }
 
-impl Render for TaggerNavigation {
-    fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
+impl Widget for TaggerNavigation {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let current_navigation_text = vec![
             match self.current_screen {
                 CurrentScreen::Main => {
@@ -68,13 +65,12 @@ impl Render for TaggerNavigation {
         ];
         let mode_footer = Paragraph::new(Line::from(current_navigation_text))
             .block(Block::default().borders(Borders::ALL));
-        f.render_widget(mode_footer, area);
-        Ok(())
+        mode_footer.render(area, buf);
     }
 }
 
-impl Render for TaggerHint {
-    fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
+impl Widget for TaggerHint {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let hint = {
             match self.current_screen {
                 CurrentScreen::Main => Span::styled(
@@ -91,7 +87,6 @@ impl Render for TaggerHint {
             }
         };
         let key_notes_footer = Paragraph::new(hint).block(Block::default().borders(Borders::ALL));
-        f.render_widget(key_notes_footer, area);
-        Ok(())
+        key_notes_footer.render(area, buf);
     }
 }

@@ -16,6 +16,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 ## [0.1.0-alpha32] - 2024-09-29
 
 - enhance: `tagger pick` page ops
+- refact with `Widget`
 
 ## [0.1.0-alpha31] - 2024-09-28
 

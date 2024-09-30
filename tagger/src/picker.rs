@@ -1,5 +1,5 @@
 use crate::{
-    components::{Grid, NumInput, PickerFooter, Quit, Render, Title},
+    components::{Grid, NumInput, PickerFooter, Quit, Title},
     state::{CurrentScreen, PICKER_PROCESS},
     terminal::AutoDropTerminal,
     utils::{centered_rect, json_from, json_into},
@@ -9,8 +9,9 @@ use clap::ValueEnum;
 use crossterm::event::{self, Event as TermEvent, KeyCode, KeyEventKind};
 use mime_guess::MimeGuess;
 use ratatui::{
+    buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
-    Frame,
+    widgets::{Widget, WidgetRef},
 };
 use std::{
     collections::HashSet, fs, path::PathBuf, sync::atomic::Ordering as AtomicOrdering,
@@ -42,7 +43,6 @@ pub enum Method {
 
 impl Picker {
     pub fn new(method: Method, cache: PathBuf, from: PathBuf, to: PathBuf) -> Self {
-        fs::create_dir_all(&to).unwrap();
         let images = walkdir::WalkDir::new(from)
             .into_iter()
             .filter_map(|res| res.ok())
@@ -85,7 +85,7 @@ impl Picker {
 
             'l: loop {
                 terminal.draw(|f| {
-                    self.render(f, f.area()).ok();
+                    f.render_widget(&*self, f.area());
                 })?;
                 while let TermEvent::Key(key) = event::read()? {
                     if key.kind == KeyEventKind::Release {
@@ -144,14 +144,22 @@ impl Picker {
                         CurrentScreen::Exiting => match key.code {
                             KeyCode::Char('y') => {
                                 json_into(&self.cache_path, &self.cache)?;
+                                fs::create_dir_all(&self.to)?;
+                                walkdir::WalkDir::new(&self.to)
+                                    .into_iter()
+                                    .filter_map(|res| res.ok())
+                                    .filter_map(|e| {
+                                        let path = e.into_path();
+                                        match self.cache.remove(&path) {
+                                            true => None,
+                                            false => Some(path),
+                                        }
+                                    })
+                                    .for_each(|path| {
+                                        fs::remove_file(path).ok();
+                                    });
                                 for from in self.cache.iter() {
                                     let mut to = self.to.join(from.file_name().unwrap());
-                                    if to.exists()
-                                        && to.canonicalize().unwrap()
-                                            == from.canonicalize().unwrap()
-                                    {
-                                        continue;
-                                    }
                                     let mut i = 0;
                                     while to.exists() {
                                         let name = from.file_name().unwrap();
@@ -159,19 +167,18 @@ impl Picker {
                                         to = self.to.join(new_name);
                                         i += 1;
                                     }
-                                    match self.method {
-                                        Method::Cp => fs::copy(from, to).map(|_| {})?,
-                                        Method::SoftLink => {
-                                            #[cfg(target_family = "unix")]
-                                            std::os::unix::fs::symlink(from.canonicalize()?, to)?;
-                                            #[cfg(target_family = "windows")]
-                                            std::os::windows::fs::symlink_file(
-                                                from.canonicalize()?,
-                                                to,
-                                            )?;
+                                    if let Ok(from) = from.canonicalize() {
+                                        match self.method {
+                                            Method::Cp => fs::copy(from, to).map(|_| {})?,
+                                            Method::SoftLink => {
+                                                #[cfg(target_family = "unix")]
+                                                std::os::unix::fs::symlink(from, to)?;
+                                                #[cfg(target_family = "windows")]
+                                                std::os::windows::fs::symlink_file(from, to)?;
+                                            }
+                                            Method::HardLink => fs::hard_link(from, to)?,
+                                            Method::Move => fs::rename(from, to)?,
                                         }
-                                        Method::HardLink => fs::hard_link(from, to)?,
-                                        Method::Move => fs::rename(from, to)?,
                                     }
                                 }
                                 return Ok(());
@@ -194,17 +201,17 @@ impl Picker {
     }
 }
 
-impl Render for Picker {
-    fn render(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
+impl WidgetRef for Picker {
+    fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         if CurrentScreen::Exiting == self.current_screen {
-            let area = centered_rect(60, 25, f.area());
-            Quit.render(f, area)?;
-            return Ok(());
+            let area = centered_rect(60, 25, area);
+            Quit.render(area, buf);
+            return;
         }
         if CurrentScreen::Main == self.current_screen && self.buffer.is_empty() {
-            let area = centered_rect(60, 25, f.area());
-            NumInput { num: self.page }.render(f, area)?;
-            return Ok(());
+            let area = centered_rect(60, 25, area);
+            NumInput { num: self.page }.render(area, buf);
+            return;
         }
         let chunks = Layout::default()
             .direction(Direction::Vertical)
@@ -217,20 +224,19 @@ impl Render for Picker {
         Title {
             title: "Picker".to_string(),
         }
-        .render(f, chunks[0])?;
+        .render(chunks[0], buf);
         match self.buffer.is_empty() {
-            false => Grid::new(self.buffer.as_slice(), self.chosen)?.render(f, chunks[1])?,
+            false => Grid::new(self.buffer.as_slice(), self.chosen).render(chunks[1], buf),
             true => {
                 Title {
                     title: "The picking finished.".to_string(),
                 }
-                .render(f, chunks[1])?;
+                .render(chunks[1], buf);
             }
         }
         PickerFooter {
             current_screen: self.current_screen,
         }
-        .render(f, chunks[2])?;
-        Ok(())
+        .render(chunks[2], buf);
     }
 }

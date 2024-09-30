@@ -1,5 +1,6 @@
-use crate::components::Title;
+use crate::{components::Title, utils::picker};
 use anyhow::{anyhow, Result};
+use crossbeam::sync::Parker;
 use lru::LruCache;
 use ratatui::{
     buffer::Buffer,
@@ -14,9 +15,18 @@ use std::sync::mpsc::{channel, Receiver};
 use std::sync::{Arc, LazyLock, RwLock};
 use std::thread;
 
-static CACHE: LazyLock<RwLock<LruCache<PathBuf, Box<dyn StatefulProtocol>>>> =
+struct CacheLine {
+    data: Option<Box<dyn StatefulProtocol>>,
+    parker: Option<Parker>,
+}
+
+// Safety: we won't use the parker's reference
+unsafe impl Sync for CacheLine {}
+
+static CACHE: LazyLock<RwLock<LruCache<PathBuf, CacheLine>>> =
     LazyLock::new(|| RwLock::new(LruCache::new(NonZeroUsize::new(45).unwrap())));
-static RESIZE: Resize = Resize::Fit(Some(FilterType::Lanczos3));
+
+const RESIZE: Resize = Resize::Fit(Some(FilterType::Lanczos3));
 const CACHE_ERR: &str = "Race condition of Cache RwLock";
 const PICKER_ERR: &str = "Race condition of PICKER_ERR RwLock";
 
@@ -27,19 +37,8 @@ pub(crate) struct Images<'a> {
 
 impl<'a> Images<'a> {
     pub(crate) fn new(paths: &'a [&'a PathBuf; 2]) -> Self {
-        #[cfg(not(target_os = "windows"))]
-        let mut picker = Picker::from_termios()
-            .map_err(|_| anyhow::anyhow!("Failed to get the picker"))
-            .unwrap();
-        #[cfg(target_os = "windows")]
-        let mut picker = {
-            let mut picker = Picker::new((12, 24));
-            picker.protocol_type = ratatui_image::picker::ProtocolType::Iterm2;
-            picker
-        };
-        picker.guess_protocol();
         Self {
-            picker: Arc::new(RwLock::new(picker)),
+            picker: Arc::new(RwLock::new(picker())),
             paths,
         }
     }
@@ -52,12 +51,8 @@ impl<'a> Widget for Images<'a> {
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
             .split(area);
         let mut images = Vec::with_capacity(2);
-        for i in 0..2 {
-            images.push(Image::new(
-                self.picker.clone(),
-                self.paths[i].clone(),
-                chunks[i],
-            ));
+        for (i, &path) in self.paths[..2].iter().enumerate() {
+            images.push(Image::new(self.picker.clone(), path.clone(), chunks[i]));
         }
         for (i, image) in images.into_iter().enumerate() {
             image.render(chunks[i], buf);
@@ -65,7 +60,7 @@ impl<'a> Widget for Images<'a> {
     }
 }
 
-pub struct Grid<'a> {
+pub(crate) struct Grid<'a> {
     picker: Arc<RwLock<Picker>>,
     paths: &'a [PathBuf],
     heighlight: [bool; 9],
@@ -73,19 +68,8 @@ pub struct Grid<'a> {
 
 impl<'a> Grid<'a> {
     pub(crate) fn new(paths: &'a [PathBuf], heighlight: [bool; 9]) -> Self {
-        #[cfg(not(target_os = "windows"))]
-        let mut picker = ratatui_image::picker::Picker::from_termios()
-            .map_err(|_| anyhow::anyhow!("Failed to get the picker"))
-            .unwrap();
-        #[cfg(target_os = "windows")]
-        let mut picker = {
-            let mut picker = ratatui_image::picker::Picker::new((12, 24));
-            picker.protocol_type = ratatui_image::picker::ProtocolType::Iterm2;
-            picker
-        };
-        picker.guess_protocol();
         Self {
-            picker: Arc::new(RwLock::new(picker)),
+            picker: Arc::new(RwLock::new(picker())),
             paths,
             heighlight,
         }
@@ -131,11 +115,17 @@ impl<'a> Widget for Grid<'a> {
             })
             .collect::<Vec<_>>();
         let mut images = Vec::with_capacity(9);
-        for (i, path) in self.paths.iter().enumerate() {
+        for (i, path) in self.paths[..9.min(self.paths.len())].iter().enumerate() {
             images.push(Image::new(self.picker.clone(), path.clone(), grid[i]));
         }
         for (i, image) in images.into_iter().enumerate() {
             image.render(grid[i], buf);
+        }
+        // Preload the next images
+        if self.paths.len() > 9 {
+            for (i, path) in self.paths[9..].iter().enumerate() {
+                preload(self.picker.clone(), path.clone(), grid[i % 9]);
+            }
         }
     }
 }
@@ -148,52 +138,53 @@ impl Image {
     pub(crate) fn new(picker: Arc<RwLock<Picker>>, path: PathBuf, chunk: Rect) -> Self {
         let (tx, rx) = channel::<Box<dyn StatefulProtocol>>();
         thread::spawn(move || -> Result<()> {
+            let parker = {
+                let mut cache = CACHE.write().map_err(|_| anyhow!(CACHE_ERR))?;
+                cache.get_mut(&path).and_then(|line| line.parker.take())
+            };
+            if let Some(parker) = parker {
+                parker.park();
+            }
+            let p = Parker::new();
+            let u = p.unparker().clone();
             let hit = {
-                let cache = CACHE.read().map_err(|_| anyhow!(CACHE_ERR))?;
-                cache.contains(&path)
+                let mut cache = CACHE.write().map_err(|_| anyhow!(CACHE_ERR))?;
+                let hit = cache.pop(&path);
+                cache.put(
+                    path.clone(),
+                    CacheLine {
+                        data: None,
+                        parker: Some(p),
+                    },
+                );
+                hit
             };
             match hit {
-                true => {
-                    let resize = {
-                        let mut cache = CACHE.write().map_err(|_| anyhow!(CACHE_ERR))?;
-                        cache
-                            .get_mut(&path)
-                            .unwrap()
-                            .needs_resize(&RESIZE, chunk)
-                            .is_some()
-                    };
-                    match resize {
-                        true => {
-                            let mut protocol = {
-                                let mut cache = CACHE.write().map_err(|_| anyhow!(CACHE_ERR))?;
-                                cache.pop(&path).unwrap()
-                            };
-                            protocol.resize_encode(&RESIZE, None, chunk);
-                            let mut cache = CACHE.write().map_err(|_| anyhow!(CACHE_ERR))?;
-                            cache.put(path, protocol.clone());
-                            tx.send(protocol)?;
-                        }
-                        false => {
-                            let mut cache = CACHE.write().map_err(|_| anyhow!(CACHE_ERR))?;
-                            let protocol = cache.get(&path).unwrap();
-                            tx.send(protocol.clone())?;
-                        }
+                Some(mut line) => {
+                    if let Some(data) = &mut line.data {
+                        data.resize_encode(&RESIZE, None, chunk);
+                        tx.send(data.clone())?;
                     }
+                    let mut cache = CACHE.write().map_err(|_| anyhow!(CACHE_ERR))?;
+                    cache.put(path, line);
                 }
-                false => {
-                    let image = image::open(&path)?;
+                _ => {
+                    let image = image::open(&path).inspect_err(|_| u.unpark())?;
                     let mut image_fit_state = {
                         let mut picker = picker.write().map_err(|_| anyhow!(PICKER_ERR))?;
                         picker.new_resize_protocol(image)
                     };
                     image_fit_state.resize_encode(&RESIZE, None, chunk);
                     {
+                        tx.send(image_fit_state.clone())?;
                         let mut cache = CACHE.write().map_err(|_| anyhow!(PICKER_ERR))?;
-                        cache.put(path, image_fit_state.clone());
+                        if let Some(cache_line) = cache.get_mut(&path) {
+                            cache_line.data = Some(image_fit_state);
+                        }
                     }
-                    tx.send(image_fit_state)?;
                 }
             }
+            u.unpark();
             Ok(())
         });
         Self { rx }
@@ -210,4 +201,49 @@ impl Widget for Image {
             .render(area, buf),
         }
     }
+}
+
+/// Preload image to cache
+pub(crate) fn preload(picker: Arc<RwLock<Picker>>, path: PathBuf, chunk: Rect) {
+    thread::spawn(move || -> Result<()> {
+        let p = Parker::new();
+        let u = p.unparker().clone();
+        let hit = {
+            let mut cache = CACHE.write().map_err(|_| anyhow!(CACHE_ERR))?;
+            let hit = cache.pop(&path);
+            cache.put(
+                path.clone(),
+                CacheLine {
+                    data: None,
+                    parker: Some(p),
+                },
+            );
+            hit
+        };
+        match hit {
+            Some(mut line) => {
+                if let Some(data) = &mut line.data {
+                    data.resize_encode(&RESIZE, None, chunk);
+                }
+                let mut cache = CACHE.write().map_err(|_| anyhow!(CACHE_ERR))?;
+                cache.put(path, line);
+            }
+            None => {
+                let image = image::open(&path).inspect_err(|_| u.unpark())?;
+                let mut image_fit_state = {
+                    let mut picker = picker.write().map_err(|_| anyhow!(PICKER_ERR))?;
+                    picker.new_resize_protocol(image)
+                };
+                image_fit_state.resize_encode(&RESIZE, None, chunk);
+                {
+                    let mut cache = CACHE.write().map_err(|_| anyhow!(PICKER_ERR))?;
+                    if let Some(cache_line) = cache.get_mut(&path) {
+                        cache_line.data = Some(image_fit_state);
+                    }
+                }
+            }
+        }
+        u.unpark();
+        Ok(())
+    });
 }

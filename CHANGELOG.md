@@ -12,6 +12,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 ## [0.1.0-alpha34] - 2024-09-30
 
 - improve perf: `tagger` will cache the loaded images in memory
+- improve perf: `tagger` will pre-load images in memory
 
 ## [0.1.0-alpha33] - 2024-09-30
 

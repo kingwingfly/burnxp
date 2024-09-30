@@ -51,3 +51,18 @@ pub(crate) fn json_into<T: Serialize>(path: &PathBuf, data: &T) -> io::Result<()
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))
     })
 }
+
+pub(crate) fn picker() -> ratatui_image::picker::Picker {
+    #[cfg(not(target_os = "windows"))]
+    let mut picker = ratatui_image::picker::Picker::from_termios()
+        .map_err(|_| anyhow::anyhow!("Failed to get the picker"))
+        .unwrap();
+    #[cfg(target_os = "windows")]
+    let mut picker = {
+        let mut picker = ratatui_image::picker::Picker::new((12, 24));
+        picker.protocol_type = ratatui_image::picker::ProtocolType::Iterm2;
+        picker
+    };
+    picker.guess_protocol();
+    picker
+}

@@ -19,9 +19,9 @@ use std::{
 };
 
 #[derive(Debug, Default)]
-pub struct Picker {
+pub struct Picker<'a> {
     current_screen: CurrentScreen,
-    buffer: Vec<PathBuf>,
+    buffer: &'a [PathBuf],
     chosen: [bool; 9],
     page: usize,
     method: Method,
@@ -41,7 +41,7 @@ pub enum Method {
     Move,
 }
 
-impl Picker {
+impl<'a> Picker<'a> {
     pub fn new(method: Method, cache: PathBuf, from: PathBuf, to: PathBuf) -> Self {
         let images = walkdir::WalkDir::new(from)
             .into_iter()
@@ -65,7 +65,7 @@ impl Picker {
         }
     }
 
-    pub fn run(&mut self) -> Result<()> {
+    pub fn run(&'a mut self) -> Result<()> {
         let mut terminal = AutoDropTerminal::new()?;
         loop {
             PICKER_PROCESS
@@ -74,8 +74,10 @@ impl Picker {
             if 9 * self.page + 1 > self.images.len() {
                 self.current_screen = CurrentScreen::Finished;
             } else {
-                self.buffer = self.images.chunks(9).nth(self.page).unwrap().to_vec();
-                for (i, p) in self.buffer.iter().enumerate() {
+                let l = self.page * 9;
+                let r = (l + 18).min(self.images.len());
+                self.buffer = &self.images[l..r];
+                for (i, p) in self.buffer[..9.min(self.buffer.len())].iter().enumerate() {
                     if self.cache.contains(p) {
                         self.chosen[i] = true;
                     }
@@ -102,7 +104,7 @@ impl Picker {
                             _ if !self.buffer.is_empty() => match key.code {
                                 KeyCode::Char(c) if c.is_numeric() => {
                                     let i = c.to_digit(10).unwrap() as usize;
-                                    if i > 0 && i <= self.buffer.len() {
+                                    if i > 0 && i <= self.buffer.len().min(9) {
                                         self.chosen[i - 1] = !self.chosen[i - 1];
                                         if self.chosen[i - 1] {
                                             self.cache.insert(self.buffer[i - 1].clone());
@@ -111,7 +113,7 @@ impl Picker {
                                         }
                                     }
                                 }
-                                KeyCode::Char('j') => self.buffer.clear(), // empty means jump page
+                                KeyCode::Char('j') => self.buffer = &[], // empty means jump page
                                 _ => {
                                     match key.code {
                                         KeyCode::Enter | KeyCode::Right => self.page += 1,
@@ -119,7 +121,7 @@ impl Picker {
                                         _ => continue,
                                     }
                                     self.chosen = [false; 9];
-                                    self.buffer.clear();
+                                    self.buffer = &[];
                                     break 'l;
                                 }
                             },
@@ -202,7 +204,7 @@ impl Picker {
     }
 }
 
-impl WidgetRef for Picker {
+impl WidgetRef for Picker<'_> {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         if CurrentScreen::Exiting == self.current_screen {
             let area = centered_rect(60, 25, area);
@@ -227,7 +229,7 @@ impl WidgetRef for Picker {
         }
         .render(chunks[0], buf);
         match self.buffer.is_empty() {
-            false => Grid::new(self.buffer.as_slice(), self.chosen).render(chunks[1], buf),
+            false => Grid::new(self.buffer, self.chosen).render(chunks[1], buf),
             true => {
                 Title {
                     title: "The picking finished.".to_string(),

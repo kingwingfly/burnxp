@@ -3760,6 +3760,7 @@ dependencies = [
  "crossbeam",
  "crossterm 0.28.1",
  "image",
+ "lru",
  "mime_guess",
  "rand",
  "ratatui 0.28.1",

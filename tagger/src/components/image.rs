@@ -1,5 +1,6 @@
 use crate::components::Title;
 use anyhow::{anyhow, Result};
+use lru::LruCache;
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
@@ -7,10 +8,17 @@ use ratatui::{
     widgets::{Block, Borders, Widget},
 };
 use ratatui_image::{picker::Picker, protocol::StatefulProtocol, FilterType, Resize};
+use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::sync::mpsc::{channel, Receiver};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, LazyLock, RwLock};
 use std::thread;
+
+static CACHE: LazyLock<RwLock<LruCache<PathBuf, Box<dyn StatefulProtocol>>>> =
+    LazyLock::new(|| RwLock::new(LruCache::new(NonZeroUsize::new(45).unwrap())));
+static RESIZE: Resize = Resize::Fit(Some(FilterType::Lanczos3));
+const CACHE_ERR: &str = "Race condition of Cache RwLock";
+const PICKER_ERR: &str = "Race condition of PICKER_ERR RwLock";
 
 pub(crate) struct Images<'a> {
     picker: Arc<RwLock<Picker>>,
@@ -140,15 +148,52 @@ impl Image {
     pub(crate) fn new(picker: Arc<RwLock<Picker>>, path: PathBuf, chunk: Rect) -> Self {
         let (tx, rx) = channel::<Box<dyn StatefulProtocol>>();
         thread::spawn(move || -> Result<()> {
-            let image = image::open(path)?;
-            let mut image_fit_state = {
-                let mut picker = picker
-                    .write()
-                    .map_err(|_| anyhow!("Race condition of Picker RwLock"))?;
-                picker.new_resize_protocol(image)
+            let hit = {
+                let cache = CACHE.read().map_err(|_| anyhow!(CACHE_ERR))?;
+                cache.contains(&path)
             };
-            image_fit_state.resize_encode(&Resize::Fit(Some(FilterType::Triangle)), None, chunk);
-            tx.send(image_fit_state)?;
+            match hit {
+                true => {
+                    let resize = {
+                        let mut cache = CACHE.write().map_err(|_| anyhow!(CACHE_ERR))?;
+                        cache
+                            .get_mut(&path)
+                            .unwrap()
+                            .needs_resize(&RESIZE, chunk)
+                            .is_some()
+                    };
+                    match resize {
+                        true => {
+                            let mut protocol = {
+                                let mut cache = CACHE.write().map_err(|_| anyhow!(CACHE_ERR))?;
+                                cache.pop(&path).unwrap()
+                            };
+                            protocol.resize_encode(&RESIZE, None, chunk);
+                            let mut cache = CACHE.write().map_err(|_| anyhow!(CACHE_ERR))?;
+                            cache.put(path, protocol.clone());
+                            tx.send(protocol)?;
+                        }
+                        false => {
+                            let mut cache = CACHE.write().map_err(|_| anyhow!(CACHE_ERR))?;
+                            let protocol = cache.get(&path).unwrap();
+                            tx.send(protocol.clone())?;
+                        }
+                    }
+                }
+                false => {
+                    let image = image::open(&path)?;
+                    let mut image_fit_state = {
+                        let mut picker = picker.write().map_err(|_| anyhow!(PICKER_ERR))?;
+                        picker.new_resize_protocol(image)
+                    };
+                    image_fit_state.resize_encode(&RESIZE, None, chunk);
+                    {
+                        let mut cache = CACHE.write().map_err(|_| anyhow!(PICKER_ERR))?;
+                        cache.put(path, image_fit_state.clone());
+                    }
+                    tx.send(image_fit_state)?;
+                }
+            }
             Ok(())
         });
         Self { rx }

@@ -43,16 +43,15 @@ impl<'a> Widget for Images<'a> {
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
             .split(area);
-        let jhs = (0..2)
-            .map(|i| {
-                let path = self.paths[i].clone();
-                let picker = self.picker.clone();
-                thread::spawn(move || -> Result<Image> {
-                    let image = image::open(&path)?;
-                    Ok(Image::new(picker, image, path))
-                })
-            })
-            .collect::<Vec<_>>();
+        let mut jhs = Vec::with_capacity(2);
+        for i in 0..2 {
+            let path = self.paths[i].clone();
+            let picker = self.picker.clone();
+            jhs.push(thread::spawn(move || -> Result<Image> {
+                let image = image::open(&path)?;
+                Ok(Image::new(picker, image, path))
+            }))
+        }
         for (jh, &chunk) in jhs.into_iter().zip(chunks.iter()) {
             if let Ok(Ok(w)) = jh.join() {
                 w.render(chunk, buf);
@@ -113,18 +112,15 @@ impl<'a> Widget for Grid<'a> {
                     .collect::<Vec<_>>()
             })
             .collect::<Vec<_>>();
-        let jhs = self
-            .paths
-            .iter()
-            .map(|path| {
-                let path = path.clone();
-                let picker = self.picker.clone();
-                thread::spawn(move || -> Result<Image> {
-                    let image = image::open(&path)?;
-                    Ok(Image::new(picker, image, path.clone()))
-                })
-            })
-            .collect::<Vec<_>>();
+        let mut jhs = Vec::with_capacity(9);
+        for path in self.paths {
+            let path = path.clone();
+            let picker = self.picker.clone();
+            jhs.push(thread::spawn(move || -> Result<Image> {
+                let image = image::open(&path)?;
+                Ok(Image::new(picker, image, path.clone()))
+            }))
+        }
         for (i, jh) in jhs.into_iter().enumerate() {
             let block = Block::default()
                 .title(format!("{}", i + 1))

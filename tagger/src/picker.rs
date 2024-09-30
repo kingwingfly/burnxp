@@ -34,8 +34,8 @@ pub struct Picker {
 
 #[derive(Debug, Clone, Default, ValueEnum)]
 pub enum Method {
-    #[default]
     Cp,
+    #[default]
     SoftLink,
     HardLink,
     Move,
@@ -47,7 +47,7 @@ impl Picker {
             .into_iter()
             .filter_map(|res| res.ok())
             .filter_map(|e| match MimeGuess::from_path(e.path()).first() {
-                Some(mime) if mime.type_() == "image" => Some(e.into_path()),
+                Some(mime) if mime.type_() == "image" => e.into_path().canonicalize().ok(),
                 _ => None,
             })
             .collect::<Vec<_>>();
@@ -58,7 +58,6 @@ impl Picker {
         Self {
             method,
             to,
-            buffer: Vec::with_capacity(9),
             cache: json_from(&cache).unwrap_or_default(),
             cache_path: cache,
             images,
@@ -150,10 +149,12 @@ impl Picker {
                                     .filter_map(|res| res.ok())
                                     .filter_map(|e| {
                                         let path = e.into_path();
-                                        match self.cache.remove(&path) {
-                                            true => None,
-                                            false => Some(path),
+                                        if path.is_symlink()
+                                            && !self.cache.remove(&path.canonicalize().ok()?)
+                                        {
+                                            return Some(path);
                                         }
+                                        None
                                     })
                                     .for_each(|path| {
                                         fs::remove_file(path).ok();

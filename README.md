@@ -32,7 +32,7 @@ guarantee total order and O(nlogn) complexity)
 - L/R/U/D arrow keys for better/worse/much better/much worse
 - Sort, score and group pictures in json format
 - The user input will be cached so that user can continue from where he/she left off
-- `tagger pick` subcommand can help pick the images to be tagged
+- `tagger pick` subcommand can help pick the images to be tagged **(super fast image viewer in terminal)**
 - `tagger divide` subcommand can help divide the images into train-set and valid-set
 - `tagger observe` subcommand can help observe the distribution of scores
 

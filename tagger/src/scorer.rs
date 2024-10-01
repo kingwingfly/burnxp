@@ -136,6 +136,7 @@ impl Scorer {
                             }
                         }
                     },
+                    _ => unreachable!(),
                 }
                 break;
             }
@@ -204,7 +205,7 @@ impl WidgetRef for Scorer {
         match self.cmp {
             Some([ref p1, ref p2]) => {
                 // p2 is the old key in BTree, randomly choose from it for comparison.
-                Images::new(&[&p1[0], p2.random_one()]).render(chunks[1], buf);
+                Images::new([&p1[0], p2.random_one()]).render(chunks[1], buf);
             }
             None => {
                 Title {

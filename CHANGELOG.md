@@ -9,9 +9,12 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
-## [0.1.0-alpha35] - 2024-10-01
+## [0.1.0-alpha35] - 2024-10-02
 
 - improve piker: show path if load failed
+- fix bug: `tagger score` do not work properly in Kitty
+- improve perf: `tagger pick` now pre-load images following user input direction
+- bump deps
 
 ## [0.1.0-alpha34] - 2024-10-01
 

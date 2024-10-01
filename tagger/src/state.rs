@@ -13,6 +13,7 @@ pub(crate) static PICKER_PROCESS: LazyLock<PickerProcess> = LazyLock::new(Picker
 pub(crate) enum CurrentScreen {
     #[default]
     Main,
+    Popup,
     Finished,
     Exiting,
 }

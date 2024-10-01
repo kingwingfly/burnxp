@@ -1,8 +1,14 @@
+use image::DynamicImage;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use ratatui_image::picker::Picker;
+use ratatui_image::protocol::StatefulProtocol;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::io;
+use std::sync::atomic::Ordering;
 use std::{fs::File, path::PathBuf};
+
+use crate::state::PICKER_PROCESS;
 
 /// helper function to create a centered rect using up certain percentage of the available rect `r`
 pub(crate) fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
@@ -65,4 +71,106 @@ pub(crate) fn picker() -> ratatui_image::picker::Picker {
     };
     picker.guess_protocol();
     picker
+}
+
+pub(crate) struct MyPicker {
+    inner: Picker,
+    count: u8,
+}
+
+impl MyPicker {
+    pub(crate) fn new() -> Self {
+        Self {
+            inner: picker(),
+            count: 0,
+        }
+    }
+
+    pub(crate) fn new_resize_protocol(&mut self, image: DynamicImage) -> Box<dyn StatefulProtocol> {
+        if self.count == 255 {
+            self.count = 0;
+            self.inner = picker();
+        } else {
+            self.count += 1;
+        }
+        self.inner.new_resize_protocol(image)
+    }
+}
+
+#[derive(Debug, Default)]
+enum PreLoadDirection {
+    #[default]
+    Forward,
+    Backward,
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct Items<T, const N: usize> {
+    page: usize,
+    direction: PreLoadDirection,
+    items: Vec<T>,
+}
+
+impl<T, const N: usize> Items<T, N> {
+    pub(crate) fn new(items: Vec<T>) -> Items<T, N> {
+        PICKER_PROCESS
+            .total
+            .fetch_add(items.len(), Ordering::Relaxed);
+        Self {
+            items,
+            page: 0,
+            direction: PreLoadDirection::default(),
+        }
+    }
+
+    pub(crate) fn page(&self) -> usize {
+        self.page
+    }
+
+    pub(crate) fn inc_page(&mut self) -> bool {
+        self.direction = PreLoadDirection::Forward;
+        if (self.page + 1) * N < self.items.len() {
+            self.page += 1;
+            false
+        } else {
+            true
+        }
+    }
+
+    pub(crate) fn dec_page(&mut self) {
+        if self.page > 0 {
+            self.page -= 1;
+        }
+        self.direction = PreLoadDirection::Backward;
+    }
+
+    pub(crate) fn set_page(&mut self, page: usize) {
+        let page = page.min(self.items.len().saturating_sub(1) / N);
+        self.page = page;
+    }
+
+    pub(crate) fn current_items(&self) -> &[T] {
+        PICKER_PROCESS
+            .finished
+            .store(N * self.page, Ordering::Relaxed);
+        let l = self.page * N;
+        let r = (self.page + 1) * N;
+        &self.items[l..r.min(self.items.len())]
+    }
+
+    pub(crate) fn preload_items(&self) -> &[T] {
+        match self.direction {
+            PreLoadDirection::Forward if (self.page + 1) * N < self.items.len() => {
+                let l = (self.page + 1) * N;
+                let r = (self.page + 2) * N;
+                &self.items[l..r.min(self.items.len())]
+            }
+            PreLoadDirection::Backward if self.page > 1 => {
+                let l = (self.page - 1) * N;
+                let r = self.page * N;
+                &self.items[l..r.min(self.items.len())]
+            }
+            _ => &[],
+        }
+    }
 }

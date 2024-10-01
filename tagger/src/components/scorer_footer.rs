@@ -47,6 +47,7 @@ impl Widget for TaggerNavigation {
                     Span::styled("Finished", Style::default().fg(Color::Green))
                 }
                 CurrentScreen::Exiting => Span::styled("Exiting", Style::default().fg(Color::Red)),
+                _ => unreachable!(),
             },
             Span::styled(" | ", Style::default().fg(Color::White)),
             match self.current_screen {
@@ -61,6 +62,7 @@ impl Widget for TaggerNavigation {
                 CurrentScreen::Exiting => {
                     Span::styled("Exiting", Style::default().fg(Color::LightRed))
                 }
+                _ => unreachable!(),
             },
         ];
         let mode_footer = Paragraph::new(Line::from(current_navigation_text))
@@ -84,6 +86,7 @@ impl Widget for TaggerHint {
                     "Are you sure you want to exit? (y/n)",
                     Style::default().fg(Color::LightRed),
                 ),
+                _ => unreachable!(),
             }
         };
         let key_notes_footer = Paragraph::new(hint).block(Block::default().borders(Borders::ALL));

@@ -1,4 +1,4 @@
-use crate::{components::Title, utils::picker};
+use crate::{components::Title, utils::MyPicker};
 use anyhow::{anyhow, Result};
 use crossbeam::sync::Parker;
 use lru::LruCache;
@@ -8,39 +8,40 @@ use ratatui::{
     style::{Color, Style},
     widgets::{Block, Borders, Widget},
 };
-use ratatui_image::{picker::Picker, protocol::StatefulProtocol, FilterType, Resize};
+use ratatui_image::{protocol::StatefulProtocol, FilterType, Resize};
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::sync::mpsc::{channel, Receiver};
-use std::sync::{Arc, LazyLock, RwLock};
+use std::sync::{LazyLock, RwLock};
 use std::thread;
+
+static CACHE: LazyLock<RwLock<LruCache<PathBuf, CacheLine>>> = LazyLock::new(|| {
+    RwLock::new(LruCache::new(
+        NonZeroUsize::new(CACHE_SIZE as usize).unwrap(),
+    ))
+});
+static PICKER: LazyLock<RwLock<MyPicker>> = LazyLock::new(|| RwLock::new(MyPicker::new()));
+
+const CACHE_SIZE: u8 = 45;
+const RESIZE: Resize = Resize::Fit(Some(FilterType::Lanczos3));
+const CACHE_ERR: &str = "Race condition of Cache RwLock";
+const PICKER_ERR: &str = "Race condition of PICKER_ERR RwLock";
 
 struct CacheLine {
     data: Option<Box<dyn StatefulProtocol>>,
     parker: Option<Parker>,
 }
 
-// Safety: we won't use the parker's reference
+// Safety: we won't use the Parker's reference
 unsafe impl Sync for CacheLine {}
 
-static CACHE: LazyLock<RwLock<LruCache<PathBuf, CacheLine>>> =
-    LazyLock::new(|| RwLock::new(LruCache::new(NonZeroUsize::new(45).unwrap())));
-
-const RESIZE: Resize = Resize::Fit(Some(FilterType::Lanczos3));
-const CACHE_ERR: &str = "Race condition of Cache RwLock";
-const PICKER_ERR: &str = "Race condition of PICKER_ERR RwLock";
-
 pub(crate) struct Images<'a> {
-    picker: Arc<RwLock<Picker>>,
-    paths: &'a [&'a PathBuf; 2],
+    paths: [&'a PathBuf; 2],
 }
 
 impl<'a> Images<'a> {
-    pub(crate) fn new(paths: &'a [&'a PathBuf; 2]) -> Self {
-        Self {
-            picker: Arc::new(RwLock::new(picker())),
-            paths,
-        }
+    pub(crate) fn new(paths: [&'a PathBuf; 2]) -> Self {
+        Self { paths }
     }
 }
 
@@ -52,7 +53,7 @@ impl<'a> Widget for Images<'a> {
             .split(area);
         let mut images = Vec::with_capacity(2);
         for (i, &path) in self.paths[..2].iter().enumerate() {
-            images.push(Image::new(self.picker.clone(), path.clone(), chunks[i]));
+            images.push(Image::new(path.clone(), chunks[i]));
         }
         for (i, image) in images.into_iter().enumerate() {
             image.render(chunks[i], buf);
@@ -61,16 +62,16 @@ impl<'a> Widget for Images<'a> {
 }
 
 pub(crate) struct Grid<'a> {
-    picker: Arc<RwLock<Picker>>,
-    paths: &'a [PathBuf],
+    cur: &'a [PathBuf],
+    pre: &'a [PathBuf],
     heighlight: [bool; 9],
 }
 
 impl<'a> Grid<'a> {
-    pub(crate) fn new(paths: &'a [PathBuf], heighlight: [bool; 9]) -> Self {
+    pub(crate) fn new(cur: &'a [PathBuf], pre: &'a [PathBuf], heighlight: [bool; 9]) -> Self {
         Self {
-            picker: Arc::new(RwLock::new(picker())),
-            paths,
+            cur,
+            pre,
             heighlight,
         }
     }
@@ -115,17 +116,15 @@ impl<'a> Widget for Grid<'a> {
             })
             .collect::<Vec<_>>();
         let mut images = Vec::with_capacity(9);
-        for (i, path) in self.paths[..9.min(self.paths.len())].iter().enumerate() {
-            images.push(Image::new(self.picker.clone(), path.clone(), grid[i]));
+        for (i, path) in self.cur.iter().enumerate() {
+            images.push(Image::new(path.clone(), grid[i]));
         }
         for (i, image) in images.into_iter().enumerate() {
             image.render(grid[i], buf);
         }
         // Preload the next images
-        if self.paths.len() > 9 {
-            for (i, path) in self.paths[9..].iter().enumerate() {
-                preload(self.picker.clone(), path.clone(), grid[i % 9]);
-            }
+        for (i, path) in self.pre.iter().enumerate() {
+            preload(path.clone(), grid[i % 9]);
         }
     }
 }
@@ -136,7 +135,7 @@ struct Image {
 }
 
 impl Image {
-    pub(crate) fn new(picker: Arc<RwLock<Picker>>, path: PathBuf, chunk: Rect) -> Self {
+    pub(crate) fn new(path: PathBuf, chunk: Rect) -> Self {
         let (tx, rx) = channel::<Box<dyn StatefulProtocol>>();
         let path_c = path.clone();
         thread::spawn(move || -> Result<()> {
@@ -173,7 +172,7 @@ impl Image {
                 _ => {
                     let image = image::open(&path).inspect_err(|_| u.unpark())?;
                     let mut image_fit_state = {
-                        let mut picker = picker.write().map_err(|_| anyhow!(PICKER_ERR))?;
+                        let mut picker = PICKER.write().map_err(|_| anyhow!(PICKER_ERR))?;
                         picker.new_resize_protocol(image)
                     };
                     image_fit_state.resize_encode(&RESIZE, None, chunk);
@@ -206,7 +205,7 @@ impl Widget for Image {
 }
 
 /// Preload image to cache
-pub(crate) fn preload(picker: Arc<RwLock<Picker>>, path: PathBuf, chunk: Rect) {
+fn preload(path: PathBuf, chunk: Rect) {
     thread::spawn(move || -> Result<()> {
         let p = Parker::new();
         let u = p.unparker().clone();
@@ -233,7 +232,7 @@ pub(crate) fn preload(picker: Arc<RwLock<Picker>>, path: PathBuf, chunk: Rect) {
             None => {
                 let image = image::open(&path).inspect_err(|_| u.unpark())?;
                 let mut image_fit_state = {
-                    let mut picker = picker.write().map_err(|_| anyhow!(PICKER_ERR))?;
+                    let mut picker = PICKER.write().map_err(|_| anyhow!(PICKER_ERR))?;
                     picker.new_resize_protocol(image)
                 };
                 image_fit_state.resize_encode(&RESIZE, None, chunk);

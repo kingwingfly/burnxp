@@ -1,8 +1,8 @@
 use crate::{
     components::{Grid, NumInput, PickerFooter, Quit, Title},
-    state::{CurrentScreen, PICKER_PROCESS},
+    state::CurrentScreen,
     terminal::AutoDropTerminal,
-    utils::{centered_rect, json_from, json_into},
+    utils::{centered_rect, json_from, json_into, Items},
 };
 use anyhow::Result;
 use clap::ValueEnum;
@@ -13,20 +13,17 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     widgets::{Widget, WidgetRef},
 };
-use std::{
-    collections::HashSet, fs, path::PathBuf, sync::atomic::Ordering as AtomicOrdering,
-    time::Duration,
-};
+use std::{collections::HashSet, fs, path::PathBuf, time::Duration};
 
 #[derive(Debug, Default)]
-pub struct Picker<'a> {
+pub struct Picker {
     current_screen: CurrentScreen,
-    buffer: &'a [PathBuf],
-    chosen: [bool; 9],
-    page: usize,
+    chosen: [bool; 9], // flags
+    items: Items<PathBuf, 9>,
+    /// file ops method
     method: Method,
+    /// target directory to move images to
     to: PathBuf,
-    images: Vec<PathBuf>,
     /// cache those picked
     cache: HashSet<PathBuf>,
     cache_path: PathBuf,
@@ -41,7 +38,7 @@ pub enum Method {
     Move,
 }
 
-impl<'a> Picker<'a> {
+impl Picker {
     pub fn new(method: Method, cache: PathBuf, from: PathBuf, to: PathBuf) -> Self {
         let images = walkdir::WalkDir::new(from)
             .into_iter()
@@ -51,36 +48,22 @@ impl<'a> Picker<'a> {
                 _ => None,
             })
             .collect::<Vec<_>>();
-        PICKER_PROCESS
-            .total
-            .store(images.len(), AtomicOrdering::Relaxed);
-
         Self {
             method,
             to,
+            items: Items::new(images),
             cache: json_from(&cache).unwrap_or_default(),
             cache_path: cache,
-            images,
             ..Default::default()
         }
     }
 
-    pub fn run(&'a mut self) -> Result<()> {
+    pub fn run(&mut self) -> Result<()> {
         let mut terminal = AutoDropTerminal::new()?;
         loop {
-            PICKER_PROCESS
-                .finished
-                .store(9 * self.page, AtomicOrdering::Relaxed);
-            if 9 * self.page + 1 > self.images.len() {
-                self.current_screen = CurrentScreen::Finished;
-            } else {
-                let l = self.page * 9;
-                let r = (l + 18).min(self.images.len());
-                self.buffer = &self.images[l..r];
-                for (i, p) in self.buffer[..9.min(self.buffer.len())].iter().enumerate() {
-                    if self.cache.contains(p) {
-                        self.chosen[i] = true;
-                    }
+            for (i, p) in self.items.current_items().iter().enumerate() {
+                if self.cache.contains(p) {
+                    self.chosen[i] = true;
                 }
             }
 
@@ -98,40 +81,43 @@ impl<'a> Picker<'a> {
                     }
                     match self.current_screen {
                         CurrentScreen::Main => match key.code {
-                            KeyCode::Char('q') => {
-                                self.current_screen = CurrentScreen::Exiting;
+                            KeyCode::Char('q') => self.current_screen = CurrentScreen::Exiting,
+                            KeyCode::Char(c) if c.is_numeric() => {
+                                let cur = self.items.current_items();
+                                let i = c.to_digit(10).unwrap() as usize;
+                                if i > 0 && i <= cur.len() {
+                                    self.chosen[i - 1] = !self.chosen[i - 1];
+                                    if self.chosen[i - 1] {
+                                        self.cache.insert(cur[i - 1].clone());
+                                    } else {
+                                        self.cache.remove(&cur[i - 1]);
+                                    }
+                                }
                             }
-                            _ if !self.buffer.is_empty() => match key.code {
-                                KeyCode::Char(c) if c.is_numeric() => {
-                                    let i = c.to_digit(10).unwrap() as usize;
-                                    if i > 0 && i <= self.buffer.len().min(9) {
-                                        self.chosen[i - 1] = !self.chosen[i - 1];
-                                        if self.chosen[i - 1] {
-                                            self.cache.insert(self.buffer[i - 1].clone());
-                                        } else {
-                                            self.cache.remove(&self.buffer[i - 1]);
+                            KeyCode::Char('j') => self.current_screen = CurrentScreen::Popup,
+                            _ => {
+                                match key.code {
+                                    KeyCode::Enter | KeyCode::Right => {
+                                        if self.items.inc_page() {
+                                            self.current_screen = CurrentScreen::Finished;
+                                            break;
                                         }
                                     }
+                                    KeyCode::Left => self.items.dec_page(),
+                                    _ => continue,
                                 }
-                                KeyCode::Char('j') => self.buffer = &[], // empty means jump page
-                                _ => {
-                                    match key.code {
-                                        KeyCode::Enter | KeyCode::Right => self.page += 1,
-                                        KeyCode::Left => self.page = self.page.saturating_sub(1),
-                                        _ => continue,
-                                    }
-                                    self.chosen = [false; 9];
-                                    self.buffer = &[];
-                                    break 'l;
-                                }
-                            },
-                            KeyCode::Char(c) if c.is_numeric() => {
-                                self.page = self.page * 10 + c.to_digit(10).unwrap() as usize;
+                                self.chosen = [false; 9];
+                                break 'l;
                             }
-                            KeyCode::Backspace => self.page /= 10,
+                        },
+                        CurrentScreen::Popup => match key.code {
+                            KeyCode::Char(c) if c.is_numeric() => {
+                                self.items.set_page(
+                                    self.items.page() * 10 + c.to_digit(10).unwrap() as usize,
+                                );
+                            }
+                            KeyCode::Backspace => self.items.set_page(self.items.page() / 10),
                             KeyCode::Enter => {
-                                self.page =
-                                    self.page.clamp(0, self.images.len().saturating_sub(1) / 9);
                                 self.current_screen = CurrentScreen::Main;
                                 self.chosen = [false; 9];
                                 break 'l;
@@ -189,12 +175,7 @@ impl<'a> Picker<'a> {
                             KeyCode::Char('Y') => {
                                 return Ok(());
                             }
-                            _ => {
-                                self.current_screen = match self.buffer.is_empty() {
-                                    false => CurrentScreen::Main,
-                                    true => CurrentScreen::Finished,
-                                }
-                            }
+                            _ => self.current_screen = CurrentScreen::Main,
                         },
                     }
                     break;
@@ -204,16 +185,19 @@ impl<'a> Picker<'a> {
     }
 }
 
-impl WidgetRef for Picker<'_> {
+impl WidgetRef for Picker {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         if CurrentScreen::Exiting == self.current_screen {
             let area = centered_rect(60, 25, area);
             Quit.render(area, buf);
             return;
         }
-        if CurrentScreen::Main == self.current_screen && self.buffer.is_empty() {
+        if CurrentScreen::Popup == self.current_screen {
             let area = centered_rect(60, 25, area);
-            NumInput { num: self.page }.render(area, buf);
+            NumInput {
+                num: self.items.page(),
+            }
+            .render(area, buf);
             return;
         }
         let chunks = Layout::default()
@@ -228,14 +212,18 @@ impl WidgetRef for Picker<'_> {
             title: "Picker".to_string(),
         }
         .render(chunks[0], buf);
-        match self.buffer.is_empty() {
-            false => Grid::new(self.buffer, self.chosen).render(chunks[1], buf),
-            true => {
-                Title {
-                    title: "The picking finished.".to_string(),
-                }
-                .render(chunks[1], buf);
+        if CurrentScreen::Main == self.current_screen {
+            Grid::new(
+                self.items.current_items(),
+                self.items.preload_items(),
+                self.chosen,
+            )
+            .render(chunks[1], buf)
+        } else {
+            Title {
+                title: "The picking finished.".to_string(),
             }
+            .render(chunks[1], buf);
         }
         PickerFooter {
             current_screen: self.current_screen,

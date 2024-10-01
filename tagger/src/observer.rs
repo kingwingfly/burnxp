@@ -58,7 +58,7 @@ impl Observer {
                         }
                         _ => self.current_screen = CurrentScreen::Main,
                     },
-                    CurrentScreen::Finished => unreachable!(),
+                    _ => unreachable!(),
                 }
                 break;
             }

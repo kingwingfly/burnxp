@@ -132,11 +132,13 @@ impl<'a> Widget for Grid<'a> {
 
 struct Image {
     rx: Receiver<Box<dyn StatefulProtocol>>,
+    path: PathBuf,
 }
 
 impl Image {
     pub(crate) fn new(picker: Arc<RwLock<Picker>>, path: PathBuf, chunk: Rect) -> Self {
         let (tx, rx) = channel::<Box<dyn StatefulProtocol>>();
+        let path_c = path.clone();
         thread::spawn(move || -> Result<()> {
             let parker = {
                 let mut cache = CACHE.write().map_err(|_| anyhow!(CACHE_ERR))?;
@@ -187,7 +189,7 @@ impl Image {
             u.unpark();
             Ok(())
         });
-        Self { rx }
+        Self { rx, path: path_c }
     }
 }
 
@@ -195,8 +197,8 @@ impl Widget for Image {
     fn render(self, area: Rect, buf: &mut Buffer) {
         match self.rx.recv() {
             Ok(mut protocol) => protocol.render(area, buf),
-            Err(e) => Title {
-                title: format!("Failed to render image: {e}"),
+            Err(_) => Title {
+                title: format!("Failed to render image: {}", self.path.display()),
             }
             .render(area, buf),
         }

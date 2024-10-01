@@ -22,6 +22,7 @@ static CACHE: LazyLock<RwLock<LruCache<PathBuf, CacheLine>>> = LazyLock::new(|| 
 });
 static PICKER: LazyLock<RwLock<MyPicker>> = LazyLock::new(|| RwLock::new(MyPicker::new()));
 
+// Should less than 256, or id collision may happen in Kitty terminal emulator
 const CACHE_SIZE: u8 = 45;
 const RESIZE: Resize = Resize::Fit(Some(FilterType::Lanczos3));
 const CACHE_ERR: &str = "Race condition of Cache RwLock";
@@ -129,7 +130,7 @@ impl<'a> Widget for Grid<'a> {
     }
 }
 
-struct Image {
+pub(crate) struct Image {
     rx: Receiver<Box<dyn StatefulProtocol>>,
     path: PathBuf,
 }

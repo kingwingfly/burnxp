@@ -1,19 +1,18 @@
 use crate::{
-    components::{Grid, NumInput, PickerFooter, Quit, Title},
-    state::CurrentScreen,
+    components::{Grid, Input, PickerFooter, Quit, Title},
+    state::{CurrentScreen, PROCESS},
     terminal::AutoDropTerminal,
-    utils::{centered_rect, json_from, json_into, Items},
+    utils::{centered_rect, images_walk, json_from, json_into, Items},
 };
 use anyhow::Result;
 use clap::ValueEnum;
 use crossterm::event::{self, Event as TermEvent, KeyCode, KeyEventKind};
-use mime_guess::MimeGuess;
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
     widgets::{Widget, WidgetRef},
 };
-use std::{collections::HashSet, fs, path::PathBuf, time::Duration};
+use std::{collections::HashSet, fs, path::PathBuf, sync::atomic::Ordering, time::Duration};
 
 #[derive(Debug, Default)]
 pub struct Picker {
@@ -40,14 +39,8 @@ pub enum Method {
 
 impl Picker {
     pub fn new(method: Method, cache: PathBuf, from: PathBuf, to: PathBuf) -> Self {
-        let images = walkdir::WalkDir::new(from)
-            .into_iter()
-            .filter_map(|res| res.ok())
-            .filter_map(|e| match MimeGuess::from_path(e.path()).first() {
-                Some(mime) if mime.type_() == "image" => e.into_path().canonicalize().ok(),
-                _ => None,
-            })
-            .collect::<Vec<_>>();
+        let images = images_walk(from);
+        PROCESS.total.fetch_add(images.len(), Ordering::Relaxed);
         Self {
             method,
             to,
@@ -61,6 +54,9 @@ impl Picker {
     pub fn run(&mut self) -> Result<()> {
         let mut terminal = AutoDropTerminal::new()?;
         loop {
+            PROCESS
+                .finished
+                .store(9 * self.items.page(), Ordering::Relaxed);
             for (i, p) in self.items.current_items().iter().enumerate() {
                 if self.cache.contains(p) {
                     self.chosen[i] = true;
@@ -94,7 +90,7 @@ impl Picker {
                                     }
                                 }
                             }
-                            KeyCode::Char('j') => self.current_screen = CurrentScreen::Popup,
+                            KeyCode::Char('j') => self.current_screen = CurrentScreen::Popup(0),
                             _ => {
                                 match key.code {
                                     KeyCode::Enter | KeyCode::Right => {
@@ -110,7 +106,7 @@ impl Picker {
                                 break 'l;
                             }
                         },
-                        CurrentScreen::Popup => match key.code {
+                        CurrentScreen::Popup(_) => match key.code {
                             KeyCode::Char(c) if c.is_numeric() => {
                                 self.items.set_page(
                                     self.items.page() * 10 + c.to_digit(10).unwrap() as usize,
@@ -192,12 +188,9 @@ impl WidgetRef for Picker {
             Quit.render(area, buf);
             return;
         }
-        if CurrentScreen::Popup == self.current_screen {
+        if let CurrentScreen::Popup(_) = self.current_screen {
             let area = centered_rect(60, 25, area);
-            NumInput {
-                num: self.items.page(),
-            }
-            .render(area, buf);
+            Input::new("Page to go", self.items.page()).render(area, buf);
             return;
         }
         let chunks = Layout::default()

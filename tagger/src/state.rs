@@ -6,25 +6,26 @@ use std::{
     },
 };
 
-pub(crate) static TAGGER_PROCESS: LazyLock<TaggerProcess> = LazyLock::new(TaggerProcess::default);
-pub(crate) static PICKER_PROCESS: LazyLock<PickerProcess> = LazyLock::new(PickerProcess::default);
+pub(crate) static PROCESS_WITH_COMPLEXITY: LazyLock<ProcessWithComplexity> =
+    LazyLock::new(ProcessWithComplexity::default);
+pub(crate) static PROCESS: LazyLock<Process> = LazyLock::new(Process::default);
 
 #[derive(Default, Debug, PartialEq, Clone, Copy)]
 pub(crate) enum CurrentScreen {
     #[default]
     Main,
-    Popup,
+    Popup(u8),
     Finished,
     Exiting,
 }
 
 #[derive(Default)]
-pub(crate) struct TaggerProcess {
+pub(crate) struct ProcessWithComplexity {
     pub finished: AtomicUsize,
     pub total: AtomicUsize,
 }
 
-impl fmt::Display for TaggerProcess {
+impl fmt::Display for ProcessWithComplexity {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let finished = self.finished.load(Ordering::Relaxed);
         let total = self.total.load(Ordering::Relaxed);
@@ -45,12 +46,12 @@ fn complexity(finished: usize, total: usize) -> usize {
 }
 
 #[derive(Default)]
-pub(crate) struct PickerProcess {
+pub(crate) struct Process {
     pub finished: AtomicUsize,
     pub total: AtomicUsize,
 }
 
-impl fmt::Display for PickerProcess {
+impl fmt::Display for Process {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let finished = self.finished.load(Ordering::Relaxed);
         let total = self.total.load(Ordering::Relaxed);

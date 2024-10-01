@@ -2,7 +2,7 @@ use crate::components::{Images, Quit, ScorerFooter, Title};
 use crate::event::{ComparePair, Event, CMPDISPATCH};
 use crate::matrix::Matrix;
 use crate::ordpaths::{CompareResult, OrdPaths};
-use crate::state::{CurrentScreen, TAGGER_PROCESS};
+use crate::state::{CurrentScreen, PROCESS_WITH_COMPLEXITY};
 use crate::terminal::AutoDropTerminal;
 use crate::utils::{bincode_from, bincode_into, centered_rect, json_into};
 use anyhow::Result;
@@ -41,7 +41,7 @@ impl Scorer {
                 _ => None,
             })
             .collect::<Vec<_>>();
-        TAGGER_PROCESS
+        PROCESS_WITH_COMPLEXITY
             .total
             .store(images.len(), AtomicOrdering::Relaxed);
         let images_c = images.clone();
@@ -49,7 +49,7 @@ impl Scorer {
             let mut btree: BTreeSet<OrdPaths> = BTreeSet::new();
             for paths in images_c.into_iter() {
                 btree.insert(paths);
-                TAGGER_PROCESS
+                PROCESS_WITH_COMPLEXITY
                     .finished
                     .fetch_add(1, AtomicOrdering::Relaxed);
             }

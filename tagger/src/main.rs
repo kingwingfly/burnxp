@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::{CommandFactory as _, Parser, Subcommand};
 use clap_complete::{generate, Shell};
 use std::path::PathBuf;
-use tagger::{Divider, Method, Observer, Picker, Scorer};
+use tagger::{Divider, Method, Observer, Picker, Scorer, Tagger};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
@@ -21,6 +21,14 @@ enum SubCmd {
         /// The output file path
         #[clap(short, long, default_value = "scores.json")]
         output: PathBuf,
+        /// The root directory to scan for images
+        root: PathBuf,
+    },
+    /// Tag image-groups
+    Tag {
+        /// The file to store the tag results
+        #[clap(short, long, default_value = "tags.json")]
+        cache: PathBuf,
         /// The root directory to scan for images
         root: PathBuf,
     },
@@ -76,6 +84,10 @@ fn main() -> Result<()> {
         } => {
             let mut scorer = Scorer::new(root, output, cache);
             scorer.run()?;
+        }
+        SubCmd::Tag { cache, root } => {
+            let mut tagger = Tagger::new(root, cache);
+            tagger.run()?;
         }
         SubCmd::Pick {
             cache,

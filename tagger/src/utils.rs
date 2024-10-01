@@ -1,14 +1,13 @@
 use image::DynamicImage;
+use mime_guess::MimeGuess;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui_image::picker::Picker;
 use ratatui_image::protocol::StatefulProtocol;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::io;
-use std::sync::atomic::Ordering;
+use std::path::Path;
 use std::{fs::File, path::PathBuf};
-
-use crate::state::PICKER_PROCESS;
 
 /// helper function to create a centered rect using up certain percentage of the available rect `r`
 pub(crate) fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
@@ -58,7 +57,18 @@ pub(crate) fn json_into<T: Serialize>(path: &PathBuf, data: &T) -> io::Result<()
     })
 }
 
-pub(crate) fn picker() -> ratatui_image::picker::Picker {
+pub(crate) fn images_walk(root: impl AsRef<Path>) -> Vec<PathBuf> {
+    walkdir::WalkDir::new(root)
+        .into_iter()
+        .filter_map(|res| res.ok())
+        .filter_map(|e| match MimeGuess::from_path(e.path()).first() {
+            Some(mime) if mime.type_() == "image" => e.into_path().canonicalize().ok(),
+            _ => None,
+        })
+        .collect()
+}
+
+fn picker() -> ratatui_image::picker::Picker {
     #[cfg(not(target_os = "windows"))]
     let mut picker = ratatui_image::picker::Picker::from_termios()
         .map_err(|_| anyhow::anyhow!("Failed to get the picker"))
@@ -104,6 +114,7 @@ enum PreLoadDirection {
     Backward,
 }
 
+/// N: the page size
 #[derive(Debug, Default)]
 pub(crate) struct Items<T, const N: usize> {
     page: usize,
@@ -113,9 +124,6 @@ pub(crate) struct Items<T, const N: usize> {
 
 impl<T, const N: usize> Items<T, N> {
     pub(crate) fn new(items: Vec<T>) -> Items<T, N> {
-        PICKER_PROCESS
-            .total
-            .fetch_add(items.len(), Ordering::Relaxed);
         Self {
             items,
             page: 0,
@@ -149,15 +157,14 @@ impl<T, const N: usize> Items<T, N> {
         self.page = page;
     }
 
+    /// Return Items in current page
     pub(crate) fn current_items(&self) -> &[T] {
-        PICKER_PROCESS
-            .finished
-            .store(N * self.page, Ordering::Relaxed);
         let l = self.page * N;
         let r = (self.page + 1) * N;
         &self.items[l..r.min(self.items.len())]
     }
 
+    /// Return Items in next page according to the prediction
     pub(crate) fn preload_items(&self) -> &[T] {
         match self.direction {
             PreLoadDirection::Forward if (self.page + 1) * N < self.items.len() => {
@@ -172,5 +179,20 @@ impl<T, const N: usize> Items<T, N> {
             }
             _ => &[],
         }
+    }
+
+    pub(crate) fn all_items(&self) -> &[T] {
+        &self.items
+    }
+
+    pub(crate) fn push(&mut self, item: T) {
+        self.items.push(item);
+    }
+
+    pub(crate) fn remove(&mut self, item: &T)
+    where
+        T: PartialEq,
+    {
+        self.items.retain(|x| x != item);
     }
 }

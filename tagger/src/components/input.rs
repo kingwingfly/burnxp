@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
@@ -5,20 +7,29 @@ use ratatui::{
 };
 
 #[derive(Debug)]
-pub(crate) struct NumInput {
-    pub num: usize,
+pub(crate) struct Input {
+    title: String,
+    content: String,
 }
 
-impl Widget for NumInput {
+impl Input {
+    pub fn new(title: impl Display, content: impl Display) -> Self {
+        Self {
+            title: format!("{}", title),
+            content: format!("{}", content),
+        }
+    }
+}
+
+impl Widget for Input {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
             .split(area);
-        let title = Paragraph::new("Page to go:").block(Block::default().borders(Borders::ALL));
+        let title = Paragraph::new(self.title).block(Block::default().borders(Borders::ALL));
         title.render(chunks[0], buf);
-        let input =
-            Paragraph::new(format!("{}", self.num)).block(Block::default().borders(Borders::ALL));
+        let input = Paragraph::new(self.content).block(Block::default().borders(Borders::ALL));
         input.render(chunks[1], buf);
     }
 }

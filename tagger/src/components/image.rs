@@ -198,7 +198,7 @@ impl Widget for Image {
 }
 
 /// Preload image to cache
-fn preload(path: PathBuf, chunk: Rect) {
+pub(crate) fn preload(path: PathBuf, chunk: Rect) {
     thread::spawn(move || -> Result<()> {
         let p = Parker::new();
         let u = p.unparker().clone();

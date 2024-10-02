@@ -1,5 +1,5 @@
 use crate::{
-    components::{CheckBox, Image, Input, Quit, TaggerFooter, Title},
+    components::{preload, CheckBox, Image, Input, Quit, TaggerFooter, Title},
     state::{CurrentScreen, PROCESS},
     terminal::AutoDropTerminal,
     utils::{centered_rect, images_walk, json_from, json_into, Items},
@@ -429,6 +429,7 @@ impl WidgetRef for Tagger {
                 .constraints([Constraint::Percentage(70), Constraint::Fill(1)])
                 .split(chunks[1]);
             Image::new(self.items.current_items()[0].clone(), chunks[0]).render(chunks[0], buf);
+            preload(self.items.preload_items()[0].clone(), chunks[0]);
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([Constraint::Ratio(1, 2); 2])

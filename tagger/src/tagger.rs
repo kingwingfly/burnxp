@@ -83,7 +83,9 @@ where
 {
     /// Retrieve Items from the deserilized Cache
     fn from(value: &Cache<T>) -> Self {
-        Items::new(value.tags.iter().map(Into::into).collect())
+        let mut tags: Vec<Tag> = value.tags.iter().map(Into::into).collect();
+        tags.sort_by_key(|t| -t.score);
+        Items::new(tags)
     }
 }
 

@@ -9,8 +9,7 @@ use crossterm::event::{self, Event as TermEvent, KeyCode, KeyEventKind};
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Style},
-    widgets::{Block, Borders, Widget, WidgetRef},
+    widgets::{Widget, WidgetRef},
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -204,8 +203,6 @@ pub struct Tagger {
     tags: Items<Tag, 9>,
     // flags for tags current page
     chosen: [bool; 9],
-    // flags for tags next page
-    chosen_n: [bool; 9],
     cache: Cache<PathBuf>,
     cache_path: PathBuf,
     input_buffer: InputBuffer<2>,
@@ -225,8 +222,6 @@ impl Tagger {
             tags: (&cache).into(),
             // flags for tags current page
             chosen: [false; 9],
-            // flags for tags next page
-            chosen_n: [false; 9],
             cache,
             cache_path,
             input_buffer: InputBuffer::new(["TagName".to_string(), "Score".to_string()]),
@@ -251,9 +246,6 @@ impl Tagger {
             if let Some(tags) = self.cache.tagged.get(&self.items.current_items()[0]) {
                 for (i, t) in self.tags.current_items().iter().enumerate() {
                     self.chosen[i] = tags.contains(&t.name);
-                }
-                for (i, t) in self.tags.preload_items().iter().enumerate() {
-                    self.chosen_n[i] = tags.contains(&t.name);
                 }
             }
 
@@ -309,7 +301,6 @@ impl Tagger {
                                     _ => continue,
                                 }
                                 self.chosen = [false; 9];
-                                self.chosen_n = [false; 9];
                                 break 'l;
                             }
                         },
@@ -324,7 +315,6 @@ impl Tagger {
                             KeyCode::Enter => {
                                 self.current_screen = CurrentScreen::Main;
                                 self.chosen = [false; 9];
-                                self.chosen_n = [false; 9];
                                 break 'l;
                             }
                             _ => continue,
@@ -424,23 +414,11 @@ impl WidgetRef for Tagger {
         if CurrentScreen::Main == self.current_screen {
             let chunks = Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints([Constraint::Percentage(70), Constraint::Fill(1)])
+                .constraints([Constraint::Percentage(30), Constraint::Fill(1)])
                 .split(chunks[1]);
-            Image::new(self.items.current_items()[0].clone(), chunks[0]).render(chunks[0], buf);
+            Image::new(self.items.current_items()[0].clone(), chunks[1]).render(chunks[1], buf);
             preload(self.items.preload_items()[0].clone(), chunks[0]);
-            let chunks = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints([Constraint::Ratio(1, 2); 2])
-                .split(chunks[1]);
-            let b0 = Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Green));
-            let b1 = Block::default().borders(Borders::ALL);
-            CheckBox::new(self.tags.current_items(), &self.chosen).render(b1.inner(chunks[0]), buf);
-            CheckBox::new(self.tags.preload_items(), &self.chosen_n)
-                .render(b1.inner(chunks[1]), buf);
-            b0.render(chunks[0], buf);
-            b1.render(chunks[1], buf);
+            CheckBox::new(self.tags.current_items(), &self.chosen).render(chunks[0], buf);
         } else {
             Title {
                 title: "The tagging finished.".to_string(),

@@ -146,6 +146,7 @@ impl<T, const N: usize> Items<T, N> {
         self.page
     }
 
+    // return true if over bound
     pub(crate) fn inc_page(&mut self) -> bool {
         self.direction = PreLoadDirection::Forward;
         if (self.page + 1) * N < self.items.len() {
@@ -156,13 +157,18 @@ impl<T, const N: usize> Items<T, N> {
         }
     }
 
-    pub(crate) fn dec_page(&mut self) {
+    // return true if over bound
+    pub(crate) fn dec_page(&mut self) -> bool {
+        self.direction = PreLoadDirection::Backward;
         if self.page > 0 {
             self.page -= 1;
+            false
+        } else {
+            true
         }
-        self.direction = PreLoadDirection::Backward;
     }
 
+    // set current page num, clamping between illegal range
     pub(crate) fn set_page(&mut self, page: usize) {
         let page = page.min(self.items.len().saturating_sub(1) / N);
         self.page = page;

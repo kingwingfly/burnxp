@@ -96,7 +96,9 @@ impl Picker {
                                             break;
                                         }
                                     }
-                                    KeyCode::Left => self.items.dec_page(),
+                                    KeyCode::Left => {
+                                        self.items.dec_page();
+                                    }
                                     _ => continue,
                                 }
                                 self.chosen = [false; 9];

@@ -276,10 +276,18 @@ impl Tagger {
                                             break;
                                         }
                                     }
-                                    KeyCode::Left => self.items.dec_page(),
-                                    KeyCode::Up => self.tags.dec_page(),
+                                    KeyCode::Left => {
+                                        self.items.dec_page();
+                                    }
+                                    KeyCode::Up => {
+                                        if self.tags.dec_page() {
+                                            self.tags.set_page(usize::MAX);
+                                        }
+                                    }
                                     KeyCode::Down => {
-                                        self.tags.inc_page();
+                                        if self.tags.inc_page() {
+                                            self.tags.set_page(0);
+                                        }
                                     }
                                     _ => continue,
                                 }

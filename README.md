@@ -20,7 +20,8 @@ iteractively comparing the degree of compliance with sesthetics preferences.
             <img src="images/tagger_observe_screenshot.png" height="260px"/>
         </td>
         <td>
-            <img src="images/tagger_picker_screenshot.png" height="520px"/>
+            <img src="images/tagger_tag_screenshot.png" height="260px"/>
+            <img src="images/tagger_picker_screenshot.png" height="260px"/>
         </td>
     </tr>
 </table>

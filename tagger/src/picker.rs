@@ -90,13 +90,13 @@ impl Picker {
                             KeyCode::Char('j') => self.current_screen = CurrentScreen::Popup(0),
                             _ => {
                                 match key.code {
-                                    KeyCode::Enter | KeyCode::Right => {
+                                    KeyCode::Enter | KeyCode::Right | KeyCode::Down => {
                                         if self.items.inc_page() {
                                             self.current_screen = CurrentScreen::Finished;
                                             break;
                                         }
                                     }
-                                    KeyCode::Left => {
+                                    KeyCode::Left | KeyCode::Up => {
                                         self.items.dec_page();
                                     }
                                     _ => continue,
@@ -205,7 +205,7 @@ impl WidgetRef for Picker {
         }
         .render(chunks[0], buf);
         if CurrentScreen::Main == self.current_screen {
-            Grid::new(
+            Grid::<'_, 3, 3, 9>::new(
                 self.items.current_items(),
                 self.items.preload_items(),
                 self.chosen,

@@ -1,5 +1,5 @@
 use crate::{
-    components::{preload, CheckBox, Image, Input, Quit, TaggerFooter, Title},
+    components::{Grid, Input, Quit, TagGrid, TaggerFooter, Title},
     state::{CurrentScreen, PROCESS},
     terminal::AutoDropTerminal,
     utils::{centered_rect, images_walk, json_from, json_into, Items},
@@ -199,10 +199,11 @@ impl<const N: usize> fmt::Display for InputBuffer<N> {
 
 pub struct Tagger {
     current_screen: CurrentScreen,
-    items: Items<PathBuf, 1>,
+    items: Items<PathBuf, 4>,
     tags: Items<Tag, 9>,
+    current_tag: Option<Tag>,
     // flags for tags current page
-    chosen: [bool; 9],
+    chosen: [bool; 4],
     cache: Cache<PathBuf>,
     cache_path: PathBuf,
     input_buffer: InputBuffer<2>,
@@ -220,8 +221,9 @@ impl Tagger {
             current_screen: CurrentScreen::Main,
             items,
             tags: (&cache).into(),
+            current_tag: None,
             // flags for tags current page
-            chosen: [false; 9],
+            chosen: [false; 4],
             cache,
             cache_path,
             input_buffer: InputBuffer::new(["TagName".to_string(), "Score".to_string()]),
@@ -242,10 +244,14 @@ impl Tagger {
     pub fn run(&mut self) -> Result<()> {
         let mut terminal = AutoDropTerminal::new()?;
         loop {
-            PROCESS.finished.store(self.items.page(), Ordering::Relaxed);
-            if let Some(tags) = self.cache.tagged.get(&self.items.current_items()[0]) {
-                for (i, t) in self.tags.current_items().iter().enumerate() {
-                    self.chosen[i] = tags.contains(&t.name);
+            PROCESS
+                .finished
+                .store(4 * self.items.page(), Ordering::Relaxed);
+            if let Some(cur) = self.current_tag.as_ref() {
+                for (i, item) in self.items.current_items().iter().enumerate() {
+                    if let Some(tags) = self.cache.tagged.get(item) {
+                        self.chosen[i] = tags.contains(&cur.name);
+                    }
                 }
             }
 
@@ -277,30 +283,21 @@ impl Tagger {
                             }
                             KeyCode::Char('j') => self.current_screen = CurrentScreen::Popup(0), // page jump
                             KeyCode::Char('n') => self.current_screen = CurrentScreen::Popup(1), // new tag
+                            KeyCode::Char('v') => self.current_screen = CurrentScreen::Popup(2), // view tags
                             _ => {
                                 match key.code {
-                                    KeyCode::Enter | KeyCode::Right => {
+                                    KeyCode::Enter | KeyCode::Right | KeyCode::Down => {
                                         if self.items.inc_page() {
                                             self.current_screen = CurrentScreen::Finished;
                                             break;
                                         }
                                     }
-                                    KeyCode::Left => {
+                                    KeyCode::Left | KeyCode::Up => {
                                         self.items.dec_page();
-                                    }
-                                    KeyCode::Up => {
-                                        if self.tags.dec_page() {
-                                            self.tags.set_page(usize::MAX);
-                                        }
-                                    }
-                                    KeyCode::Down => {
-                                        if self.tags.inc_page() {
-                                            self.tags.set_page(0);
-                                        }
                                     }
                                     _ => continue,
                                 }
-                                self.chosen = [false; 9];
+                                self.chosen = [false; 4];
                                 break 'l;
                             }
                         },
@@ -313,8 +310,8 @@ impl Tagger {
                             }
                             KeyCode::Backspace => self.items.set_page(self.items.page() / 10),
                             KeyCode::Enter => {
+                                self.chosen = [false; 4];
                                 self.current_screen = CurrentScreen::Main;
-                                self.chosen = [false; 9];
                                 break 'l;
                             }
                             _ => continue,
@@ -350,6 +347,31 @@ impl Tagger {
                                     break 'l;
                                 }
                             },
+                            _ => continue,
+                        },
+                        // view tags
+                        CurrentScreen::Popup(2) => match key.code {
+                            KeyCode::Char(c) if c.is_numeric() => {
+                                let tags = self.tags.current_items();
+                                let i = c.to_digit(10).unwrap() as usize;
+                                if i > 0 && i <= tags.len() {
+                                    self.current_tag = Some(tags[i - 1].clone());
+                                }
+                                self.chosen = [false; 4];
+                                self.current_screen = CurrentScreen::Main;
+                                break 'l;
+                            }
+                            KeyCode::Up | KeyCode::Left => {
+                                if self.tags.dec_page() {
+                                    self.tags.set_page(usize::MAX);
+                                }
+                            }
+                            KeyCode::Down | KeyCode::Right => {
+                                if self.tags.inc_page() {
+                                    self.tags.set_page(0);
+                                }
+                            }
+                            KeyCode::Esc => self.current_screen = CurrentScreen::Main,
                             _ => continue,
                         },
                         CurrentScreen::Popup(_) => unreachable!(),
@@ -395,6 +417,7 @@ impl WidgetRef for Tagger {
                     &self.input_buffer,
                 )
                 .render(area, buf),
+                2 => TagGrid::<'_, Tag, 3, 3>::new(self.tags.current_items()).render(area, buf),
                 _ => unreachable!(),
             }
             return;
@@ -407,18 +430,34 @@ impl WidgetRef for Tagger {
                 Constraint::Length(3),
             ])
             .split(area);
-        Title {
-            title: "Tagger".to_string(),
-        }
-        .render(chunks[0], buf);
-        if CurrentScreen::Main == self.current_screen {
+        {
             let chunks = Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints([Constraint::Percentage(30), Constraint::Fill(1)])
-                .split(chunks[1]);
-            Image::new(self.items.current_items()[0].clone(), chunks[1]).render(chunks[1], buf);
-            preload(self.items.preload_items()[0].clone(), chunks[0]);
-            CheckBox::new(self.tags.current_items(), &self.chosen).render(chunks[0], buf);
+                .constraints([Constraint::Ratio(1, 2); 2])
+                .split(chunks[0]);
+            Title {
+                title: "Tagger".to_string(),
+            }
+            .render(chunks[0], buf);
+            if let Some(tag) = &self.current_tag {
+                Title {
+                    title: format!("Current Tag: {}", tag),
+                }
+                .render(chunks[1], buf);
+            } else {
+                Title {
+                    title: "Press v to select tag".to_string(),
+                }
+                .render(chunks[1], buf);
+            }
+        }
+        if CurrentScreen::Main == self.current_screen {
+            Grid::<'_, 2, 2, 4>::new(
+                self.items.current_items(),
+                self.items.preload_items(),
+                self.chosen,
+            )
+            .render(chunks[1], buf);
         } else {
             Title {
                 title: "The tagging finished.".to_string(),

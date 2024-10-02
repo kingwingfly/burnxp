@@ -62,14 +62,14 @@ impl<'a> Widget for Images<'a> {
     }
 }
 
-pub(crate) struct Grid<'a> {
+pub(crate) struct Grid<'a, const R: usize, const C: usize, const S: usize> {
     cur: &'a [PathBuf],
     pre: &'a [PathBuf],
-    heighlight: [bool; 9],
+    heighlight: [bool; S],
 }
 
-impl<'a> Grid<'a> {
-    pub(crate) fn new(cur: &'a [PathBuf], pre: &'a [PathBuf], heighlight: [bool; 9]) -> Self {
+impl<'a, const R: usize, const C: usize, const S: usize> Grid<'a, R, C, S> {
+    pub(crate) fn new(cur: &'a [PathBuf], pre: &'a [PathBuf], heighlight: [bool; S]) -> Self {
         Self {
             cur,
             pre,
@@ -78,17 +78,17 @@ impl<'a> Grid<'a> {
     }
 }
 
-impl<'a> Widget for Grid<'a> {
+impl<'a, const R: usize, const C: usize, const S: usize> Widget for Grid<'a, R, C, S> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let grid = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([Constraint::Ratio(1, 3); 3])
+            .constraints([Constraint::Ratio(1, R as u32); R])
             .split(area)
             .iter()
             .flat_map(|&line| {
                 Layout::default()
                     .direction(Direction::Horizontal)
-                    .constraints([Constraint::Ratio(1, 3); 3])
+                    .constraints([Constraint::Ratio(1, C as u32); C])
                     .split(line)
                     .iter()
                     .cloned()
@@ -108,7 +108,7 @@ impl<'a> Widget for Grid<'a> {
                 inner
             })
             .collect::<Vec<_>>();
-        let mut images = Vec::with_capacity(9);
+        let mut images = Vec::with_capacity(S);
         for (i, path) in self.cur.iter().enumerate() {
             images.push(Image::new(path.clone(), grid[i]));
         }
@@ -117,18 +117,18 @@ impl<'a> Widget for Grid<'a> {
         }
         // Preload the next images
         for (i, path) in self.pre.iter().enumerate() {
-            preload(path.clone(), grid[i % 9]);
+            preload(path.clone(), grid[i % S]);
         }
     }
 }
 
-pub(crate) struct Image {
+struct Image {
     rx: Receiver<Box<dyn StatefulProtocol>>,
     path: PathBuf,
 }
 
 impl Image {
-    pub(crate) fn new(path: PathBuf, chunk: Rect) -> Self {
+    fn new(path: PathBuf, chunk: Rect) -> Self {
         let (tx, rx) = channel::<Box<dyn StatefulProtocol>>();
         let path_c = path.clone();
         thread::spawn(move || -> Result<()> {
@@ -198,7 +198,7 @@ impl Widget for Image {
 }
 
 /// Preload image to cache
-pub(crate) fn preload(path: PathBuf, chunk: Rect) {
+fn preload(path: PathBuf, chunk: Rect) {
     thread::spawn(move || -> Result<()> {
         let p = Parker::new();
         let u = p.unparker().clone();

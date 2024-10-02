@@ -3,41 +3,39 @@ use core::fmt;
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Style},
     widgets::{Block, Borders, Paragraph, Widget, Wrap},
 };
 
-pub(crate) struct CheckBox<'a, T>
+pub(crate) struct TagGrid<'a, T, const R: usize, const C: usize>
 where
     T: fmt::Display,
 {
     items: &'a [T],
-    heighlight: &'a [bool],
 }
 
-impl<'a, T> CheckBox<'a, T>
+impl<'a, T, const R: usize, const C: usize> TagGrid<'a, T, R, C>
 where
     T: fmt::Display,
 {
-    pub fn new(items: &'a [T], heighlight: &'a [bool]) -> Self {
-        Self { items, heighlight }
+    pub fn new(items: &'a [T]) -> Self {
+        Self { items }
     }
 }
 
-impl<'a, T> Widget for CheckBox<'a, T>
+impl<'a, T, const R: usize, const C: usize> Widget for TagGrid<'a, T, R, C>
 where
     T: fmt::Display,
 {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let grid = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([Constraint::Length(3); 3])
+            .constraints([Constraint::Ratio(1, R as u32); R])
             .split(area)
             .iter()
             .flat_map(|&line| {
                 Layout::default()
                     .direction(Direction::Horizontal)
-                    .constraints([Constraint::Ratio(1, 3); 3])
+                    .constraints([Constraint::Ratio(1, C as u32); C])
                     .split(line)
                     .iter()
                     .cloned()
@@ -47,11 +45,7 @@ where
             .map(|(i, chunk)| {
                 let block = Block::default()
                     .title(format!("{}", i + 1))
-                    .borders(Borders::ALL)
-                    .style(Style::default().fg(match self.heighlight[i] {
-                        true => Color::LightYellow,
-                        false => Color::White,
-                    }));
+                    .borders(Borders::ALL);
                 let inner = block.inner(chunk);
                 block.render(chunk, buf);
                 inner

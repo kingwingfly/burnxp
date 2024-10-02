@@ -381,7 +381,7 @@ impl Tagger {
                         CurrentScreen::Popup(_) => unreachable!(),
                         CurrentScreen::Finished => match key.code {
                             KeyCode::Char('q') => self.current_screen = CurrentScreen::Exiting,
-                            _ => continue,
+                            _ => self.current_screen = CurrentScreen::Main,
                         },
                         CurrentScreen::Exiting => match key.code {
                             KeyCode::Char('y') => {

@@ -25,7 +25,7 @@ impl Widget for Input {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+            .constraints([Constraint::Length(3), Constraint::Fill(1)])
             .split(area);
         let title = Paragraph::new(self.title).block(Block::default().borders(Borders::ALL));
         title.render(chunks[0], buf);

@@ -11,7 +11,7 @@ use ratatui::{
     layout::Rect,
     widgets::{Widget, WidgetRef},
 };
-use std::{path::PathBuf, time::Duration};
+use std::path::PathBuf;
 
 type Set = Vec<(Score, Vec<PathBuf>)>;
 type Score = i64;
@@ -40,9 +40,6 @@ impl Observer {
             while let TermEvent::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Release {
                     // Skip events that are not KeyEventKind::Press
-                    continue;
-                }
-                if event::poll(Duration::from_millis(50))? {
                     continue;
                 }
                 match self.current_screen {

@@ -107,11 +107,22 @@ impl MyPicker {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Copy)]
 enum PreLoadDirection {
     #[default]
     Forward,
     Backward,
+}
+
+impl std::ops::Not for PreLoadDirection {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        match self {
+            PreLoadDirection::Forward => PreLoadDirection::Backward,
+            PreLoadDirection::Backward => PreLoadDirection::Forward,
+        }
+    }
 }
 
 /// N: the page size
@@ -172,21 +183,35 @@ impl<T, const N: usize> Items<T, N> {
                 let r = (self.page + 2) * N;
                 &self.items[l..r.min(self.items.len())]
             }
-            PreLoadDirection::Backward if self.page > 1 => {
+            PreLoadDirection::Backward if self.page > 0 => {
                 let l = (self.page - 1) * N;
                 let r = self.page * N;
                 &self.items[l..r.min(self.items.len())]
             }
-            _ => &[],
+            _ => match !self.direction {
+                PreLoadDirection::Forward if (self.page + 1) * N < self.items.len() => {
+                    let l = (self.page + 1) * N;
+                    let r = (self.page + 2) * N;
+                    &self.items[l..r.min(self.items.len())]
+                }
+                PreLoadDirection::Backward if self.page > 0 => {
+                    let l = (self.page - 1) * N;
+                    let r = self.page * N;
+                    &self.items[l..r.min(self.items.len())]
+                }
+                _ => &[],
+            },
         }
     }
 
-    pub(crate) fn all_items(&self) -> &[T] {
-        &self.items
-    }
-
-    pub(crate) fn push(&mut self, item: T) {
-        self.items.push(item);
+    pub(crate) fn push(&mut self, item: T)
+    where
+        T: PartialEq,
+    {
+        match self.items.iter_mut().find(|i| **i == item) {
+            Some(i) => *i = item,
+            None => self.items.push(item),
+        }
     }
 
     pub(crate) fn remove(&mut self, item: &T)

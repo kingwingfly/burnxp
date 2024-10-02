@@ -9,6 +9,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha36] - 2024-10-02
+
+- enhance: `tagger tag` sub-command, helping score images by tagging
+
 ## [0.1.0-alpha35] - 2024-10-02
 
 - improve piker: show path if load failed

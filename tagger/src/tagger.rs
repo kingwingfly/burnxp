@@ -1,5 +1,5 @@
 use crate::{
-    components::{Image, Input, Quit, TaggerFooter, Title},
+    components::{CheckBox, Image, Input, Quit, TaggerFooter, Title},
     state::{CurrentScreen, PROCESS},
     terminal::AutoDropTerminal,
     utils::{centered_rect, images_walk, json_from, json_into, Items},
@@ -9,21 +9,29 @@ use crossterm::event::{self, Event as TermEvent, KeyCode, KeyEventKind};
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
-    widgets::{Widget, WidgetRef},
+    style::{Color, Style},
+    widgets::{Block, Borders, Widget, WidgetRef},
 };
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::fmt;
 use std::hash::Hash;
 use std::path::PathBuf;
 use std::sync::atomic::Ordering;
-use std::{collections::HashMap, time::Duration};
 
 type Name = String;
 type Score = i64;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 struct Tag {
     name: Name,
     score: Score,
+}
+
+impl PartialEq for Tag {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+    }
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -52,12 +60,28 @@ where
             x.retain(|x| x != &tag.name);
         }
     }
+
+    fn remove(&mut self, tag: &Name) {
+        self.tags.remove(tag);
+        for tags in self.tagged.values_mut() {
+            tags.retain(|x| x != tag);
+        }
+    }
+
+    fn score(&self) -> HashMap<i64, Vec<T>> {
+        self.tagged.iter().fold(HashMap::new(), |mut acc, x| {
+            let score: Score = x.1.iter().map(|tag| self.tags[tag]).sum();
+            acc.entry(score).or_default().push(x.0.clone());
+            acc
+        })
+    }
 }
 
 impl<T, const N: usize> From<&Cache<T>> for Items<Tag, N>
 where
     T: Eq + Hash,
 {
+    /// Retrieve Items from the deserilized Cache
     fn from(value: &Cache<T>) -> Self {
         Items::new(value.tags.iter().map(Into::into).collect())
     }
@@ -72,17 +96,107 @@ impl From<(&Name, &Score)> for Tag {
     }
 }
 
+impl TryFrom<&[String; 2]> for Tag {
+    type Error = ();
+
+    fn try_from(value: &[String; 2]) -> std::result::Result<Self, Self::Error> {
+        let score = value[1].parse().map_err(|_| ())?;
+        Ok(Self {
+            name: value[0].clone(),
+            score,
+        })
+    }
+}
+
+impl TryFrom<&InputBuffer<2>> for Tag {
+    type Error = ();
+
+    fn try_from(value: &InputBuffer<2>) -> std::result::Result<Self, Self::Error> {
+        (&value.values).try_into()
+    }
+}
+
+impl fmt::Display for Tag {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}({})", self.name, self.score)
+    }
+}
+
+struct InputBuffer<const N: usize> {
+    cursor: usize,
+    keys: [String; N],
+    values: [String; N],
+}
+
+impl<const N: usize> InputBuffer<N> {
+    fn new(keys: [String; N]) -> Self {
+        let buffer = vec![String::new(); N];
+        Self {
+            cursor: 0,
+            keys,
+            values: buffer.try_into().unwrap(),
+        }
+    }
+
+    fn push(&mut self, c: char) {
+        self.values[self.cursor].push(c);
+    }
+
+    fn pop(&mut self) {
+        self.values[self.cursor].pop();
+    }
+
+    fn clear(&mut self) {
+        self.values[self.cursor].clear();
+    }
+
+    fn clear_all(&mut self) {
+        for i in 0..N {
+            self.values[i].clear();
+        }
+        self.cursor = 0;
+    }
+
+    fn next(&mut self) {
+        self.cursor = (self.cursor + 1) % N;
+    }
+
+    fn prev(&mut self) {
+        self.cursor = (self.cursor + N - 1) % N;
+    }
+}
+
+impl<const N: usize> fmt::Display for InputBuffer<N> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for i in 0..N {
+            if i == self.cursor {
+                writeln!(f, "> {:^7}: {}", self.keys[i], self.values[i])?;
+            } else {
+                writeln!(f, "  {:^7}: {}", self.keys[i], self.values[i])?;
+            }
+            writeln!(f)?;
+        }
+        Ok(())
+    }
+}
+
 pub struct Tagger {
     current_screen: CurrentScreen,
     items: Items<PathBuf, 1>,
     tags: Items<Tag, 9>,
+    // flags for tags current page
     chosen: [bool; 9],
+    // flags for tags next page
+    chosen_n: [bool; 9],
     cache: Cache<PathBuf>,
     cache_path: PathBuf,
+    input_buffer: InputBuffer<2>,
+    // path of output
+    output: PathBuf,
 }
 
 impl Tagger {
-    pub fn new(root: PathBuf, cache_path: PathBuf) -> Self {
+    pub fn new(root: PathBuf, cache_path: PathBuf, output: PathBuf) -> Self {
         let images = images_walk(&root);
         PROCESS.total.fetch_add(images.len(), Ordering::Relaxed);
         let items = Items::new(images);
@@ -91,9 +205,14 @@ impl Tagger {
             current_screen: CurrentScreen::Main,
             items,
             tags: (&cache).into(),
+            // flags for tags current page
             chosen: [false; 9],
+            // flags for tags next page
+            chosen_n: [false; 9],
             cache,
             cache_path,
+            input_buffer: InputBuffer::new(["TagName".to_string(), "Score".to_string()]),
+            output,
         }
     }
 
@@ -102,12 +221,9 @@ impl Tagger {
         self.cache.tags.insert(tag.name, tag.score);
     }
 
-    fn delete_tag(&mut self, tag: &Tag) {
+    fn remove_tag(&mut self, tag: &Tag) {
         self.tags.remove(tag);
-        self.cache.tags.remove(&tag.name);
-        for tags in self.cache.tagged.values_mut() {
-            tags.retain(|x| x != &tag.name);
-        }
+        self.cache.remove(&tag.name);
     }
 
     pub fn run(&mut self) -> Result<()> {
@@ -118,6 +234,9 @@ impl Tagger {
                 for (i, t) in self.tags.current_items().iter().enumerate() {
                     self.chosen[i] = tags.contains(&t.name);
                 }
+                for (i, t) in self.tags.preload_items().iter().enumerate() {
+                    self.chosen_n[i] = tags.contains(&t.name);
+                }
             }
 
             'l: loop {
@@ -127,9 +246,6 @@ impl Tagger {
                 while let TermEvent::Key(key) = event::read()? {
                     if key.kind == KeyEventKind::Release {
                         // Skip events that are not KeyEventKind::Press
-                        continue;
-                    }
-                    if event::poll(Duration::from_millis(50))? {
                         continue;
                     }
                     match self.current_screen {
@@ -151,7 +267,7 @@ impl Tagger {
                             }
                             KeyCode::Char('j') => self.current_screen = CurrentScreen::Popup(0), // page jump
                             KeyCode::Char('n') => self.current_screen = CurrentScreen::Popup(1), // new tag
-                            KeyCode::Char('d') => self.current_screen = CurrentScreen::Popup(2), // delete tag
+                            KeyCode::Char('m') => self.current_screen = CurrentScreen::Popup(2), // modify tag
                             _ => {
                                 match key.code {
                                     KeyCode::Enter | KeyCode::Right => {
@@ -161,13 +277,14 @@ impl Tagger {
                                         }
                                     }
                                     KeyCode::Left => self.items.dec_page(),
-                                    KeyCode::Up => {
+                                    KeyCode::Up => self.tags.dec_page(),
+                                    KeyCode::Down => {
                                         self.tags.inc_page();
                                     }
-                                    KeyCode::Down => self.tags.dec_page(),
                                     _ => continue,
                                 }
                                 self.chosen = [false; 9];
+                                self.chosen_n = [false; 9];
                                 break 'l;
                             }
                         },
@@ -182,26 +299,67 @@ impl Tagger {
                             KeyCode::Enter => {
                                 self.current_screen = CurrentScreen::Main;
                                 self.chosen = [false; 9];
+                                self.chosen_n = [false; 9];
                                 break 'l;
                             }
                             _ => continue,
                         },
                         // new tag
                         CurrentScreen::Popup(1) => match key.code {
-                            KeyCode::Enter => {
+                            KeyCode::Char(c) if !c.is_ascii_control() => self.input_buffer.push(c),
+                            KeyCode::Tab => self.input_buffer.next(),
+                            KeyCode::BackTab => self.input_buffer.prev(),
+                            KeyCode::Backspace => self.input_buffer.pop(),
+                            KeyCode::Esc => {
+                                self.input_buffer.clear_all();
                                 self.current_screen = CurrentScreen::Main;
-                                self.chosen = [false; 9];
                                 break 'l;
                             }
+                            KeyCode::Enter => match (&self.input_buffer).try_into() {
+                                Ok(tag) => {
+                                    self.new_tag(tag);
+                                    self.input_buffer.clear_all();
+                                    self.current_screen = CurrentScreen::Main;
+                                    break 'l;
+                                }
+                                Err(_) => {
+                                    self.input_buffer.cursor = 1;
+                                    self.input_buffer.clear();
+                                }
+                            },
                             _ => continue,
                         },
-                        // delete tag
+                        // modify tag
                         CurrentScreen::Popup(2) => match key.code {
-                            KeyCode::Enter => {
+                            KeyCode::Char(c) if !c.is_ascii_control() => self.input_buffer.push(c),
+                            KeyCode::Tab => self.input_buffer.next(),
+                            KeyCode::BackTab => self.input_buffer.prev(),
+                            KeyCode::Backspace => self.input_buffer.pop(),
+                            KeyCode::Esc => {
+                                self.input_buffer.clear_all();
                                 self.current_screen = CurrentScreen::Main;
-                                self.chosen = [false; 9];
                                 break 'l;
                             }
+                            KeyCode::Enter => match (&self.input_buffer).try_into() {
+                                Ok(tag) => {
+                                    self.new_tag(tag);
+                                    self.input_buffer.clear_all();
+                                    self.current_screen = CurrentScreen::Main;
+                                    break 'l;
+                                }
+                                Err(_) if self.input_buffer.cursor == 0 => {
+                                    self.input_buffer.cursor = 1;
+                                    self.input_buffer.clear();
+                                }
+                                Err(_) => {
+                                    let tag: Tag = (&self.input_buffer.values[0], &0).into();
+                                    self.remove_tag(&tag);
+                                    self.input_buffer.cursor = 0;
+                                    self.input_buffer.clear_all();
+                                    self.current_screen = CurrentScreen::Main;
+                                    break 'l;
+                                }
+                            },
                             _ => continue,
                         },
                         CurrentScreen::Popup(_) => unreachable!(),
@@ -212,6 +370,8 @@ impl Tagger {
                         CurrentScreen::Exiting => match key.code {
                             KeyCode::Char('y') => {
                                 json_into(&self.cache_path, &self.cache)?;
+                                let output = self.cache.score();
+                                json_into(&self.output, &output)?;
                                 return Ok(());
                             }
                             KeyCode::Char('Y') => {
@@ -240,9 +400,13 @@ impl WidgetRef for Tagger {
                 // page jump
                 0 => Input::new("Page to go", self.items.page()).render(area, buf),
                 // new tag
-                1 => Input::new("New tag name", self.tags.page()).render(area, buf),
-                // delete tag
-                2 => Input::new("", self.tags.page()).render(area, buf),
+                1 => Input::new("New tag name", &self.input_buffer).render(area, buf),
+                // modify tag
+                2 => Input::new(
+                    "Modify tag (Leave score empty to delete)",
+                    &self.input_buffer,
+                )
+                .render(area, buf),
                 _ => unreachable!(),
             }
             return;
@@ -260,7 +424,24 @@ impl WidgetRef for Tagger {
         }
         .render(chunks[0], buf);
         if CurrentScreen::Main == self.current_screen {
-            Image::new(self.items.current_items()[0].clone(), chunks[1]).render(chunks[1], buf)
+            let chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(70), Constraint::Fill(1)])
+                .split(chunks[1]);
+            Image::new(self.items.current_items()[0].clone(), chunks[0]).render(chunks[0], buf);
+            let chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Ratio(1, 2); 2])
+                .split(chunks[1]);
+            let b0 = Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Green));
+            let b1 = Block::default().borders(Borders::ALL);
+            CheckBox::new(self.tags.current_items(), &self.chosen).render(b1.inner(chunks[0]), buf);
+            CheckBox::new(self.tags.preload_items(), &self.chosen_n)
+                .render(b1.inner(chunks[1]), buf);
+            b0.render(chunks[0], buf);
+            b1.render(chunks[1], buf);
         } else {
             Title {
                 title: "The tagging finished.".to_string(),

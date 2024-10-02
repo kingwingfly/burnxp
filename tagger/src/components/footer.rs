@@ -4,7 +4,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph, Widget},
+    widgets::{Block, Borders, Paragraph, Widget, Wrap},
 };
 use std::sync::atomic::Ordering;
 
@@ -70,9 +70,10 @@ impl Widget for PickerNavigation {
                 _ => unreachable!(),
             },
         ];
-        let mode_footer = Paragraph::new(Line::from(current_navigation_text))
-            .block(Block::default().borders(Borders::ALL));
-        mode_footer.render(area, buf);
+        Paragraph::new(Line::from(current_navigation_text))
+            .wrap(Wrap { trim: true })
+            .block(Block::default().borders(Borders::ALL))
+            .render(area, buf);
     }
 }
 
@@ -94,41 +95,43 @@ impl Widget for PickerHint {
                 _ => unreachable!(),
             }
         };
-        let key_notes_footer = Paragraph::new(hint).block(Block::default().borders(Borders::ALL));
-        key_notes_footer.render(area, buf);
+        Paragraph::new(hint)
+            .wrap(Wrap { trim: true })
+            .block(Block::default().borders(Borders::ALL))
+            .render(area, buf);
     }
 }
 
-pub(crate) struct ScorerFooter {
+pub(crate) struct CmperFooter {
     pub current_screen: CurrentScreen,
 }
 
-impl Widget for ScorerFooter {
+impl Widget for CmperFooter {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
             .split(area);
-        ScorerNavigation {
+        CmperNavigation {
             current_screen: self.current_screen,
         }
         .render(chunks[0], buf);
-        ScorerHint {
+        CmperHint {
             current_screen: self.current_screen,
         }
         .render(chunks[1], buf);
     }
 }
 
-struct ScorerNavigation {
+struct CmperNavigation {
     current_screen: CurrentScreen,
 }
 
-struct ScorerHint {
+struct CmperHint {
     current_screen: CurrentScreen,
 }
 
-impl Widget for ScorerNavigation {
+impl Widget for CmperNavigation {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let current_navigation_text = vec![
             match self.current_screen {
@@ -157,13 +160,14 @@ impl Widget for ScorerNavigation {
                 _ => unreachable!(),
             },
         ];
-        let mode_footer = Paragraph::new(Line::from(current_navigation_text))
-            .block(Block::default().borders(Borders::ALL));
-        mode_footer.render(area, buf);
+        Paragraph::new(Line::from(current_navigation_text))
+            .wrap(Wrap { trim: true })
+            .block(Block::default().borders(Borders::ALL))
+            .render(area, buf);
     }
 }
 
-impl Widget for ScorerHint {
+impl Widget for CmperHint {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let hint = {
             match self.current_screen {
@@ -181,8 +185,10 @@ impl Widget for ScorerHint {
                 _ => unreachable!(),
             }
         };
-        let key_notes_footer = Paragraph::new(hint).block(Block::default().borders(Borders::ALL));
-        key_notes_footer.render(area, buf);
+        Paragraph::new(hint)
+            .block(Block::default().borders(Borders::ALL))
+            .wrap(Wrap { trim: true })
+            .render(area, buf);
     }
 }
 
@@ -242,9 +248,10 @@ impl Widget for TaggerNavigation {
                 _ => unreachable!(),
             },
         ];
-        let mode_footer = Paragraph::new(Line::from(current_navigation_text))
-            .block(Block::default().borders(Borders::ALL));
-        mode_footer.render(area, buf);
+        Paragraph::new(Line::from(current_navigation_text))
+            .block(Block::default().borders(Borders::ALL))
+            .wrap(Wrap { trim: true })
+            .render(area, buf);
     }
 }
 
@@ -253,7 +260,7 @@ impl Widget for TaggerHint {
         let hint = {
             match self.current_screen {
                 CurrentScreen::Main => Span::styled(
-                    "(Un)Tag(1-9) Pre(<-) Next(->/↵) New/DelTag(n/d) Quit(q)",
+                    "(Un)Tag(1-9) Pre(<-) Next(->/↵) New/ModifyTag(n/m) Quit(q)",
                     Style::default().fg(Color::Green),
                 ),
                 CurrentScreen::Finished => {
@@ -266,7 +273,9 @@ impl Widget for TaggerHint {
                 _ => unreachable!(),
             }
         };
-        let key_notes_footer = Paragraph::new(hint).block(Block::default().borders(Borders::ALL));
-        key_notes_footer.render(area, buf);
+        Paragraph::new(hint)
+            .block(Block::default().borders(Borders::ALL))
+            .wrap(Wrap { trim: true })
+            .render(area, buf);
     }
 }

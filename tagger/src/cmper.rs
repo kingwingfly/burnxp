@@ -1,4 +1,4 @@
-use crate::components::{Images, Quit, ScorerFooter, Title};
+use crate::components::{CmperFooter, Images, Quit, Title};
 use crate::event::{ComparePair, Event, CMPDISPATCH};
 use crate::matrix::Matrix;
 use crate::ordpaths::{CompareResult, OrdPaths};
@@ -15,10 +15,9 @@ use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::sync::atomic::Ordering as AtomicOrdering;
 use std::thread;
-use std::time::Duration;
 
 #[derive(Debug)]
-pub struct Scorer {
+pub struct Cmper {
     current_screen: CurrentScreen,
     cmp: Option<ComparePair>,
     /// The matrix of comparison
@@ -27,7 +26,7 @@ pub struct Scorer {
     images: Vec<OrdPaths>,
 }
 
-impl Scorer {
+impl Cmper {
     pub fn new(root: PathBuf, output: PathBuf, cache: PathBuf) -> Self {
         let matrix: Matrix = bincode_from(&cache).unwrap_or_default();
         let images = walkdir::WalkDir::new(root)
@@ -92,9 +91,6 @@ impl Scorer {
             while let TermEvent::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Release {
                     // Skip events that are not KeyEventKind::Press
-                    continue;
-                }
-                if event::poll(Duration::from_millis(50))? {
                     continue;
                 }
                 match self.current_screen {
@@ -183,7 +179,7 @@ impl Scorer {
     }
 }
 
-impl WidgetRef for Scorer {
+impl WidgetRef for Cmper {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         if CurrentScreen::Exiting == self.current_screen {
             let area = centered_rect(60, 25, area);
@@ -214,14 +210,14 @@ impl WidgetRef for Scorer {
                 .render(chunks[1], buf);
             }
         }
-        ScorerFooter {
+        CmperFooter {
             current_screen: self.current_screen,
         }
         .render(chunks[2], buf);
     }
 }
 
-impl Drop for Scorer {
+impl Drop for Cmper {
     fn drop(&mut self) {
         for paths in self.images.iter() {
             unsafe {

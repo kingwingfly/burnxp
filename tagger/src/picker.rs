@@ -12,7 +12,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     widgets::{Widget, WidgetRef},
 };
-use std::{collections::HashSet, fs, path::PathBuf, sync::atomic::Ordering, time::Duration};
+use std::{collections::HashSet, fs, path::PathBuf, sync::atomic::Ordering};
 
 #[derive(Debug, Default)]
 pub struct Picker {
@@ -70,9 +70,6 @@ impl Picker {
                 while let TermEvent::Key(key) = event::read()? {
                     if key.kind == KeyEventKind::Release {
                         // Skip events that are not KeyEventKind::Press
-                        continue;
-                    }
-                    if event::poll(Duration::from_millis(50))? {
                         continue;
                     }
                     match self.current_screen {

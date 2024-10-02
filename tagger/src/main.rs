@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::{CommandFactory as _, Parser, Subcommand};
 use clap_complete::{generate, Shell};
 use std::path::PathBuf;
-use tagger::{Divider, Method, Observer, Picker, Scorer, Tagger};
+use tagger::{Cmper, Divider, Method, Observer, Picker, Tagger};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
@@ -13,8 +13,8 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum SubCmd {
-    /// Score image-groups
-    Score {
+    /// Score image-groups by comparing them
+    Cmp {
         /// The file to cache the comparison results (relative paths are cached)
         #[clap(short, long, default_value = "cache.bin")]
         cache: PathBuf,
@@ -24,11 +24,14 @@ enum SubCmd {
         /// The root directory to scan for images
         root: PathBuf,
     },
-    /// Tag image-groups
+    /// Score images by tagging them
     Tag {
         /// The file to store the tag results
         #[clap(short, long, default_value = "tags.json")]
         cache: PathBuf,
+        /// The output file path
+        #[clap(short, long, default_value = "scores.json")]
+        output: PathBuf,
         /// The root directory to scan for images
         root: PathBuf,
     },
@@ -59,7 +62,7 @@ enum SubCmd {
         /// The output path of the validation set
         #[clap(short, long, default_value = "valid.json")]
         valid_path: PathBuf,
-        /// The path to the scores produced by the tagger score subcommand
+        /// The path to the scores produced by the tagger tag/cmp subcommand
         path: PathBuf,
     },
     /// Observe the consistency of the scores produced by the scorer
@@ -77,16 +80,20 @@ enum SubCmd {
 fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.subcmd {
-        SubCmd::Score {
-            output,
+        SubCmd::Cmp {
             cache,
+            output,
             root,
         } => {
-            let mut scorer = Scorer::new(root, output, cache);
-            scorer.run()?;
+            let mut cmper = Cmper::new(root, output, cache);
+            cmper.run()?;
         }
-        SubCmd::Tag { cache, root } => {
-            let mut tagger = Tagger::new(root, cache);
+        SubCmd::Tag {
+            cache,
+            output,
+            root,
+        } => {
+            let mut tagger = Tagger::new(root, cache, output);
             tagger.run()?;
         }
         SubCmd::Pick {

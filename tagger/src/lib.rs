@@ -1,3 +1,4 @@
+mod cmper;
 mod components;
 mod divider;
 mod event;
@@ -5,14 +6,13 @@ mod matrix;
 mod observer;
 mod ordpaths;
 mod picker;
-mod scorer;
 mod state;
 mod tagger;
 mod terminal;
 mod utils;
 
+pub use cmper::Cmper;
 pub use divider::Divider;
 pub use observer::Observer;
 pub use picker::{Method, Picker};
-pub use scorer::Scorer;
 pub use tagger::Tagger;

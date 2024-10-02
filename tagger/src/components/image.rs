@@ -82,21 +82,13 @@ impl<'a> Widget for Grid<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let grid = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
-            ])
+            .constraints([Constraint::Ratio(1, 3); 3])
             .split(area)
             .iter()
             .flat_map(|&line| {
                 Layout::default()
                     .direction(Direction::Horizontal)
-                    .constraints([
-                        Constraint::Percentage(33),
-                        Constraint::Percentage(33),
-                        Constraint::Percentage(33),
-                    ])
+                    .constraints([Constraint::Ratio(1, 3); 3])
                     .split(line)
                     .iter()
                     .cloned()

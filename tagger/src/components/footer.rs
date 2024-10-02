@@ -235,7 +235,12 @@ impl Widget for TaggerNavigation {
             Span::styled(" | ", Style::default().fg(Color::White)),
             match self.current_screen {
                 CurrentScreen::Main => Span::styled(
-                    format!("{}", *PROCESS),
+                    format!(
+                        "{} page: {}/{}",
+                        *PROCESS,
+                        PROCESS.finished.load(Ordering::Relaxed) / 4,
+                        PROCESS.total.load(Ordering::Relaxed) / 4,
+                    ),
                     Style::default().fg(Color::LightCyan),
                 ),
                 CurrentScreen::Finished => Span::styled(

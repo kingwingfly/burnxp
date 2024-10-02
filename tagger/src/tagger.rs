@@ -274,9 +274,9 @@ impl Tagger {
                                     if i > 0 && i <= item.len() {
                                         self.chosen[i - 1] = !self.chosen[i - 1];
                                         if self.chosen[i - 1] {
-                                            self.cache.tag(&item[i], cur);
+                                            self.cache.tag(&item[i - 1], cur);
                                         } else {
-                                            self.cache.untag(&item[i], cur);
+                                            self.cache.untag(&item[i - 1], cur);
                                         }
                                     } else {
                                         continue;

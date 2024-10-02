@@ -407,7 +407,7 @@ impl WidgetRef for Tagger {
             return;
         }
         if let CurrentScreen::Popup(mode) = self.current_screen {
-            let area = centered_rect(60, 25, area);
+            let area = centered_rect(60, 30, area);
             match mode {
                 // page jump
                 0 => Input::new("Page to go", self.items.page()).render(area, buf),

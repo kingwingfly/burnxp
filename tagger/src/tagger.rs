@@ -269,7 +269,6 @@ impl Tagger {
                             }
                             KeyCode::Char('j') => self.current_screen = CurrentScreen::Popup(0), // page jump
                             KeyCode::Char('n') => self.current_screen = CurrentScreen::Popup(1), // new tag
-                            KeyCode::Char('m') => self.current_screen = CurrentScreen::Popup(2), // modify tag
                             _ => {
                                 match key.code {
                                     KeyCode::Enter | KeyCode::Right => {
@@ -314,33 +313,8 @@ impl Tagger {
                             }
                             _ => continue,
                         },
-                        // new tag
+                        // modify tags
                         CurrentScreen::Popup(1) => match key.code {
-                            KeyCode::Char(c) if !c.is_ascii_control() => self.input_buffer.push(c),
-                            KeyCode::Tab => self.input_buffer.next(),
-                            KeyCode::BackTab => self.input_buffer.prev(),
-                            KeyCode::Backspace => self.input_buffer.pop(),
-                            KeyCode::Esc => {
-                                self.input_buffer.clear_all();
-                                self.current_screen = CurrentScreen::Main;
-                                break 'l;
-                            }
-                            KeyCode::Enter => match (&self.input_buffer).try_into() {
-                                Ok(tag) => {
-                                    self.new_tag(tag);
-                                    self.input_buffer.clear_all();
-                                    self.current_screen = CurrentScreen::Main;
-                                    break 'l;
-                                }
-                                Err(_) => {
-                                    self.input_buffer.cursor = 1;
-                                    self.input_buffer.clear();
-                                }
-                            },
-                            _ => continue,
-                        },
-                        // modify tag
-                        CurrentScreen::Popup(2) => match key.code {
                             KeyCode::Char(c) if !c.is_ascii_control() => self.input_buffer.push(c),
                             KeyCode::Tab => self.input_buffer.next(),
                             KeyCode::BackTab => self.input_buffer.prev(),
@@ -410,9 +384,7 @@ impl WidgetRef for Tagger {
                 // page jump
                 0 => Input::new("Page to go", self.items.page()).render(area, buf),
                 // new tag
-                1 => Input::new("New tag name", &self.input_buffer).render(area, buf),
-                // modify tag
-                2 => Input::new(
+                1 => Input::new(
                     "Modify tag (Leave score empty to delete)",
                     &self.input_buffer,
                 )

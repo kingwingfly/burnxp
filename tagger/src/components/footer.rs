@@ -260,7 +260,7 @@ impl Widget for TaggerHint {
         let hint = {
             match self.current_screen {
                 CurrentScreen::Main => Span::styled(
-                    "(Un)Tag(1-9) Pre(<-) Next(->/↵) New/ModifyTag(n/m) Quit(q)",
+                    "(Un)Tag(1-9) Pre(<-) Next(->/↵) ModifyTag(n) Quit(q)",
                     Style::default().fg(Color::Green),
                 ),
                 CurrentScreen::Finished => {

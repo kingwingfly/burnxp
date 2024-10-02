@@ -22,7 +22,7 @@ use std::sync::atomic::Ordering;
 type Name = String;
 type Score = i64;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq)]
 struct Tag {
     name: Name,
     score: Score,
@@ -31,6 +31,21 @@ struct Tag {
 impl PartialEq for Tag {
     fn eq(&self, other: &Self) -> bool {
         self.name == other.name
+    }
+}
+
+impl PartialOrd for Tag {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Tag {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match self.score.cmp(&other.score) {
+            std::cmp::Ordering::Equal => self.name.cmp(&other.name),
+            res => res,
+        }
     }
 }
 
@@ -84,7 +99,8 @@ where
     /// Retrieve Items from the deserilized Cache
     fn from(value: &Cache<T>) -> Self {
         let mut tags: Vec<Tag> = value.tags.iter().map(Into::into).collect();
-        tags.sort_by_key(|t| -t.score);
+        tags.sort_unstable();
+        tags.reverse();
         Items::new(tags)
     }
 }

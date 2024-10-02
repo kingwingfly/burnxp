@@ -278,6 +278,8 @@ impl Tagger {
                                         } else {
                                             self.cache.untag(&item[i], cur);
                                         }
+                                    } else {
+                                        continue;
                                     }
                                 } else {
                                     self.current_screen = CurrentScreen::Popup(2);

@@ -9,10 +9,6 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
-## [0.1.0-alpha37] - 2024-10-03
-
-- improve: resize the popup window of creating a new tag
-
 ## [0.1.0-alpha36] - 2024-10-03
 
 - enhance: `tagger tag` sub-command, helping score images by tagging

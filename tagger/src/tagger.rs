@@ -268,17 +268,19 @@ impl Tagger {
                         CurrentScreen::Main => match key.code {
                             KeyCode::Char('q') => self.current_screen = CurrentScreen::Exiting,
                             KeyCode::Char(c) if c.is_numeric() => {
-                                let tags = self.tags.current_items();
-                                let item = &self.items.current_items()[0];
-                                let i = c.to_digit(10).unwrap() as usize;
-                                if i > 0 && i <= tags.len() {
-                                    self.chosen[i - 1] = !self.chosen[i - 1];
-                                    let tag = &tags[i - 1];
-                                    if self.chosen[i - 1] {
-                                        self.cache.tag(item, tag);
-                                    } else {
-                                        self.cache.untag(item, tag);
+                                if let Some(cur) = self.current_tag.as_ref() {
+                                    let item = self.items.current_items();
+                                    let i = c.to_digit(10).unwrap() as usize;
+                                    if i > 0 && i <= item.len() {
+                                        self.chosen[i - 1] = !self.chosen[i - 1];
+                                        if self.chosen[i - 1] {
+                                            self.cache.tag(&item[i], cur);
+                                        } else {
+                                            self.cache.untag(&item[i], cur);
+                                        }
                                     }
+                                } else {
+                                    self.current_screen = CurrentScreen::Popup(2);
                                 }
                             }
                             KeyCode::Char('j') => self.current_screen = CurrentScreen::Popup(0), // page jump

@@ -113,7 +113,7 @@ fn main() -> Result<()> {
             path,
         } => {
             let divider = Divider::new(path, train, valid, train_path, valid_path)?;
-            divider.devide()?;
+            divider.divide()?;
         }
         SubCmd::Observe { path } => {
             let mut observer = Observer::new(path)?;

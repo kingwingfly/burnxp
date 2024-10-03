@@ -1,9 +1,9 @@
 use crate::utils::{json_from, json_into};
 use anyhow::Result;
 use rand::{seq::SliceRandom as _, thread_rng};
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 
-type Set = Vec<(Score, Vec<PathBuf>)>;
+type Set = HashMap<Score, Vec<PathBuf>>;
 type Score = i64;
 
 #[derive(Debug)]
@@ -32,18 +32,18 @@ impl Divider {
         })
     }
 
-    pub fn devide(self) -> Result<()> {
+    pub fn divide(self) -> Result<()> {
         let mut rng = thread_rng();
         let to_divide = self.to_divide;
-        let mut train_set = vec![];
-        let mut valid_set = vec![];
+        let mut train_set = HashMap::new();
+        let mut valid_set = HashMap::new();
         for (score, mut elems) in to_divide.into_iter() {
             let len = elems.len();
             let choose = (len as f64 * self.ratio).floor() as usize;
             elems.shuffle(&mut rng);
             let (valid_elems, train_elems) = elems.split_at(choose);
-            train_set.push((score, train_elems.to_vec()));
-            valid_set.push((score, valid_elems.to_vec()));
+            train_set.insert(score, train_elems.to_vec());
+            valid_set.insert(score, valid_elems.to_vec());
         }
         json_into(&self.train_path, &train_set)?;
         json_into(&self.valid_path, &valid_set)?;

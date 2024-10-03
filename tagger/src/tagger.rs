@@ -82,7 +82,7 @@ where
         }
     }
 
-    fn score(&self) -> HashMap<i64, Vec<T>> {
+    fn score(&self) -> HashMap<Score, Vec<T>> {
         self.tagged.iter().fold(HashMap::new(), |mut acc, x| {
             let score: Score = x.1.iter().map(|tag| self.tags[tag]).sum();
             acc.entry(score).or_default().push(x.0.clone());

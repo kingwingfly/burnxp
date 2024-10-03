@@ -5,7 +5,7 @@ use burn::{
 };
 use image::imageops::FilterType;
 use mime_guess::MimeGuess;
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 use std::{fs::File, path::Path};
 
 pub const SIZE: usize = 720;
@@ -36,7 +36,7 @@ pub(crate) struct ImageDataSet {
 
 impl ImageDataSet {
     pub(crate) fn train(path: PathBuf) -> Result<Self> {
-        let tags: Vec<(i64, Vec<PathBuf>)> = serde_json::from_reader(File::open(path)?)?;
+        let tags: HashMap<Score, Vec<PathBuf>> = serde_json::from_reader(File::open(path)?)?;
         let inner = tags
             .into_iter()
             .flat_map(|(score, paths)| paths.into_iter().map(move |path| (path, score)))
@@ -45,7 +45,7 @@ impl ImageDataSet {
     }
 
     pub(crate) fn test(path: PathBuf) -> Result<Self> {
-        let tags: Vec<(i64, Vec<PathBuf>)> = serde_json::from_reader(File::open(path)?)?;
+        let tags: Vec<(Score, Vec<PathBuf>)> = serde_json::from_reader(File::open(path)?)?;
         let inner = tags
             .into_iter()
             .flat_map(|(score, paths)| paths.into_iter().map(move |path| (path, score)))

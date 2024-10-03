@@ -53,11 +53,11 @@ This tool depends on `libtorch` to accelerate, please set it up with provided `s
 
 ## 1. Use compiled release
 
-You can download the `score` and `tagger` in the [release page](https://github.com/kingwingfly/burnxp/releases).
+You can download the `burnxp` and `tagger` in the [release page](https://github.com/kingwingfly/burnxp/releases).
 
 ```sh
 run/setup.xx
-run/score.xx
+run/burnxp.xx
 ./tagger.xx
 # xx is the suffix of executable file based on your OS
 ```
@@ -71,7 +71,7 @@ scripts/setup_<your_os>.xx
 source .venv/bin/activate
 
 cargo build -p tagger --release
-cargo build -p score --release
+cargo build -p burnxp --release
 ```
 
 # Note

@@ -11,9 +11,9 @@ use ratatui::{
     layout::Rect,
     widgets::{Widget, WidgetRef},
 };
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 
-type Set = Vec<(Score, Vec<PathBuf>)>;
+type Set = HashMap<Score, Vec<PathBuf>>;
 type Score = i64;
 
 #[derive(Debug)]
@@ -70,11 +70,12 @@ impl WidgetRef for Observer {
             Quit.render(area, buf);
             return;
         }
-        let data = self
+        let mut data = self
             .data
             .iter()
             .map(|(score, paths)| (*score, paths.len()))
-            .collect();
+            .collect::<Vec<_>>();
+        data.sort_by_key(|(score, _)| *score);
         Histogram { data }.render(area, buf);
     }
 }

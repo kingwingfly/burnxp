@@ -11,7 +11,7 @@ use mime_guess::MimeGuess;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::widgets::{Widget, WidgetRef};
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 use std::path::PathBuf;
 use std::sync::atomic::Ordering as AtomicOrdering;
 use std::thread;
@@ -53,21 +53,27 @@ impl Cmper {
                     .fetch_add(1, AtomicOrdering::Relaxed);
             }
             CMPDISPATCH.req_tx.send(Event::Finished)?;
-            let res: Vec<(i64, OrdPaths)> = btree.into_iter().fold(vec![], |mut acc, node| {
-                if acc.is_empty() {
-                    vec![(0, node)]
-                } else {
-                    let (last_score, last) = *acc.last().unwrap();
-                    CMPDISPATCH
-                        .req_tx
-                        .send(Event::Compare([node, last]))
-                        .unwrap();
-                    let delta = CMPDISPATCH.resp_rx.recv().unwrap() as i64;
-                    acc.push((last_score + delta, node));
-                    acc
+            let mut scores = HashMap::new();
+            let mut last: Option<OrdPaths> = None;
+            let mut score = 0;
+            for node in btree.into_iter() {
+                match last {
+                    Some(last) => {
+                        CMPDISPATCH
+                            .req_tx
+                            .send(Event::Compare([node, last]))
+                            .unwrap();
+                        let delta = CMPDISPATCH.resp_rx.recv().unwrap() as i64;
+                        score += delta;
+                        scores.insert(score, node);
+                    }
+                    None => {
+                        last = Some(node);
+                        scores.insert(score, node);
+                    }
                 }
-            });
-            json_into(&output, &res)?;
+            }
+            json_into(&output, &scores)?;
             CMPDISPATCH.req_tx.send(Event::Finished)?;
             Ok(())
         });

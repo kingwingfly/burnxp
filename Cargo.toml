@@ -1,9 +1,9 @@
 [workspace]
-members = ["score", "tagger"]
+members = ["burnxp", "tagger"]
 resolver = "2"
 
 [workspace.package]
-version = "0.1.0-alpha37"
+version = "0.1.0-alpha38"
 edition = "2021"
 authors = ["Louis <836250617@qq.com>"]
 repository = "https://github.com/kingwingfly/burnxp"

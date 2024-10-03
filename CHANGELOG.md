@@ -9,6 +9,11 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha38] - 2024-10-03
+
+- rename: `score` to `burnxp`
+- broken update: turn `tags.json` to `scores.json` and in diifferent format
+
 ## [0.1.0-alpha37] - 2024-10-03
 
 - cache relative path instead

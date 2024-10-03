@@ -2,9 +2,9 @@ use burn::{
     backend::{libtorch::LibTorchDevice, Autodiff, LibTorch},
     optim::AdamConfig,
 };
+use burnxp::{predict, train, Output, PredictConfig, ResNetType, ScoreModelConfig, TrainingConfig};
 use clap::{CommandFactory as _, Parser, Subcommand};
 use clap_complete::{generate, Shell};
-use score::{predict, train, Output, PredictConfig, ResNetType, ScoreModelConfig, TrainingConfig};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -127,7 +127,7 @@ fn main() {
             device,
         ),
         SubCmd::GenCompletion { shell } => {
-            generate(shell, &mut Cli::command(), "score", &mut std::io::stdout());
+            generate(shell, &mut Cli::command(), "model", &mut std::io::stdout());
         }
     }
 }

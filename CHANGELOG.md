@@ -12,6 +12,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 ## [0.1.0-alpha39] - 2024-10-03
 
 - fix bug: `tagger divide` not working properly
+- fix bug: valid-dataset loader not working properly
 
 ## [0.1.0-alpha38] - 2024-10-03
 

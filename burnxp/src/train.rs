@@ -68,7 +68,7 @@ pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, 
         .batch_size(config.batch_size)
         .shuffle(config.seed)
         .num_workers(config.num_workers)
-        .build(ImageDataSet::test(config.valid_set).expect("Validation set faild to be loaded"));
+        .build(ImageDataSet::valid(config.valid_set).expect("Validation set faild to be loaded"));
 
     let learner = LearnerBuilder::new(&artifact_dir)
         .metric_train_numeric(LossMetric::new())

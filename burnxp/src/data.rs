@@ -44,8 +44,8 @@ impl ImageDataSet {
         Ok(Self { inner })
     }
 
-    pub(crate) fn test(path: PathBuf) -> Result<Self> {
-        let tags: Vec<(Score, Vec<PathBuf>)> = serde_json::from_reader(File::open(path)?)?;
+    pub(crate) fn valid(path: PathBuf) -> Result<Self> {
+        let tags: HashMap<Score, Vec<PathBuf>> = serde_json::from_reader(File::open(path)?)?;
         let inner = tags
             .into_iter()
             .flat_map(|(score, paths)| paths.into_iter().map(move |path| (path, score)))

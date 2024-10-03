@@ -126,6 +126,11 @@ impl Picker {
                         CurrentScreen::Exiting => match key.code {
                             KeyCode::Char('y') => {
                                 json_into(&self.cache_path, &self.cache)?;
+                                let mut cache = self
+                                    .cache
+                                    .iter()
+                                    .filter_map(|p| p.canonicalize().ok())
+                                    .collect::<HashSet<_>>();
                                 fs::create_dir_all(&self.to)?;
                                 walkdir::WalkDir::new(&self.to)
                                     .into_iter()
@@ -133,7 +138,7 @@ impl Picker {
                                     .filter_map(|e| {
                                         let path = e.into_path();
                                         if path.is_symlink()
-                                            && !self.cache.remove(&path.canonicalize().ok()?)
+                                            && !cache.remove(&path.canonicalize().ok()?)
                                         {
                                             return Some(path);
                                         }
@@ -142,7 +147,7 @@ impl Picker {
                                     .for_each(|path| {
                                         fs::remove_file(path).ok();
                                     });
-                                for from in self.cache.iter() {
+                                for from in cache.iter() {
                                     let mut to = self.to.join(from.file_name().unwrap());
                                     let mut i = 0;
                                     while to.exists() {
@@ -151,18 +156,16 @@ impl Picker {
                                         to = self.to.join(new_name);
                                         i += 1;
                                     }
-                                    if let Ok(from) = from.canonicalize() {
-                                        match self.method {
-                                            Method::Cp => fs::copy(from, to).map(|_| {})?,
-                                            Method::SoftLink => {
-                                                #[cfg(target_family = "unix")]
-                                                std::os::unix::fs::symlink(from, to)?;
-                                                #[cfg(target_family = "windows")]
-                                                std::os::windows::fs::symlink_file(from, to)?;
-                                            }
-                                            Method::HardLink => fs::hard_link(from, to)?,
-                                            Method::Move => fs::rename(from, to)?,
+                                    match self.method {
+                                        Method::Cp => fs::copy(from, to).map(|_| {})?,
+                                        Method::SoftLink => {
+                                            #[cfg(target_family = "unix")]
+                                            std::os::unix::fs::symlink(from, to)?;
+                                            #[cfg(target_family = "windows")]
+                                            std::os::windows::fs::symlink_file(from, to)?;
                                         }
+                                        Method::HardLink => fs::hard_link(from, to)?,
+                                        Method::Move => fs::rename(from, to)?,
                                     }
                                 }
                                 return Ok(());

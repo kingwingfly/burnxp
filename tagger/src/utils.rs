@@ -62,7 +62,7 @@ pub(crate) fn images_walk(root: impl AsRef<Path>) -> Vec<PathBuf> {
         .into_iter()
         .filter_map(|res| res.ok())
         .filter_map(|e| match MimeGuess::from_path(e.path()).first() {
-            Some(mime) if mime.type_() == "image" => e.into_path().canonicalize().ok(),
+            Some(mime) if mime.type_() == "image" => Some(e.into_path()),
             _ => None,
         })
         .collect()

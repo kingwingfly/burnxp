@@ -37,6 +37,7 @@ enum SubCmd {
         /// Number of workers for data loading
         #[arg(short = 'w', long, default_value = "1")]
         num_workers: usize,
+        /// Learning rate for the optimizer, starting from set value to its 1/10
         #[arg(short, long, default_value = "1.0e-3")]
         learning_rate: f64,
         /// Number of epochs before allowing early stopping

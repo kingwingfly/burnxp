@@ -31,6 +31,8 @@ pub struct PredictConfig {
     batch_size: usize,
     #[config(default = 8)]
     num_workers: usize,
+    #[config(default = 0.5)]
+    confidence_threshold: f32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -91,6 +93,7 @@ pub fn predict<B: Backend>(config: PredictConfig, device: B::Device) {
                     let tags = tags
                         .iter()
                         .zip(all_tags.iter())
+                        .filter(|(p, _)| **p > config.confidence_threshold)
                         .map(|(p, (k, v))| Tag {
                             name: k.clone(),
                             weight: *v,
@@ -124,16 +127,14 @@ pub fn predict<B: Backend>(config: PredictConfig, device: B::Device) {
                     let tags = tags
                         .iter()
                         .zip(all_tags.iter())
+                        .filter(|(p, _)| **p > config.confidence_threshold)
                         .map(|(p, (k, v))| Tag {
                             name: k.clone(),
                             weight: *v,
                             possibility: *p,
                         })
                         .collect::<Vec<_>>();
-                    let total_score = tags
-                        .iter()
-                        .map(|t| t.possibility * t.weight as f32)
-                        .sum::<f32>();
+                    let total_score = tags.iter().map(|t| t.weight as f32).sum::<f32>();
                     output.insert(
                         path,
                         ScoreResult {

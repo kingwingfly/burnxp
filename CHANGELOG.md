@@ -15,7 +15,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 - improve: random forest instead of regression
 - improve: linear learning rate scheduler
 - improve: more metrics to show in `burnxp train`
-- improve: better prediction output
+- improve: better prediction output with confidence threshold
 
 ## [0.1.0-alpha39] - 2024-10-03
 

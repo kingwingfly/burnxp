@@ -46,6 +46,9 @@ enum SubCmd {
         /// Path to the pretrained model checkpoint
         #[arg(short, long)]
         pretrained: Option<PathBuf>,
+        /// Random seed for reproducibility
+        #[arg(short, long, default_value = "42")]
+        seed: u64,
     },
     /// Predict using a ResNet model checkpoint
     Predict {
@@ -66,9 +69,12 @@ enum SubCmd {
         /// Number of workers for data loading
         #[arg(short = 'w', long, default_value = "8")]
         num_workers: usize,
-        /// Path to the weights file
+        /// Path to the file which contains the tags' weights
         #[arg(short, long, default_value = "tags.json")]
         tags: PathBuf,
+        /// Confidence threshold for the prediction, only tags with possibility greater than this value will be output
+        #[arg(long, default_value = "0.5")]
+        confidence_threshold: f32,
     },
     /// generate auto completion script
     GenCompletion {
@@ -99,6 +105,7 @@ fn main() {
             learning_rate,
             early_stopping,
             pretrained,
+            seed,
         } => {
             train::<MyAutodiffBackend>(
                 artifact_dir,
@@ -113,7 +120,8 @@ fn main() {
                 .with_num_workers(num_workers)
                 .with_learning_rate(learning_rate)
                 .with_pretrained(pretrained)
-                .with_early_stopping(early_stopping),
+                .with_early_stopping(early_stopping)
+                .with_seed(seed),
                 device,
             );
         }
@@ -125,10 +133,12 @@ fn main() {
             batch_size,
             num_workers,
             tags,
+            confidence_threshold,
         } => predict::<MyBackend>(
             PredictConfig::new(model, checkpoint, input, output, tags)
                 .with_batch_size(batch_size)
-                .with_num_workers(num_workers),
+                .with_num_workers(num_workers)
+                .with_confidence_threshold(confidence_threshold),
             device,
         ),
         SubCmd::GenCompletion { shell } => {

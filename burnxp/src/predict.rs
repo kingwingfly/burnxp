@@ -38,12 +38,20 @@ struct Tags {
     tags: HashMap<String, i64>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Tag {
     name: String,
     weight: i64,
     possibility: f32,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ScoreResult {
+    score: f32,
+    tags: Vec<Tag>,
+}
+
+type JsonOutput = HashMap<PathBuf, ScoreResult>;
 
 impl fmt::Display for Tag {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -105,7 +113,37 @@ pub fn predict<B: Backend>(config: PredictConfig, device: B::Device) {
             }
         }
         Output::Json => {
-            todo!()
+            let mut output: JsonOutput = HashMap::new();
+            for batch in dataloader_predict.iter() {
+                let tags = model
+                    .forward(batch.datas)
+                    .into_data()
+                    .to_vec::<f32>()
+                    .unwrap();
+                for (path, tags) in batch.paths.into_iter().zip(tags.chunks(all_tags.len())) {
+                    let tags = tags
+                        .iter()
+                        .zip(all_tags.iter())
+                        .map(|(p, (k, v))| Tag {
+                            name: k.clone(),
+                            weight: *v,
+                            possibility: *p,
+                        })
+                        .collect::<Vec<_>>();
+                    let total_score = tags
+                        .iter()
+                        .map(|t| t.possibility * t.weight as f32)
+                        .sum::<f32>();
+                    output.insert(
+                        path,
+                        ScoreResult {
+                            score: total_score,
+                            tags,
+                        },
+                    );
+                }
+            }
+            serde_json::to_writer_pretty(std::io::stdout(), &output).unwrap();
         }
     }
 }

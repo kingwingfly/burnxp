@@ -81,14 +81,6 @@ where
             tags.retain(|x| x != tag);
         }
     }
-
-    fn score(&self) -> HashMap<Score, Vec<T>> {
-        self.tagged.iter().fold(HashMap::new(), |mut acc, x| {
-            let score: Score = x.1.iter().map(|tag| self.tags[tag]).sum();
-            acc.entry(score).or_default().push(x.0.clone());
-            acc
-        })
-    }
 }
 
 impl<T, const N: usize> From<&Cache<T>> for Items<Tag, N>
@@ -205,18 +197,17 @@ pub struct Tagger {
     // flags for tags current page
     chosen: [bool; 4],
     cache: Cache<PathBuf>,
-    cache_path: PathBuf,
     input_buffer: InputBuffer<2>,
     // path of output
     output: PathBuf,
 }
 
 impl Tagger {
-    pub fn new(root: PathBuf, cache_path: PathBuf, output: PathBuf) -> Self {
+    pub fn new(root: PathBuf, output: PathBuf) -> Self {
         let images = images_walk(&root);
         PROCESS.total.fetch_add(images.len(), Ordering::Relaxed);
         let items = Items::new(images);
-        let cache: Cache<PathBuf> = json_from(&cache_path).unwrap_or_default();
+        let cache: Cache<PathBuf> = json_from(&output).unwrap_or_default();
         Self {
             current_screen: CurrentScreen::Main,
             items,
@@ -225,7 +216,6 @@ impl Tagger {
             // flags for tags current page
             chosen: [false; 4],
             cache,
-            cache_path,
             input_buffer: InputBuffer::new(["TagName".to_string(), "Score".to_string()]),
             output,
         }
@@ -385,9 +375,7 @@ impl Tagger {
                         },
                         CurrentScreen::Exiting => match key.code {
                             KeyCode::Char('y') => {
-                                json_into(&self.cache_path, &self.cache)?;
-                                let output = self.cache.score();
-                                json_into(&self.output, &output)?;
+                                json_into(&self.output, &self.cache)?;
                                 return Ok(());
                             }
                             KeyCode::Char('Y') => {

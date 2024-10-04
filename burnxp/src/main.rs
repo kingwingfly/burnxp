@@ -37,7 +37,7 @@ enum SubCmd {
         /// Number of workers for data loading
         #[arg(short = 'w', long, default_value = "1")]
         num_workers: usize,
-        #[arg(short, long, default_value = "1.0e-4")]
+        #[arg(short, long, default_value = "1.0e-3")]
         learning_rate: f64,
         /// Number of epochs before allowing early stopping
         #[arg(short, long, default_value = "20")]
@@ -65,6 +65,9 @@ enum SubCmd {
         /// Number of workers for data loading
         #[arg(short = 'w', long, default_value = "8")]
         num_workers: usize,
+        /// Path to the weights file
+        #[arg(short, long, default_value = "tags.json")]
+        tags: PathBuf,
     },
     /// generate auto completion script
     GenCompletion {
@@ -120,8 +123,9 @@ fn main() {
             output,
             batch_size,
             num_workers,
+            tags,
         } => predict::<MyBackend>(
-            PredictConfig::new(model, checkpoint, input, output)
+            PredictConfig::new(model, checkpoint, input, output, tags)
                 .with_batch_size(batch_size)
                 .with_num_workers(num_workers),
             device,

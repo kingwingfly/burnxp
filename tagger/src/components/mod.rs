@@ -6,10 +6,10 @@ mod quit;
 mod tag_grid;
 mod title;
 
-pub(crate) use footer::{CmperFooter, PickerFooter, TaggerFooter};
-pub(crate) use histogram::Histogram;
-pub(crate) use image::{Grid, Images};
-pub(crate) use input::Input;
-pub(crate) use quit::Quit;
-pub(crate) use tag_grid::TagGrid;
-pub(crate) use title::Title;
+pub(crate) use footer::*;
+pub(crate) use histogram::*;
+pub(crate) use image::*;
+pub(crate) use input::*;
+pub(crate) use quit::*;
+pub(crate) use tag_grid::*;
+pub(crate) use title::*;

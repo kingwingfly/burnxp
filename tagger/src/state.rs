@@ -6,6 +6,7 @@ use std::{
     },
 };
 
+#[cfg(feature = "cmper")]
 pub(crate) static PROCESS_WITH_COMPLEXITY: LazyLock<ProcessWithComplexity> =
     LazyLock::new(ProcessWithComplexity::default);
 pub(crate) static PROCESS: LazyLock<Process> = LazyLock::new(Process::default);
@@ -19,12 +20,14 @@ pub(crate) enum CurrentScreen {
     Exiting,
 }
 
+#[cfg(feature = "cmper")]
 #[derive(Default)]
 pub(crate) struct ProcessWithComplexity {
     pub finished: AtomicUsize,
     pub total: AtomicUsize,
 }
 
+#[cfg(feature = "cmper")]
 impl fmt::Display for ProcessWithComplexity {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let finished = self.finished.load(Ordering::Relaxed);
@@ -34,6 +37,7 @@ impl fmt::Display for ProcessWithComplexity {
     }
 }
 
+#[cfg(feature = "cmper")]
 fn complexity(finished: usize, total: usize) -> usize {
     if total < 3 {
         return total.max(1) - 1;

@@ -32,6 +32,7 @@ pub(crate) fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
         .split(popup_layout[1])[1] // Return the middle chunk
 }
 
+#[cfg(feature = "cmper")]
 pub(crate) fn bincode_from<T: DeserializeOwned>(path: &PathBuf) -> io::Result<T> {
     File::open(path).and_then(|f| {
         bincode::deserialize_from(f).map_err(|_| io::Error::from(io::ErrorKind::InvalidData))
@@ -44,6 +45,7 @@ pub(crate) fn json_from<T: DeserializeOwned>(path: &PathBuf) -> io::Result<T> {
     })
 }
 
+#[cfg(feature = "cmper")]
 pub(crate) fn bincode_into<T: Serialize>(path: &PathBuf, data: &T) -> io::Result<()> {
     File::create(path).and_then(|f| {
         bincode::serialize_into(f, data).map_err(|_| io::Error::from(io::ErrorKind::InvalidData))

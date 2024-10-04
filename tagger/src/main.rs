@@ -2,7 +2,9 @@ use anyhow::Result;
 use clap::{CommandFactory as _, Parser, Subcommand};
 use clap_complete::{generate, Shell};
 use std::path::PathBuf;
-use tagger::{Cmper, Divider, Method, Observer, Picker, Tagger};
+#[cfg(feature = "cmper")]
+use tagger::Cmper;
+use tagger::{Divider, Method, Observer, Picker, Tagger};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
@@ -13,24 +15,10 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum SubCmd {
-    /// Score image-groups by comparing them
-    Cmp {
-        /// The file to cache the comparison results (relative paths are cached)
-        #[clap(short, long, default_value = "cache.bin")]
-        cache: PathBuf,
-        /// The output file path
-        #[clap(short, long, default_value = "scores.json")]
-        output: PathBuf,
-        /// The root directory to scan for images
-        root: PathBuf,
-    },
     /// Score images by tagging them
     Tag {
-        /// The file to store the tag results
+        /// The file to store and cache the tag results
         #[clap(short, long, default_value = "tags.json")]
-        cache: PathBuf,
-        /// The output file path
-        #[clap(short, long, default_value = "scores.json")]
         output: PathBuf,
         /// The root directory to scan for images
         root: PathBuf,
@@ -75,25 +63,25 @@ enum SubCmd {
         /// shell name
         shell: Shell,
     },
+    /// Score image-groups by comparing them (deprecated)
+    #[cfg(feature = "cmper")]
+    Cmp {
+        /// The file to cache the comparison results (relative paths are cached)
+        #[clap(short, long, default_value = "cache.bin")]
+        cache: PathBuf,
+        /// The output file path
+        #[clap(short, long, default_value = "scores.json")]
+        output: PathBuf,
+        /// The root directory to scan for images
+        root: PathBuf,
+    },
 }
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.subcmd {
-        SubCmd::Cmp {
-            cache,
-            output,
-            root,
-        } => {
-            let mut cmper = Cmper::new(root, output, cache);
-            cmper.run()?;
-        }
-        SubCmd::Tag {
-            cache,
-            output,
-            root,
-        } => {
-            let mut tagger = Tagger::new(root, cache, output);
+        SubCmd::Tag { output, root } => {
+            let mut tagger = Tagger::new(root, output);
             tagger.run()?;
         }
         SubCmd::Pick {
@@ -121,6 +109,15 @@ fn main() -> Result<()> {
         }
         SubCmd::GenCompletion { shell } => {
             generate(shell, &mut Cli::command(), "tagger", &mut std::io::stdout());
+        }
+        #[cfg(feature = "cmper")]
+        SubCmd::Cmp {
+            cache,
+            output,
+            root,
+        } => {
+            let mut cmper = Cmper::new(root, output, cache);
+            cmper.run()?;
         }
     }
 

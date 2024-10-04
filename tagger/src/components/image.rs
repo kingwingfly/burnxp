@@ -36,32 +36,6 @@ struct CacheLine {
 // Safety: we won't use the Parker's reference
 unsafe impl Sync for CacheLine {}
 
-pub(crate) struct Images<'a> {
-    paths: [&'a PathBuf; 2],
-}
-
-impl<'a> Images<'a> {
-    pub(crate) fn new(paths: [&'a PathBuf; 2]) -> Self {
-        Self { paths }
-    }
-}
-
-impl<'a> Widget for Images<'a> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let chunks = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
-            .split(area);
-        let mut images = Vec::with_capacity(2);
-        for (i, &path) in self.paths[..2].iter().enumerate() {
-            images.push(Image::new(path.clone(), chunks[i]));
-        }
-        for (i, image) in images.into_iter().enumerate() {
-            image.render(chunks[i], buf);
-        }
-    }
-}
-
 pub(crate) struct Grid<'a, const R: usize, const C: usize, const S: usize> {
     cur: &'a [PathBuf],
     pre: &'a [PathBuf],
@@ -240,4 +214,33 @@ fn preload(path: PathBuf, chunk: Rect) {
         u.unpark();
         Ok(())
     });
+}
+
+#[cfg(feature = "cmper")]
+pub(crate) struct Images<'a> {
+    paths: [&'a PathBuf; 2],
+}
+
+#[cfg(feature = "cmper")]
+impl<'a> Images<'a> {
+    pub(crate) fn new(paths: [&'a PathBuf; 2]) -> Self {
+        Self { paths }
+    }
+}
+
+#[cfg(feature = "cmper")]
+impl<'a> Widget for Images<'a> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        let chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+            .split(area);
+        let mut images = Vec::with_capacity(2);
+        for (i, &path) in self.paths[..2].iter().enumerate() {
+            images.push(Image::new(path.clone(), chunks[i]));
+        }
+        for (i, image) in images.into_iter().enumerate() {
+            image.render(chunks[i], buf);
+        }
+    }
 }

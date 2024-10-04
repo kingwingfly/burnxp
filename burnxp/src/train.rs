@@ -8,7 +8,7 @@ use burn::{
     train::{
         metric::{
             store::{Aggregate, Direction, Split},
-            CpuMemory, CpuTemperature, CpuUse, CudaMetric, LossMetric,
+            CpuMemory, CpuUse, CudaMetric, HammingScore, LearningRateMetric, LossMetric,
         },
         LearnerBuilder, MetricEarlyStoppingStrategy, StoppingCondition,
     },
@@ -86,15 +86,17 @@ pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, 
         .build(ImageDataSet::valid(valid_input).expect("Validation set faild to be loaded"));
 
     let learner = LearnerBuilder::new(&artifact_dir)
+        .metric_train_numeric(HammingScore::new())
+        .metric_valid_numeric(HammingScore::new())
         .metric_train_numeric(LossMetric::new())
         .metric_valid_numeric(LossMetric::new())
+        .metric_train(LearningRateMetric::new())
         .metric_train(CudaMetric::new())
         .metric_train(CpuUse::new())
-        .metric_train(CpuTemperature::new())
         .metric_train(CpuMemory::new())
-        .early_stopping(MetricEarlyStoppingStrategy::new::<LossMetric<B>>(
+        .early_stopping(MetricEarlyStoppingStrategy::new::<HammingScore<B>>(
             Aggregate::Mean,
-            Direction::Lowest,
+            Direction::Highest,
             Split::Valid,
             StoppingCondition::NoImprovementSince { n_epochs: config.early_stopping },
         ))

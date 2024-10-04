@@ -67,10 +67,14 @@ pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, 
     let batcher_train = ImageBatcher::<B>::new(device.clone());
     let batcher_valid = ImageBatcher::<B::InnerBackend>::new(device.clone());
 
-    let train_input: Input =
-        serde_json::from_reader(File::open(config.train_set).unwrap()).unwrap();
-    let valid_input: Input =
-        serde_json::from_reader(File::open(config.valid_set).unwrap()).unwrap();
+    let train_input: Input = serde_json::from_reader(
+        File::open(config.train_set).expect("Train set file should be accessible"),
+    )
+    .expect("Train set file should be valid");
+    let valid_input: Input = serde_json::from_reader(
+        File::open(config.valid_set).expect("Validation set file should be accessible"),
+    )
+    .expect("Validation set file should be valid");
     let num_classes = train_input.num_classes;
 
     let dataloader_train = DataLoaderBuilder::new(batcher_train)

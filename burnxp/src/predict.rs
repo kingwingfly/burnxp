@@ -62,7 +62,10 @@ impl fmt::Display for Tag {
 }
 
 pub fn predict<B: Backend>(config: PredictConfig, device: B::Device) {
-    let all_tags: Tags = serde_json::from_reader(File::open(config.tags).unwrap()).unwrap();
+    let all_tags: Tags = serde_json::from_reader(
+        File::open(config.tags).expect("The file containing tags and weights should be accessible"),
+    )
+    .expect("The file containing tags and weights should be valid");
     let mut all_tags = all_tags.tags.into_iter().collect::<Vec<_>>();
     all_tags.sort_by_key(|(k, _)| k.clone());
     let model = ScoreModelConfig::new(config.model)

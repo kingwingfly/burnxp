@@ -127,7 +127,7 @@ fn main() {
             device,
         ),
         SubCmd::GenCompletion { shell } => {
-            generate(shell, &mut Cli::command(), "model", &mut std::io::stdout());
+            generate(shell, &mut Cli::command(), "burnxp", &mut std::io::stdout());
         }
     }
 }

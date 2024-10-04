@@ -13,6 +13,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - deprecated: `tagger cmp` sub-command
 - improve: random forest instead of regression
+- improve: linear learning rate scheduler
 
 ## [0.1.0-alpha39] - 2024-10-03
 

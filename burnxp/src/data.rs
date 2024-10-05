@@ -37,7 +37,7 @@ impl ImageDataSet {
     pub(crate) fn train(input: Input) -> Result<Self> {
         for (path, _) in input.tagged.iter() {
             assert!(
-                path.canonicalize()?.exists(),
+                path.canonicalize().is_ok(),
                 "expected {} to exist",
                 path.display()
             );
@@ -50,7 +50,7 @@ impl ImageDataSet {
     pub(crate) fn valid(input: Input) -> Result<Self> {
         for (path, _) in input.tagged.iter() {
             assert!(
-                path.canonicalize()?.exists(),
+                path.canonicalize().is_ok(),
                 "expected {} to exist",
                 path.display()
             );

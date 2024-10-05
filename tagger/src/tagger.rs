@@ -375,6 +375,7 @@ impl Tagger {
                         },
                         CurrentScreen::Exiting => match key.code {
                             KeyCode::Char('y') => {
+                                self.cache.tagged.retain(|k, _| k.canonicalize().is_ok());
                                 json_into(&self.output, &self.cache)?;
                                 return Ok(());
                             }

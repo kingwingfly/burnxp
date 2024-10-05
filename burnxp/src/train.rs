@@ -98,10 +98,10 @@ pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, 
         .metric_train(CudaMetric::new())
         .metric_train(CpuUse::new())
         .metric_train(CpuMemory::new())
-        .early_stopping(MetricEarlyStoppingStrategy::new::<HammingScore<B>>(
+        .early_stopping(MetricEarlyStoppingStrategy::new::<LossMetric<B>>(
             Aggregate::Mean,
-            Direction::Highest,
-            Split::Valid,
+            Direction::Lowest,
+            Split::Train,
             StoppingCondition::NoImprovementSince { n_epochs: config.early_stopping },
         ))
         .with_file_checkpointer(CompactRecorder::new())

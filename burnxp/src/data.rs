@@ -35,12 +35,26 @@ pub(crate) struct ImageDataSet {
 
 impl ImageDataSet {
     pub(crate) fn train(input: Input) -> Result<Self> {
+        for (path, _) in input.tagged.iter() {
+            assert!(
+                path.canonicalize()?.exists(),
+                "expected {} to exist",
+                path.display()
+            );
+        }
         Ok(Self {
             inner: input.tagged,
         })
     }
 
     pub(crate) fn valid(input: Input) -> Result<Self> {
+        for (path, _) in input.tagged.iter() {
+            assert!(
+                path.canonicalize()?.exists(),
+                "expected {} to exist",
+                path.display()
+            );
+        }
         Ok(Self {
             inner: input.tagged,
         })
@@ -61,15 +75,14 @@ impl ImageDataSet {
 
 impl Dataset<ImageData> for ImageDataSet {
     fn get(&self, index: usize) -> Option<ImageData> {
-        self.inner.get(index).and_then(|(path, tags)| {
-            Some(ImageData {
-                data: open_image(path)?
-                    .into_iter()
-                    .map(|p| p as f32 / 255.0)
-                    .collect(),
-                tags: tags.clone(),
-                path: path.clone(),
-            })
+        self.inner.get(index).map(|(path, tags)| ImageData {
+            data: open_image(path)
+                .unwrap_or_else(|| panic!("Failed to load image {}", path.display()))
+                .into_iter()
+                .map(|p| p as f32 / 255.0)
+                .collect(),
+            tags: tags.clone(),
+            path: path.clone(),
         })
     }
 

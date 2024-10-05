@@ -9,6 +9,11 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha41] - 2024-10-05
+
+- fix bug: when training, if file not found or unable to load, it will skip current training epoch.
+Now pre-check will be take and an error will be thrown if file unaccessiable.
+
 ## [0.1.0-alpha40] - 2024-10-05
 
 - deprecated: `tagger cmp` sub-command

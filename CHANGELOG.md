@@ -9,6 +9,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha42] - 2024-10-07
+
+- fix bug: fix `MyPicker` count mistake
+
 ## [0.1.0-alpha41] - 2024-10-05
 
 - fix bug: when training, if file not found or unable to be loaded, it will skip current training epoch.

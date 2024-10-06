@@ -100,7 +100,7 @@ impl MyPicker {
 
     pub(crate) fn new_resize_protocol(&mut self, image: DynamicImage) -> Box<dyn StatefulProtocol> {
         if self.count == 255 {
-            self.count = 0;
+            self.count = 1;
             self.inner = picker();
         } else {
             self.count += 1;

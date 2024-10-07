@@ -1,5 +1,5 @@
 use burn::{
-    data::dataloader::DataLoaderBuilder,
+    data::{dataloader::DataLoaderBuilder, dataset::Dataset as _},
     lr_scheduler::linear::LinearLrSchedulerConfig,
     optim::AdamConfig,
     prelude::*,
@@ -28,7 +28,7 @@ pub struct TrainingConfig {
     train_set: PathBuf,
     valid_set: PathBuf,
     pretrained: Option<PathBuf>,
-    #[config(default = 128)]
+    #[config(default = 64)]
     num_epochs: usize,
     #[config(default = 1)]
     batch_size: usize,
@@ -38,8 +38,10 @@ pub struct TrainingConfig {
     seed: u64,
     #[config(default = 1.0e-3)]
     learning_rate: f64,
-    #[config(default = 20)]
+    #[config(default = 10)]
     early_stopping: usize,
+    #[config(default = "0.8")]
+    confidence_threshold: f32,
 }
 
 /// Should be the same as tagger/divider's Output
@@ -77,11 +79,13 @@ pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, 
     .expect("Validation set file should be valid");
     let num_classes = train_input.num_classes;
 
+    let dataset_train = ImageDataSet::train(train_input).expect("Training set failed to be loaded");
+    let num_iters = dataset_train.len() / config.batch_size * config.num_epochs;
     let dataloader_train = DataLoaderBuilder::new(batcher_train)
         .batch_size(config.batch_size)
         .shuffle(config.seed)
         .num_workers(config.num_workers)
-        .build(ImageDataSet::train(train_input).expect("Training set failed to be loaded"));
+        .build(dataset_train);
 
     let dataloader_valid = DataLoaderBuilder::new(batcher_valid)
         .batch_size(config.batch_size)
@@ -90,8 +94,8 @@ pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, 
         .build(ImageDataSet::valid(valid_input).expect("Validation set faild to be loaded"));
 
     let learner = LearnerBuilder::new(&artifact_dir)
-        .metric_train_numeric(HammingScore::new())
-        .metric_valid_numeric(HammingScore::new())
+        .metric_train_numeric(HammingScore::new().with_threshold(config.confidence_threshold))
+        .metric_valid_numeric(HammingScore::new().with_threshold(config.confidence_threshold))
         .metric_train_numeric(LossMetric::new())
         .metric_valid_numeric(LossMetric::new())
         .metric_train(LearningRateMetric::new())
@@ -121,7 +125,7 @@ pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, 
                 model
             },
             config.optimizer.init(),
-            LinearLrSchedulerConfig::new(config.learning_rate, config.learning_rate/10., config.num_epochs).init(),
+            LinearLrSchedulerConfig::new(config.learning_rate, config.learning_rate/10., num_iters ).init(),
         );
 
     let model_trained = learner.fit(dataloader_train, dataloader_valid);

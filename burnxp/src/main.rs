@@ -30,18 +30,18 @@ enum SubCmd {
         /// Directory to save artifacts (The directory will be recreated if it exists)
         #[arg(short, long, default_value = "burnxp_artifact")]
         artifact_dir: PathBuf,
-        #[arg(short, long, default_value = "128")]
+        #[arg(short, long, default_value = "64")]
         num_epochs: usize,
         #[arg(short, long, default_value = "1")]
         batch_size: usize,
         /// Number of workers for data loading
         #[arg(short = 'w', long, default_value = "1")]
         num_workers: usize,
-        /// Learning rate for the optimizer, starting from set value to its 1/10
+        /// Learning rate for the optimizer, decreasing to 1/10 of the given value
         #[arg(short, long, default_value = "1.0e-3")]
         learning_rate: f64,
         /// Number of epochs before allowing early stopping
-        #[arg(short, long, default_value = "20")]
+        #[arg(short, long, default_value = "10")]
         early_stopping: usize,
         /// Path to the pretrained model checkpoint
         #[arg(short, long)]
@@ -49,6 +49,9 @@ enum SubCmd {
         /// Random seed for reproducibility
         #[arg(short, long, default_value = "42")]
         seed: u64,
+        /// Confidence threshold for computing HammingScore
+        #[arg(short, long, default_value = "0.8")]
+        confidence_threshold: f32,
     },
     /// Predict using a ResNet model checkpoint
     Predict {
@@ -73,7 +76,7 @@ enum SubCmd {
         #[arg(short, long, default_value = "tags.json")]
         tags: PathBuf,
         /// Confidence threshold for the prediction, only tags with possibility greater than this value will be output
-        #[arg(long, default_value = "0.5")]
+        #[arg(long, default_value = "0.8")]
         confidence_threshold: f32,
     },
     /// generate auto completion script
@@ -106,6 +109,7 @@ fn main() {
             early_stopping,
             pretrained,
             seed,
+            confidence_threshold,
         } => {
             train::<MyAutodiffBackend>(
                 artifact_dir,
@@ -121,7 +125,8 @@ fn main() {
                 .with_learning_rate(learning_rate)
                 .with_pretrained(pretrained)
                 .with_early_stopping(early_stopping)
-                .with_seed(seed),
+                .with_seed(seed)
+                .with_confidence_threshold(confidence_threshold),
                 device,
             );
         }

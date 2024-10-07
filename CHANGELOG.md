@@ -9,9 +9,11 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
-## [0.1.0] - 2024-10-08
+## [0.1.0-alpha43] - 2024-10-08
 
 - make observer optional
+- improve: self-define hamming score confidence threshold when training
+- improve: more soft lr scheduler
 
 ## [0.1.0-alpha42] - 2024-10-07
 

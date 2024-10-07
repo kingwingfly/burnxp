@@ -30,6 +30,7 @@ impl<B: Backend> ScoreModel<B> {
     ) -> MultiLabelClassificationOutput<B> {
         let output = self.forward(batch.datas);
         let loss = BinaryCrossEntropyLossConfig::new()
+            .with_smoothing(Some(0.1))
             .init(&B::Device::default())
             .forward(output.clone(), batch.targets.clone());
         MultiLabelClassificationOutput::new(loss, output, batch.targets)

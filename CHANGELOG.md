@@ -12,6 +12,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 ## [0.1.0-alpha42] - 2024-10-07
 
 - fix bug: fix `MyPicker` count mistake
+- improve: sort before display, making similar-name files gather together
 
 ## [0.1.0-alpha41] - 2024-10-05
 

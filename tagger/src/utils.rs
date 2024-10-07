@@ -60,14 +60,16 @@ pub(crate) fn json_into<T: Serialize>(path: &PathBuf, data: &T) -> io::Result<()
 }
 
 pub(crate) fn images_walk(root: impl AsRef<Path>) -> Vec<PathBuf> {
-    walkdir::WalkDir::new(root)
+    let mut res = walkdir::WalkDir::new(root)
         .into_iter()
         .filter_map(|res| res.ok())
         .filter_map(|e| match MimeGuess::from_path(e.path()).first() {
             Some(mime) if mime.type_() == "image" => Some(e.into_path()),
             _ => None,
         })
-        .collect()
+        .collect::<Vec<_>>();
+    res.sort();
+    res
 }
 
 fn picker() -> ratatui_image::picker::Picker {

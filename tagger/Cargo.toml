@@ -27,3 +27,4 @@ lru = "0.12.4"
 [features]
 default = []
 cmper = ["dep:bincode"]
+observe = []

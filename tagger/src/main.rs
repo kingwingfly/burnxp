@@ -4,7 +4,9 @@ use clap_complete::{generate, Shell};
 use std::path::PathBuf;
 #[cfg(feature = "cmper")]
 use tagger::Cmper;
-use tagger::{Divider, Method, Observer, Picker, Tagger};
+#[cfg(feature = "observe")]
+use tagger::Observer;
+use tagger::{Divider, Method, Picker, Tagger};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
@@ -53,15 +55,16 @@ enum SubCmd {
         /// The path to the scores produced by the tagger tag/cmp subcommand
         path: PathBuf,
     },
-    /// Observe the consistency of the scores produced by the scorer
-    Observe {
-        /// The path to the scores produced by the tagger score subcommand
-        path: PathBuf,
-    },
     /// generate auto completion script
     GenCompletion {
         /// shell name
         shell: Shell,
+    },
+    /// Observe the consistency of the scores produced by the scorer
+    #[cfg(feature = "observe")]
+    Observe {
+        /// The path to the scores produced by the tagger score subcommand
+        path: PathBuf,
     },
     /// Score image-groups by comparing them (deprecated)
     #[cfg(feature = "cmper")]
@@ -103,12 +106,13 @@ fn main() -> Result<()> {
             let divider = Divider::new(path, train, valid, train_path, valid_path)?;
             divider.divide()?;
         }
+        SubCmd::GenCompletion { shell } => {
+            generate(shell, &mut Cli::command(), "tagger", &mut std::io::stdout());
+        }
+        #[cfg(feature = "observe")]
         SubCmd::Observe { path } => {
             let mut observer = Observer::new(path)?;
             observer.run()?;
-        }
-        SubCmd::GenCompletion { shell } => {
-            generate(shell, &mut Cli::command(), "tagger", &mut std::io::stdout());
         }
         #[cfg(feature = "cmper")]
         SubCmd::Cmp {

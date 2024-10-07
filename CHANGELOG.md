@@ -14,6 +14,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 - make observer optional
 - improve: self-define hamming score confidence threshold when training
 - improve: more soft lr scheduler
+- improve: more reasonable early stop strategy
 
 ## [0.1.0-alpha42] - 2024-10-07
 

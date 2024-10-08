@@ -40,7 +40,7 @@ pub struct TrainingConfig {
     learning_rate: f64,
     #[config(default = 10)]
     early_stopping: usize,
-    #[config(default = "0.8")]
+    #[config(default = "0.1")]
     confidence_threshold: f32,
 }
 

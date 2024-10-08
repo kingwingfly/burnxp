@@ -50,7 +50,7 @@ enum SubCmd {
         #[arg(short, long, default_value = "42")]
         seed: u64,
         /// Confidence threshold for computing HammingScore
-        #[arg(short, long, default_value = "0.8")]
+        #[arg(short, long, default_value = "0.1")]
         confidence_threshold: f32,
     },
     /// Predict using a ResNet model checkpoint

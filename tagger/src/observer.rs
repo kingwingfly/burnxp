@@ -11,14 +11,18 @@ use ratatui::{
     layout::Rect,
     widgets::{Widget, WidgetRef},
 };
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
 
-type Set = HashMap<Score, Vec<PathBuf>>;
-type Score = i64;
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct Cache {
+    tags: HashMap<String, i64>,
+    tagged: HashMap<PathBuf, Vec<String>>,
+}
 
 #[derive(Debug)]
 pub struct Observer {
-    data: Set,
+    data: Cache,
     current_screen: CurrentScreen,
 }
 
@@ -70,12 +74,17 @@ impl WidgetRef for Observer {
             Quit.render(area, buf);
             return;
         }
-        let mut data = self
-            .data
-            .iter()
-            .map(|(score, paths)| (*score, paths.len()))
-            .collect::<Vec<_>>();
-        data.sort_by_key(|(score, _)| *score);
+        let mut all_tags = self.data.tags.keys().cloned().collect::<Vec<_>>();
+        all_tags.sort();
+        let mut data = vec![0; all_tags.len()];
+        for (_, tags) in self.data.tagged.iter() {
+            for (i, tag) in all_tags.iter().enumerate() {
+                if tags.contains(tag) {
+                    data[i] += 1;
+                }
+            }
+        }
+        let data = all_tags.into_iter().zip(data).collect();
         Histogram { data }.render(area, buf);
     }
 }

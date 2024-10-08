@@ -5,12 +5,13 @@ use ratatui::{
     text::Line,
     widgets::{Bar, BarChart, BarGroup, Widget},
 };
+use std::fmt::Display;
 
-pub(crate) struct Histogram {
-    pub data: Vec<(i64, usize)>,
+pub(crate) struct Histogram<T: Display> {
+    pub data: Vec<(T, usize)>,
 }
 
-impl Widget for Histogram {
+impl<T: Display> Widget for Histogram<T> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let [title, histogram] = Layout::vertical([Constraint::Length(1), Constraint::Fill(1)])
             .spacing(1)
@@ -18,33 +19,20 @@ impl Widget for Histogram {
 
         "Histogram".bold().into_centered_line().render(title, buf);
 
-        let height = histogram.height as usize;
-        if height == 0 {
-            return;
+        let height = area.height as usize;
+        let col = self.data.len() / height + 1;
+        let chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(vec![Constraint::Ratio(1, col as u32); col])
+            .split(histogram);
+
+        for (i, data) in self.data.chunks(height).enumerate() {
+            let data = data
+                .iter()
+                .map(|(tag, num)| (tag.to_string(), *num))
+                .collect::<Vec<_>>();
+            barchart(&data).render(chunks[i], buf);
         }
-        let group_size = self.data.len() / height + 1;
-        let mut data = vec![0; height];
-        for (score, num) in self.data.iter() {
-            data[(*score as usize / group_size).min(height - 1)] += num
-        }
-        let mut data = data
-            .into_iter()
-            .enumerate()
-            .map(|(i, num)| {
-                (
-                    if group_size > 1 {
-                        format!("{}-{}", i * group_size, (i + 1) * group_size - 1)
-                    } else {
-                        format!("{}", i)
-                    },
-                    num,
-                )
-            })
-            .collect::<Vec<_>>();
-        while let Some((_, 0)) = data.last() {
-            data.pop();
-        }
-        barchart(&data).render(histogram, buf);
     }
 }
 

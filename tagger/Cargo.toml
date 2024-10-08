@@ -26,6 +26,6 @@ rand = "0.8.5"
 lru = "0.12.4"
 
 [features]
-default = []
+default = ["observer"]
 cmper = ["dep:bincode"]
-observe = []
+observer = []

@@ -4,7 +4,7 @@ use clap_complete::{generate, Shell};
 use std::path::PathBuf;
 #[cfg(feature = "cmper")]
 use tagger::Cmper;
-#[cfg(feature = "observe")]
+#[cfg(feature = "observer")]
 use tagger::Observer;
 use tagger::{Divider, Method, Picker, Tagger};
 
@@ -61,7 +61,7 @@ enum SubCmd {
         shell: Shell,
     },
     /// Observe the consistency of the scores produced by the scorer
-    #[cfg(feature = "observe")]
+    #[cfg(feature = "observer")]
     Observe {
         /// The path to the scores produced by the tagger score subcommand
         path: PathBuf,
@@ -109,7 +109,7 @@ fn main() -> Result<()> {
         SubCmd::GenCompletion { shell } => {
             generate(shell, &mut Cli::command(), "tagger", &mut std::io::stdout());
         }
-        #[cfg(feature = "observe")]
+        #[cfg(feature = "observer")]
         SubCmd::Observe { path } => {
             let mut observer = Observer::new(path)?;
             observer.run()?;

@@ -1,6 +1,6 @@
 use crate::{
     data::{ImageBatcher, ImageDataSet},
-    ResNetType, ScoreModelConfig,
+    ModelConfig, ResNetType,
 };
 use burn::{
     config::Config,
@@ -68,7 +68,7 @@ pub fn predict<B: Backend>(config: PredictConfig, device: B::Device) {
     .expect("The file containing tags and weights should be valid");
     let mut all_tags = all_tags.tags.into_iter().collect::<Vec<_>>();
     all_tags.sort_by_key(|(k, _)| k.clone());
-    let model = ScoreModelConfig::new(config.model)
+    let model = ModelConfig::new(config.model)
         .init::<B>(&device, all_tags.len())
         .load_record(
             CompactRecorder::new()

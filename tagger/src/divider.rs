@@ -1,6 +1,7 @@
 use crate::utils::{json_from, json_into};
 use anyhow::Result;
 use rand::{seq::SliceRandom as _, thread_rng};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
 
@@ -12,8 +13,8 @@ struct Cache {
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 struct Output {
-    pub num_classes: usize,
-    pub tagged: Vec<(PathBuf, Vec<i8>)>,
+    weights: Option<Vec<f32>>,
+    tagged: Vec<(PathBuf, Vec<i8>)>,
 }
 
 #[derive(Debug)]
@@ -43,27 +44,44 @@ impl Divider {
     }
 
     pub fn divide(&self) -> Result<()> {
-        let (mut all_tags, mut weights) = (vec![], vec![]);
+        let mut all_tags = vec![];
         let to_divide = &self.to_divide;
-        for (tag, weight) in to_divide.tags.iter() {
-            all_tags.push(tag.clone());
-            weights.push(*weight);
+        for tag in to_divide.tags.keys() {
+            all_tags.push(tag);
         }
         all_tags.sort();
-        let mut tagged = vec![];
-        for (item, tags) in self.to_divide.tagged.iter() {
-            let tags = all_tags.iter().map(|t| tags.contains(t) as i8).collect();
-            tagged.push((item.clone(), tags));
-        }
+        let mut tagged = to_divide
+            .tagged
+            .par_iter()
+            .map(|(item, tags)| {
+                let mut res = vec![0; all_tags.len()];
+                for (i, tag) in all_tags.iter().enumerate() {
+                    res[i] = tags.contains(tag) as i8;
+                }
+                (item.clone(), res)
+            })
+            .collect::<Vec<_>>();
+        let mut weights = tagged
+            .iter()
+            .fold(vec![0.; all_tags.len()], |mut acc, (_, tags)| {
+                for (i, tag) in tags.iter().enumerate() {
+                    acc[i] += *tag as f32;
+                }
+                acc
+            })
+            .into_iter()
+            .map(|x| 1. / x.clamp(2., 256.).log2())
+            .collect::<Vec<_>>();
+        let sum = weights.iter().sum::<f32>();
+        weights.iter_mut().for_each(|x| *x /= sum);
         let mut train_set = Output::default();
         let mut valid_set = Output::default();
         tagged.shuffle(&mut thread_rng());
         let len = tagged.len();
         let valid_set_size = (len as f64 * self.ratio).floor() as usize;
         let (valid_elems, train_elems) = tagged.split_at(valid_set_size);
-        train_set.num_classes = weights.len();
+        train_set.weights = Some(weights);
         train_set.tagged = train_elems.to_vec();
-        valid_set.num_classes = weights.len();
         valid_set.tagged = valid_elems.to_vec();
         json_into(&self.train_path, &train_set)?;
         json_into(&self.valid_path, &valid_set)?;

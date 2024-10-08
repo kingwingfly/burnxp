@@ -3771,6 +3771,7 @@ dependencies = [
  "rand",
  "ratatui 0.28.1",
  "ratatui-image",
+ "rayon",
  "serde",
  "serde_json",
  "walkdir",

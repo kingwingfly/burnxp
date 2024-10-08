@@ -1,4 +1,3 @@
-use crate::train::Input;
 use anyhow::Result;
 use burn::{
     data::dataloader::{batcher::Batcher, Dataset},
@@ -34,30 +33,26 @@ pub(crate) struct ImageDataSet {
 }
 
 impl ImageDataSet {
-    pub(crate) fn train(input: Input) -> Result<Self> {
-        for (path, _) in input.tagged.iter() {
+    pub(crate) fn train(tagged: Vec<(PathBuf, Vec<i8>)>) -> Result<Self> {
+        for (path, _) in tagged.iter() {
             assert!(
                 path.canonicalize().is_ok(),
                 "expected {} to exist",
                 path.display()
             );
         }
-        Ok(Self {
-            inner: input.tagged,
-        })
+        Ok(Self { inner: tagged })
     }
 
-    pub(crate) fn valid(input: Input) -> Result<Self> {
-        for (path, _) in input.tagged.iter() {
+    pub(crate) fn valid(tagged: Vec<(PathBuf, Vec<i8>)>) -> Result<Self> {
+        for (path, _) in tagged.iter() {
             assert!(
                 path.canonicalize().is_ok(),
                 "expected {} to exist",
                 path.display()
             );
         }
-        Ok(Self {
-            inner: input.tagged,
-        })
+        Ok(Self { inner: tagged })
     }
 
     pub(crate) fn predict(path: PathBuf) -> Result<Self> {

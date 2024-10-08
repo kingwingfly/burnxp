@@ -2,7 +2,7 @@ use burn::{
     backend::{libtorch::LibTorchDevice, Autodiff, LibTorch},
     optim::AdamConfig,
 };
-use burnxp::{predict, train, Output, PredictConfig, ResNetType, ScoreModelConfig, TrainingConfig};
+use burnxp::{predict, train, ModelConfig, Output, PredictConfig, ResNetType, TrainingConfig};
 use clap::{CommandFactory as _, Parser, Subcommand};
 use clap_complete::{generate, Shell};
 use std::path::PathBuf;
@@ -114,7 +114,7 @@ fn main() {
             train::<MyAutodiffBackend>(
                 artifact_dir,
                 TrainingConfig::new(
-                    ScoreModelConfig::new(model),
+                    ModelConfig::new(model),
                     AdamConfig::new(),
                     train_set,
                     valid_set,

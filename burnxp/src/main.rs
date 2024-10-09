@@ -38,7 +38,7 @@ enum SubCmd {
         #[arg(short = 'w', long, default_value = "1")]
         num_workers: usize,
         /// Learning rate for the optimizer, decreasing to 1/10 of the given value
-        #[arg(short, long, default_value = "1.0e-2")]
+        #[arg(short, long, default_value = "1.0e-3")]
         learning_rate: f64,
         /// Number of epochs before allowing early stopping
         #[arg(short, long, default_value = "10")]
@@ -61,9 +61,6 @@ enum SubCmd {
         /// Path to the model checkpoint
         #[arg(short, long)]
         checkpoint: PathBuf,
-        /// Root of test images directory
-        #[arg(short, long)]
-        input: PathBuf,
         /// Method to output the scores
         #[arg(short, long, default_value = "tty")]
         output: Output,
@@ -79,6 +76,8 @@ enum SubCmd {
         /// only tags with possibility greater than (1 - this value) will be output
         #[arg(long, default_value = "0.5")]
         confidence_threshold: f32,
+        /// Root of images directory
+        input: PathBuf,
     },
     /// generate auto completion script
     GenCompletion {

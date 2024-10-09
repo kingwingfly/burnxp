@@ -36,7 +36,7 @@ pub struct TrainingConfig {
     num_workers: usize,
     #[config(default = 42)]
     seed: u64,
-    #[config(default = 1.0e-2)]
+    #[config(default = 1.0e-3)]
     learning_rate: f64,
     #[config(default = 10)]
     early_stopping: usize,

@@ -72,8 +72,8 @@ impl Divider {
             .into_iter()
             .map(|x| 1. / x.clamp(2., 256.).log2())
             .collect::<Vec<_>>();
-        let sum = weights.iter().sum::<f32>();
-        weights.iter_mut().for_each(|x| *x /= sum);
+        let factory = weights.iter().sum::<f32>() / weights.len() as f32;
+        weights.iter_mut().for_each(|x| *x /= factory);
         let mut train_set = Output::default();
         let mut valid_set = Output::default();
         tagged.shuffle(&mut thread_rng());

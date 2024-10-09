@@ -70,7 +70,7 @@ impl Divider {
                 acc
             })
             .into_iter()
-            .map(|x| 1. / x.clamp(2., 256.).log2())
+            .map(|x| 1. / x.clamp(1., 256.))
             .collect::<Vec<_>>();
         let factory = weights.iter().sum::<f32>() / weights.len() as f32;
         weights.iter_mut().for_each(|x| *x /= factory);

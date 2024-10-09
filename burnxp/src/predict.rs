@@ -96,7 +96,7 @@ pub fn predict<B: Backend>(config: PredictConfig, device: B::Device) {
                     let tags = tags
                         .iter()
                         .zip(all_tags.iter())
-                        .filter(|(p, _)| **p > config.confidence_threshold)
+                        .filter(|(p, _)| **p > 1. - config.confidence_threshold)
                         .map(|(p, (k, v))| Tag {
                             name: k.clone(),
                             weight: *v,
@@ -130,7 +130,7 @@ pub fn predict<B: Backend>(config: PredictConfig, device: B::Device) {
                     let tags = tags
                         .iter()
                         .zip(all_tags.iter())
-                        .filter(|(p, _)| **p > config.confidence_threshold)
+                        .filter(|(p, _)| **p > 1. - config.confidence_threshold)
                         .map(|(p, (k, v))| Tag {
                             name: k.clone(),
                             weight: *v,

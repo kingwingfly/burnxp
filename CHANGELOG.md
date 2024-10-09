@@ -14,6 +14,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 - fix bug: image resize factor not as the right type
 - improve: take label weight into account when training
 - improve: new observer
+- improve: better default lr
 
 ## [0.1.0-alpha43] - 2024-10-08
 

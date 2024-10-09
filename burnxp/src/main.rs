@@ -38,7 +38,7 @@ enum SubCmd {
         #[arg(short = 'w', long, default_value = "1")]
         num_workers: usize,
         /// Learning rate for the optimizer, decreasing to 1/10 of the given value
-        #[arg(short, long, default_value = "1.0e-3")]
+        #[arg(short, long, default_value = "1.0e-2")]
         learning_rate: f64,
         /// Number of epochs before allowing early stopping
         #[arg(short, long, default_value = "10")]

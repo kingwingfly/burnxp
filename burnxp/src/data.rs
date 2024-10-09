@@ -132,13 +132,13 @@ pub fn open_image(path: impl AsRef<Path>) -> Option<Vec<u8>> {
     let img = image::open(path.as_ref().canonicalize().ok()?).ok()?;
     let mut background = image::RgbImage::new(size, size);
 
-    let factor = img.height().max(img.width()) / size;
-    if factor == 0 {
+    let factor = img.height().max(img.width()) as f64 / size as f64;
+    if factor == 0. {
         // an invalid image
         return None;
     }
-    let nheight = (img.height() / factor).min(size);
-    let nwidth = (img.width() / factor).min(size);
+    let nheight = (img.height() as f64 / factor).min(size as f64) as u32;
+    let nwidth = (img.width() as f64 / factor).min(size as f64) as u32;
 
     let img = img.resize(nwidth, nheight, FilterType::Gaussian);
     let img = img.to_rgb8();

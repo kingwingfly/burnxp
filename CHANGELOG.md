@@ -9,8 +9,9 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
-## [0.1.0-alpha44] - 2024-10-08
+## [0.1.0-alpha44] - 2024-10-09
 
+- fix bug: image resize factor not as the right type
 - improve: take label weight into account when training
 - improve: new observer
 

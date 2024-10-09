@@ -50,7 +50,7 @@ enum SubCmd {
         #[arg(short, long, default_value = "42")]
         seed: u64,
         /// Confidence threshold for computing HammingScore
-        #[arg(short, long, default_value = "0.1")]
+        #[arg(short, long, default_value = "0.5")]
         confidence_threshold: f32,
     },
     /// Predict using a ResNet model checkpoint
@@ -75,8 +75,9 @@ enum SubCmd {
         /// Path to the file which contains the tags' weights
         #[arg(short, long, default_value = "tags.json")]
         tags: PathBuf,
-        /// Confidence threshold for the prediction, only tags with possibility greater than this value will be output
-        #[arg(long, default_value = "0.8")]
+        /// Confidence threshold for the prediction,
+        /// only tags with possibility greater than (1 - this value) will be output
+        #[arg(long, default_value = "0.5")]
         confidence_threshold: f32,
     },
     /// generate auto completion script

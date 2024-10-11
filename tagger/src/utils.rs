@@ -4,10 +4,15 @@ use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui_image::picker::Picker;
 use ratatui_image::protocol::StatefulProtocol;
 use serde::de::DeserializeOwned;
-use serde::Serialize;
-use std::io;
-use std::path::Path;
-use std::{fs::File, path::PathBuf};
+use serde::{Deserialize, Serialize};
+use std::fmt;
+use std::{
+    collections::HashMap,
+    fs::File,
+    hash::Hash,
+    io,
+    path::{Path, PathBuf},
+};
 
 /// helper function to create a centered rect using up certain percentage of the available rect `r`
 pub(crate) fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
@@ -229,5 +234,223 @@ impl<T, const N: usize> Items<T, N> {
         T: PartialEq,
     {
         self.items.retain(|x| x != item);
+    }
+}
+
+type Name = String;
+type Score = i64;
+
+#[derive(Debug, Clone, Eq)]
+pub(crate) struct Tag {
+    pub name: Name,
+    pub score: Score,
+}
+
+impl PartialEq for Tag {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+    }
+}
+
+impl PartialOrd for Tag {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Tag {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match self.score.cmp(&other.score) {
+            std::cmp::Ordering::Equal => self.name.cmp(&other.name),
+            res => res,
+        }
+    }
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub(crate) struct TagRecord<T>
+where
+    T: Eq + Hash,
+{
+    pub tags: HashMap<Name, Score>,
+    pub tagged: HashMap<T, Vec<Name>>,
+}
+
+impl<T> TagRecord<T>
+where
+    T: Eq + Hash + Clone,
+{
+    pub(crate) fn tag(&mut self, item: &T, tag: &Tag) {
+        if let Some(x) = self.tagged.get_mut(item) {
+            x.push(tag.name.clone());
+            return;
+        }
+        self.tagged.insert(item.clone(), vec![tag.name.clone()]);
+    }
+
+    pub(crate) fn untag(&mut self, item: &T, tag: &Tag) {
+        if let Some(x) = self.tagged.get_mut(item) {
+            x.retain(|x| x != &tag.name);
+        }
+    }
+
+    pub(crate) fn remove(&mut self, tag: &Name) {
+        self.tags.remove(tag);
+        for tags in self.tagged.values_mut() {
+            tags.retain(|x| x != tag);
+        }
+    }
+}
+
+impl<T, const N: usize> From<&TagRecord<T>> for Items<Tag, N>
+where
+    T: Eq + Hash,
+{
+    /// Retrieve Items from the deserilized Cache
+    fn from(value: &TagRecord<T>) -> Self {
+        let mut tags: Vec<Tag> = value.tags.iter().map(Into::into).collect();
+        tags.sort_unstable();
+        tags.reverse();
+        Items::new(tags)
+    }
+}
+
+impl From<(&Name, &Score)> for Tag {
+    fn from(value: (&Name, &Score)) -> Self {
+        Self {
+            name: value.0.clone(),
+            score: *value.1,
+        }
+    }
+}
+
+impl TryFrom<&[String; 2]> for Tag {
+    type Error = ();
+
+    fn try_from(value: &[String; 2]) -> std::result::Result<Self, Self::Error> {
+        let score = value[1].parse().map_err(|_| ())?;
+        Ok(Self {
+            name: value[0].clone(),
+            score,
+        })
+    }
+}
+
+impl TryFrom<&InputBuffer<2>> for Tag {
+    type Error = ();
+
+    fn try_from(value: &InputBuffer<2>) -> std::result::Result<Self, Self::Error> {
+        (&value.values).try_into()
+    }
+}
+
+impl fmt::Display for Tag {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}({})", self.name, self.score)
+    }
+}
+
+pub(crate) struct InputBuffer<const N: usize> {
+    pub cursor: usize,
+    pub keys: [String; N],
+    pub values: [String; N],
+}
+
+impl<const N: usize> InputBuffer<N> {
+    pub(crate) fn new(keys: [String; N]) -> Self {
+        let buffer = vec![String::new(); N];
+        Self {
+            cursor: 0,
+            keys,
+            values: buffer.try_into().unwrap(),
+        }
+    }
+
+    pub(crate) fn push(&mut self, c: char) {
+        self.values[self.cursor].push(c);
+    }
+
+    pub(crate) fn pop(&mut self) {
+        self.values[self.cursor].pop();
+    }
+
+    pub(crate) fn clear(&mut self) {
+        self.values[self.cursor].clear();
+    }
+
+    pub(crate) fn clear_all(&mut self) {
+        for i in 0..N {
+            self.values[i].clear();
+        }
+        self.cursor = 0;
+    }
+
+    pub(crate) fn next(&mut self) {
+        self.cursor = (self.cursor + 1) % N;
+    }
+
+    pub(crate) fn prev(&mut self) {
+        self.cursor = (self.cursor + N - 1) % N;
+    }
+}
+
+impl<const N: usize> fmt::Display for InputBuffer<N> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for i in 0..N {
+            if i == self.cursor {
+                writeln!(f, "> {:^7}: {}", self.keys[i], self.values[i])?;
+            } else {
+                writeln!(f, "  {:^7}: {}", self.keys[i], self.values[i])?;
+            }
+            writeln!(f)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct DataSetDesc {
+    pub num_classes: usize,
+    pub up_sample: HashMap<BitFlags, usize>,
+    pub binary_encodings: HashMap<BitFlags, Vec<PathBuf>>,
+}
+
+impl DataSetDesc {
+    pub fn new(num_classes: usize) -> Self {
+        Self {
+            num_classes,
+            up_sample: HashMap::new(),
+            binary_encodings: HashMap::new(),
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[repr(transparent)]
+#[serde(transparent)]
+pub struct BitFlags {
+    inner: u64,
+}
+
+impl BitFlags {
+    pub(crate) fn enable(&mut self, i: u64) {
+        assert!(i < 63, "invalid bit");
+        self.inner |= 1 << i;
+    }
+}
+
+impl From<u64> for BitFlags {
+    fn from(value: u64) -> Self {
+        Self { inner: value }
+    }
+}
+
+impl From<BitFlags> for Vec<i8> {
+    fn from(value: BitFlags) -> Self {
+        let mut res = Vec::new();
+        for i in 0..64 {
+            res.push((value.inner & (1 << i) != 0) as i8);
+        }
+        res
     }
 }

@@ -2,7 +2,7 @@ use crate::{
     components::{Grid, Input, Quit, TagGrid, TaggerFooter, Title},
     state::{CurrentScreen, PROCESS},
     terminal::AutoDropTerminal,
-    utils::{centered_rect, images_walk, json_from, json_into, Items},
+    utils::{centered_rect, images_walk, json_from, json_into, InputBuffer, Items, Tag, TagRecord},
 };
 use anyhow::Result;
 use crossterm::event::{self, Event as TermEvent, KeyCode, KeyEventKind};
@@ -11,183 +11,8 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     widgets::{Widget, WidgetRef},
 };
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::fmt;
-use std::hash::Hash;
 use std::path::PathBuf;
 use std::sync::atomic::Ordering;
-
-type Name = String;
-type Score = i64;
-
-#[derive(Debug, Clone, Eq)]
-struct Tag {
-    name: Name,
-    score: Score,
-}
-
-impl PartialEq for Tag {
-    fn eq(&self, other: &Self) -> bool {
-        self.name == other.name
-    }
-}
-
-impl PartialOrd for Tag {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Tag {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        match self.score.cmp(&other.score) {
-            std::cmp::Ordering::Equal => self.name.cmp(&other.name),
-            res => res,
-        }
-    }
-}
-
-#[derive(Debug, Default, Serialize, Deserialize)]
-struct Cache<T>
-where
-    T: Eq + Hash,
-{
-    tags: HashMap<Name, Score>,
-    tagged: HashMap<T, Vec<Name>>,
-}
-
-impl<T> Cache<T>
-where
-    T: Eq + Hash + Clone,
-{
-    fn tag(&mut self, item: &T, tag: &Tag) {
-        if let Some(x) = self.tagged.get_mut(item) {
-            x.push(tag.name.clone());
-            return;
-        }
-        self.tagged.insert(item.clone(), vec![tag.name.clone()]);
-    }
-
-    fn untag(&mut self, item: &T, tag: &Tag) {
-        if let Some(x) = self.tagged.get_mut(item) {
-            x.retain(|x| x != &tag.name);
-        }
-    }
-
-    fn remove(&mut self, tag: &Name) {
-        self.tags.remove(tag);
-        for tags in self.tagged.values_mut() {
-            tags.retain(|x| x != tag);
-        }
-    }
-}
-
-impl<T, const N: usize> From<&Cache<T>> for Items<Tag, N>
-where
-    T: Eq + Hash,
-{
-    /// Retrieve Items from the deserilized Cache
-    fn from(value: &Cache<T>) -> Self {
-        let mut tags: Vec<Tag> = value.tags.iter().map(Into::into).collect();
-        tags.sort_unstable();
-        tags.reverse();
-        Items::new(tags)
-    }
-}
-
-impl From<(&Name, &Score)> for Tag {
-    fn from(value: (&Name, &Score)) -> Self {
-        Self {
-            name: value.0.clone(),
-            score: *value.1,
-        }
-    }
-}
-
-impl TryFrom<&[String; 2]> for Tag {
-    type Error = ();
-
-    fn try_from(value: &[String; 2]) -> std::result::Result<Self, Self::Error> {
-        let score = value[1].parse().map_err(|_| ())?;
-        Ok(Self {
-            name: value[0].clone(),
-            score,
-        })
-    }
-}
-
-impl TryFrom<&InputBuffer<2>> for Tag {
-    type Error = ();
-
-    fn try_from(value: &InputBuffer<2>) -> std::result::Result<Self, Self::Error> {
-        (&value.values).try_into()
-    }
-}
-
-impl fmt::Display for Tag {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}({})", self.name, self.score)
-    }
-}
-
-struct InputBuffer<const N: usize> {
-    cursor: usize,
-    keys: [String; N],
-    values: [String; N],
-}
-
-impl<const N: usize> InputBuffer<N> {
-    fn new(keys: [String; N]) -> Self {
-        let buffer = vec![String::new(); N];
-        Self {
-            cursor: 0,
-            keys,
-            values: buffer.try_into().unwrap(),
-        }
-    }
-
-    fn push(&mut self, c: char) {
-        self.values[self.cursor].push(c);
-    }
-
-    fn pop(&mut self) {
-        self.values[self.cursor].pop();
-    }
-
-    fn clear(&mut self) {
-        self.values[self.cursor].clear();
-    }
-
-    fn clear_all(&mut self) {
-        for i in 0..N {
-            self.values[i].clear();
-        }
-        self.cursor = 0;
-    }
-
-    fn next(&mut self) {
-        self.cursor = (self.cursor + 1) % N;
-    }
-
-    fn prev(&mut self) {
-        self.cursor = (self.cursor + N - 1) % N;
-    }
-}
-
-impl<const N: usize> fmt::Display for InputBuffer<N> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for i in 0..N {
-            if i == self.cursor {
-                writeln!(f, "> {:^7}: {}", self.keys[i], self.values[i])?;
-            } else {
-                writeln!(f, "  {:^7}: {}", self.keys[i], self.values[i])?;
-            }
-            writeln!(f)?;
-        }
-        Ok(())
-    }
-}
 
 pub struct Tagger {
     current_screen: CurrentScreen,
@@ -196,7 +21,7 @@ pub struct Tagger {
     current_tag: Option<Tag>,
     // flags for tags current page
     chosen: [bool; 4],
-    cache: Cache<PathBuf>,
+    cache: TagRecord<PathBuf>,
     input_buffer: InputBuffer<2>,
     // path of output
     output: PathBuf,
@@ -207,7 +32,7 @@ impl Tagger {
         let images = images_walk(&root);
         PROCESS.total.fetch_add(images.len(), Ordering::Relaxed);
         let items = Items::new(images);
-        let cache: Cache<PathBuf> = json_from(&output).unwrap_or_default();
+        let cache: TagRecord<PathBuf> = json_from(&output).unwrap_or_default();
         Self {
             current_screen: CurrentScreen::Main,
             items,

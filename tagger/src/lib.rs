@@ -23,3 +23,4 @@ pub use divider::Divider;
 pub use observer::Observer;
 pub use picker::{Method, Picker};
 pub use tagger::Tagger;
+pub use utils::{BitFlags, DataSetDesc};

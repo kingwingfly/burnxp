@@ -20,9 +20,8 @@ clap = { workspace = true }
 clap_complete = { workspace = true }
 walkdir = { workspace = true }
 mime_guess = { workspace = true }
-rayon = { workspace = true }
+rand = { workspace = true }
 crossbeam = "0.8.4"
-rand = "0.8.5"
 lru = "0.12.4"
 
 [features]

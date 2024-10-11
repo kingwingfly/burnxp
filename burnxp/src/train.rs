@@ -13,8 +13,8 @@ use burn::{
         LearnerBuilder, MetricEarlyStoppingStrategy, StoppingCondition,
     },
 };
-use serde::{Deserialize, Serialize};
 use std::{fs::File, path::PathBuf};
+use tagger::DataSetDesc;
 
 use crate::{
     data::{ImageBatcher, ImageDataSet},
@@ -44,13 +44,6 @@ pub struct TrainingConfig {
     confidence_threshold: f32,
 }
 
-/// Should be the same as tagger/divider's Output
-#[derive(Debug, Default, Serialize, Deserialize)]
-pub(crate) struct Input {
-    weights: Option<Vec<f32>>,
-    tagged: Vec<(PathBuf, Vec<i8>)>,
-}
-
 fn create_artifact_dir(artifact_dir: &PathBuf) {
     // Remove existing artifacts before to get an accurate learner summary
     std::fs::remove_dir_all(artifact_dir).ok();
@@ -69,24 +62,19 @@ pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, 
     let batcher_train = ImageBatcher::<B>::new(device.clone());
     let batcher_valid = ImageBatcher::<B::InnerBackend>::new(device.clone());
 
-    let train_input: Input = serde_json::from_reader(
+    let train_input: DataSetDesc = serde_json::from_reader(
         File::open(config.train_set).expect("Train set file should be accessible"),
     )
     .expect("Train set file should be illegal");
-    let valid_input: Input = serde_json::from_reader(
+    let valid_input: DataSetDesc = serde_json::from_reader(
         File::open(config.valid_set).expect("Validation set file should be accessible"),
     )
     .expect("Validation set file should be illegal");
 
-    let num_classes = train_input
-        .weights
-        .as_ref()
-        .expect("Train set file should contain label weights")
-        .len();
-    let num_iters = train_input.tagged.len() / config.batch_size * config.num_epochs;
+    let num_classes = train_input.num_classes;
+    let num_iters = num_classes / config.batch_size * config.num_epochs;
 
-    let dataset_train =
-        ImageDataSet::train(train_input.tagged).expect("Training set failed to be loaded");
+    let dataset_train = ImageDataSet::train(train_input).expect("Training set failed to be loaded");
     let dataloader_train = DataLoaderBuilder::new(batcher_train)
         .batch_size(config.batch_size)
         .shuffle(config.seed)
@@ -97,7 +85,7 @@ pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, 
         .batch_size(config.batch_size)
         .shuffle(config.seed)
         .num_workers(config.num_workers)
-        .build(ImageDataSet::valid(valid_input.tagged).expect("Validation set faild to be loaded"));
+        .build(ImageDataSet::valid(valid_input).expect("Validation set faild to be loaded"));
 
     let learner = LearnerBuilder::new(&artifact_dir)
         .metric_train_numeric(HammingScore::new().with_threshold(config.confidence_threshold))
@@ -119,7 +107,7 @@ pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, 
         .summary()
         .build(
             {
-                let mut model = config.model.with_weights(train_input.weights).init::<B>(&device, num_classes);
+                let mut model = config.model.init::<B>(&device, num_classes);
                 if let Some(pretrain) = config.pretrained {
                     model = model.load_record(
                         CompactRecorder::new()

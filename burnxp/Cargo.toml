@@ -8,6 +8,7 @@ description = "An image scorer by ResNet"
 license = "MIT"
 
 [dependencies]
+tagger = { path = "../tagger" }
 burn = { workspace = true, features = ["train", "tch"] }
 serde_json = { workspace = true }
 image = { workspace = true }
@@ -18,3 +19,5 @@ anyhow = { workspace = true }
 serde = { workspace = true }
 walkdir = { workspace = true }
 mime_guess = { workspace = true }
+rand = { workspace = true }
+imageproc = "0.25.0"

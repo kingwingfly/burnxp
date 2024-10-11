@@ -51,7 +51,6 @@ impl<B: Backend> ValidStep<ImageBatch<B>, MultiLabelClassificationOutput<B>> for
 #[derive(Config, Debug)]
 pub struct ModelConfig {
     rnn_type: ResNetType,
-    weights: Option<Vec<f32>>,
 }
 
 impl ModelConfig {
@@ -68,7 +67,6 @@ impl ModelConfig {
             sigmoid: Sigmoid,
             loss: BinaryCrossEntropyLossConfig::new()
                 .with_smoothing(Some(0.1))
-                .with_weights(self.weights.clone())
                 .init(device),
         }
     }

@@ -3,7 +3,7 @@ members = ["burnxp", "tagger"]
 resolver = "2"
 
 [workspace.package]
-version = "0.1.0-alpha44"
+version = "0.1.0-alpha45"
 edition = "2021"
 authors = ["Louis <836250617@qq.com>"]
 repository = "https://github.com/kingwingfly/burnxp"
@@ -29,7 +29,7 @@ clap = { version = "4.5.17", features = ["derive"] }
 clap_complete = "4.5.29"
 mime_guess = "2.0.5"
 walkdir = "2.5.0"
-rayon = "1.10.0"
+rand = "0.8.5"
 
 [profile.dev.package.image]
 opt-level = 3

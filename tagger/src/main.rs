@@ -42,15 +42,15 @@ enum SubCmd {
     Divide {
         /// The ratio of the training set
         #[clap(short, long, default_value = "9")]
-        train: usize,
+        train: u32,
         /// The ratio of the validation set
         #[clap(short, long, default_value = "1")]
-        valid: usize,
+        valid: u32,
         /// The output path of the training set
-        #[clap(short, long, default_value = "train.json")]
+        #[clap(long, default_value = "train.json")]
         train_path: PathBuf,
         /// The output path of the validation set
-        #[clap(short, long, default_value = "valid.json")]
+        #[clap(long, default_value = "valid.json")]
         valid_path: PathBuf,
         /// The path to the scores produced by the tagger tag/cmp subcommand
         path: PathBuf,

@@ -28,14 +28,10 @@ iteractively comparing the degree of compliance with sesthetics preferences.
 
 
 Features:
-- Sort pictures by comparing one by one (clever data structure and algorithm are used to
-guarantee total order and O(nlogn) complexity)
-- L/R/U/D arrow keys for better/worse/much better/much worse
-- Sort, score and group pictures in json format
-- The user input will be cached so that user can continue from where he/she left off
 - `tagger pick` subcommand can help pick the images to be tagged **(super fast image viewer in terminal)**
-- `tagger divide` subcommand can help divide the images into train-set and valid-set
-- `tagger observe` subcommand can help observe the distribution of scores
+- `tagger tag` subcommand to label pictures
+- `tagger divide` subcommand can help divide the images into train-set and valid-set, an efficient solver to balance labels and compute weight
+- `tagger observe` subcommand can help observe the distribution of labels
 
 ## Trainer
 
@@ -43,19 +39,21 @@ guarantee total order and O(nlogn) complexity)
 
 ## Predictor
 
-![train_screenshot](images/predict_screenshot.png)
+![predict_screenshot](images/predict_screenshot.png)
 
 # Usage
 
 **Cuda 12.x should be installed** for non-macOS users.
 
-This tool depends on `libtorch` to accelerate, please set it up with provided `setup` scripts.
+Torch version depends on `libtorch` to accelerate, please set it up with provided `dist/setup` scripts. 
+Instead, candle version can work with Cuda only (known issue: [cuda 12.6 unusable](https://github.com/huggingface/candle/issues/2410)).
 
 ## 1. Use compiled release
 
 You can download the `burnxp` and `tagger` in the [release page](https://github.com/kingwingfly/burnxp/releases).
 
 ```sh
+# torch-version only, candle version can skip this setup
 run/setup.xx
 run/burnxp.xx
 ./tagger.xx
@@ -66,25 +64,26 @@ run/burnxp.xx
 
 ```sh
 git clone git@github.com:kingwingfly/burnxp.git
+# torch-version only, candle version can skip this setup
 scripts/setup_<your_os>.xx
-# macOS only
+# torch-version and macOS only, candle version can skip this
 source .venv/bin/activate
 
 cargo build -p tagger --release
-cargo build -p burnxp --release
+cargo build -p burnxp-xx --release
 ```
 
 # Note
 
 The `tagger` works well in `kitty` `iTerm2` and `wezterm` while maybe not in other terminals (like `Warp`).
 
-For Windows, I tried my best to make it work, but Windows is just a piece of \*\*;
+For Windows, I tried my best but failed to make it work, maybe Windows is just a piece of \*\*;
 
 A `Tauri` version may be under development.
 
 # Contributing
 
-Please export all needed environment variables like `scripts/setup` before coding, or your IDE may not work well.
+Please setup all needed environment variables like `scripts/setup` before coding, or your IDE may not work well.
 
 For macOS users, you need also activate python venv before coding.
 

@@ -17,7 +17,10 @@ const HALF: i64 = (SIZE / 2) as i64;
 #[derive(Debug, Clone)]
 pub(crate) struct ImageData {
     data: Vec<f32>,
+    #[cfg(feature = "tch")]
     tags: Vec<i8>,
+    #[cfg(feature = "candle")]
+    tags: Vec<u8>,
     path: PathBuf,
 }
 

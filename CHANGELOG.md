@@ -13,6 +13,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - improve: up-sample image when training
 - enhance: a solver is added to balance the number of tags
+- enhance: candle backend
 
 ## [0.1.0-alpha44] - 2024-10-09
 

@@ -457,6 +457,16 @@ impl From<BitFlags> for Vec<i8> {
     }
 }
 
+impl From<BitFlags> for Vec<u8> {
+    fn from(value: BitFlags) -> Self {
+        let mut res = Vec::with_capacity(64);
+        for i in 0..64 {
+            res.push((value.inner & (1 << i) != 0) as u8);
+        }
+        res
+    }
+}
+
 impl From<BitFlags> for Vec<f64> {
     fn from(value: BitFlags) -> Self {
         let mut res = Vec::with_capacity(64);

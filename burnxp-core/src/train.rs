@@ -52,7 +52,7 @@ fn create_artifact_dir(artifact_dir: &PathBuf) {
 
 pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, device: B::Device) {
     create_artifact_dir(&artifact_dir);
-
+    #[cfg(not(feature = "candle"))]
     B::seed(config.seed);
 
     config

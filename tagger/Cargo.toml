@@ -23,6 +23,12 @@ mime_guess = { workspace = true }
 rand = { workspace = true }
 crossbeam = "0.8.4"
 lru = "0.12.4"
+# argmin-math only support nalgebra 0.32.0
+nalgebra = { version = "0.32.0", default-features = false, features = ["std"] }
+argmin-math = { version = "0.4.0", default-features = false, features = [
+    "nalgebra_latest",
+] }
+argmin = { version = "0.10.0", features = ["rayon"] }
 
 [features]
 default = ["observer"]

@@ -12,6 +12,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 ## [0.1.0-alpha45] - 2024-10-11
 
 - improve: up-sample image when training
+- enhance: a solver is added to balance the number of tags
 
 ## [0.1.0-alpha44] - 2024-10-09
 

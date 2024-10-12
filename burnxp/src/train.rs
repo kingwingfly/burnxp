@@ -1,5 +1,5 @@
 use burn::{
-    data::dataloader::DataLoaderBuilder,
+    data::{dataloader::DataLoaderBuilder, dataset::Dataset},
     lr_scheduler::linear::LinearLrSchedulerConfig,
     optim::AdamConfig,
     prelude::*,
@@ -62,19 +62,19 @@ pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, 
     let batcher_train = ImageBatcher::<B>::new(device.clone());
     let batcher_valid = ImageBatcher::<B::InnerBackend>::new(device.clone());
 
-    let train_input: DataSetDesc = serde_json::from_reader(
+    let mut train_input: DataSetDesc = serde_json::from_reader(
         File::open(config.train_set).expect("Train set file should be accessible"),
     )
     .expect("Train set file should be illegal");
+    let weights = train_input.weights.take();
     let valid_input: DataSetDesc = serde_json::from_reader(
         File::open(config.valid_set).expect("Validation set file should be accessible"),
     )
     .expect("Validation set file should be illegal");
 
     let num_classes = train_input.num_classes;
-    let num_iters = num_classes / config.batch_size * config.num_epochs;
-
     let dataset_train = ImageDataSet::train(train_input).expect("Training set failed to be loaded");
+    let num_iters = dataset_train.len() / config.batch_size * config.early_stopping;
     let dataloader_train = DataLoaderBuilder::new(batcher_train)
         .batch_size(config.batch_size)
         .shuffle(config.seed)
@@ -107,7 +107,7 @@ pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, 
         .summary()
         .build(
             {
-                let mut model = config.model.init::<B>(&device, num_classes);
+                let mut model = config.model.with_weights(weights).init::<B>(&device, num_classes);
                 if let Some(pretrain) = config.pretrained {
                     model = model.load_record(
                         CompactRecorder::new()

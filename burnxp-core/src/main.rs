@@ -1,5 +1,5 @@
-use crate::{predict, train, ModelConfig, Output, PredictConfig, ResNetType, TrainingConfig};
 use burn::{backend::Autodiff, optim::AdamConfig};
+use burnxp::{predict, train, ModelConfig, Output, PredictConfig, ResNetType, TrainingConfig};
 use clap::{CommandFactory as _, Parser, Subcommand};
 use clap_complete::{generate, Shell};
 use std::path::PathBuf;
@@ -90,16 +90,16 @@ type MyBackend = burn::backend::Candle<f32, u8>;
 
 type MyAutodiffBackend = Autodiff<MyBackend>;
 
-pub fn run() {
+fn main() {
     #[cfg(all(feature = "tch", target_os = "macos"))]
     let device = burn::backend::libtorch::LibTorchDevice::Mps;
     #[cfg(all(feature = "tch", not(target_os = "macos")))]
     let device = burn::backend::libtorch::LibTorchDevice::Cuda(0);
 
     #[cfg(all(feature = "candle", target_os = "macos"))]
-    let device = burn::backend::candle::CandleDevice::metal(0);
+    let device = burn::backend::candle::CandleDevice::Metal(0);
     #[cfg(all(feature = "candle", not(target_os = "macos")))]
-    let device = burn::backend::candle::CandleDevice::cuda(0);
+    let device = burn::backend::candle::CandleDevice::Cuda(0);
 
     let args = Cli::parse();
     match args.subcmd {

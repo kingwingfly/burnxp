@@ -64,6 +64,7 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-22.04' || matrix.os == 'windows-latest' }}
         uses: Jimver/cuda-toolkit@master
         with:
+          cuda: "12.4"
           method: network
           sub-packages: '["nvcc"]'
 

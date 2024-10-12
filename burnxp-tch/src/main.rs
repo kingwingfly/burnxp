@@ -1,3 +1,5 @@
+use burnxp_core::run;
+
 fn main() {
-    println!("Hello, world!");
+    run()
 }

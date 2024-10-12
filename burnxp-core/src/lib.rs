@@ -1,5 +1,8 @@
 #![cfg(any(feature = "tch", feature = "candle"))]
 
+#[cfg(all(feature = "tch", feature = "candle"))]
+compile_error!("features `tch` and `candle` are mutually exclusive");
+
 mod cli;
 mod data;
 mod model;

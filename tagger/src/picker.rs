@@ -138,7 +138,9 @@ impl Picker {
                                     .filter_map(|e| {
                                         let path = e.into_path();
                                         if path.is_symlink()
-                                            && !cache.remove(&path.canonicalize().ok()?)
+                                            && path
+                                                .canonicalize()
+                                                .map_or(true, |p| !cache.remove(&p))
                                         {
                                             return Some(path);
                                         }

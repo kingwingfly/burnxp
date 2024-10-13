@@ -70,8 +70,8 @@ enum SubCmd {
         #[arg(short, long, default_value = "tags.json")]
         tags: PathBuf,
         /// Confidence threshold for the prediction,
-        /// only tags with possibility greater than (1 - this value) will be output
-        #[arg(long, default_value = "0.5")]
+        /// only tags with possibility greater than (1 - threshold) will be output
+        #[arg(long = "threshold", default_value = "0.5")]
         confidence_threshold: f32,
         /// Root of images directory
         input: PathBuf,

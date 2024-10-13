@@ -37,8 +37,8 @@ impl<B: Backend> Model<B> {
 
 impl<B: AutodiffBackend> TrainStep<ImageBatch<B>, MultiLabelClassificationOutput<B>> for Model<B> {
     fn step(&self, batch: ImageBatch<B>) -> TrainOutput<MultiLabelClassificationOutput<B>> {
-        let reg = self.forward_multilabelclassification(batch);
-        TrainOutput::new(self, reg.loss.backward(), reg)
+        let classify = self.forward_multilabelclassification(batch);
+        TrainOutput::new(self, classify.loss.backward(), classify)
     }
 }
 

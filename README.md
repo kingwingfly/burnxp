@@ -45,8 +45,8 @@ Features:
 
 **Cuda 12.x should be installed** for non-macOS users.
 
-Torch version depends on `libtorch` to accelerate, please set it up with provided `dist/setup` scripts.
-Instead, candle version can work with Cuda only (known issue: [cuda 12.6 unusable](https://github.com/huggingface/candle/issues/2410)).
+Torch version (recommended) depends on `libtorch` to accelerate, please set it up with provided `dist/setup` scripts.
+Instead, candle version can work independently (known issue: 1. [cuda 12.6 unusable](https://github.com/huggingface/candle/issues/2410); 2. `max_pool` and `avg_pool` are not well-supported, which leads candle version actually unusable).
 
 ## 1. Use compiled release
 

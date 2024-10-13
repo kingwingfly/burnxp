@@ -6,8 +6,12 @@ authors.workspace = true
 repository.workspace = true
 license.workspace = true
 
-[target.'cfg(target_os = "macos")'.dependencies]
-burnxp-core = { path = "../burnxp-core", features = ["candle-metal"] }
+[dependencies]
+burnxp-core = { path = "../burnxp-core", features = ["tch"] }
 
-[target.'cfg(not(target_os = "macos"))'.dependencies]
-burnxp-core = { path = "../burnxp-core", features = ["candle-cuda"] }
+# upper steam is not ready
+# [target.'cfg(target_os = "macos")'.dependencies]
+# burnxp-core = { path = "../burnxp-core", features = ["candle-metal"] }
+
+# [target.'cfg(not(target_os = "macos"))'.dependencies]
+# burnxp-core = { path = "../burnxp-core", features = ["candle-cuda"] }

@@ -94,10 +94,12 @@ impl Divider {
             .collect::<Vec<_>>();
         let ans_matrix = DVector::from_iterator(ans.len(), ans.iter().map(|&x| x as f64));
         let verify = &m * &ans_matrix;
-        println!("Balanced: {}", verify);
         let weights = verify.len() as f64
             * (DVector::from_element(verify.len(), 1.).component_div(&verify)).normalize();
-        println!("Weights: {}", weights);
+        println!("{:<5}{:<8}Tag", "Num", "Weights");
+        for (i, tag) in all_tags.iter().enumerate() {
+            println!("{:<5}{:<8.2}{}", verify[i], weights[i], tag);
+        }
 
         train_set.up_sample = all_flags.into_iter().zip(ans).collect();
         train_set.weights = Some(weights.into_iter().map(|x| *x as f32).collect());

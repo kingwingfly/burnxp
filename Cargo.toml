@@ -1,5 +1,5 @@
 [workspace]
-members = ["burnxp-candle", "burnxp-tch", "burnxp-core", "tagger"]
+members = ["burnxp", "burnxp-core", "tagger"]
 resolver = "2"
 
 [workspace.package]

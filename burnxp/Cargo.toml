@@ -1,5 +1,5 @@
 [package]
-name = "burnxp-candle"
+name = "burnxp"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -7,7 +7,7 @@ repository.workspace = true
 license.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
-burnxp-core = { path = "../burnxp-core", features = ["candle-mac"] }
+burnxp-core = { path = "../burnxp-core", features = ["candle-metal"] }
 
 [target.'cfg(not(target_os = "macos"))'.dependencies]
 burnxp-core = { path = "../burnxp-core", features = ["candle-cuda"] }

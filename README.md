@@ -54,6 +54,7 @@ You can download the `burnxp` and `tagger` in the [release page](https://github.
 
 ```sh
 # torch-version only, candle version can skip this setup
+# you can also setup manually like this script if you have libtorch else where
 run/setup.xx
 run/burnxp.xx
 ./tagger.xx

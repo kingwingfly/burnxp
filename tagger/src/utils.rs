@@ -79,6 +79,7 @@ pub(crate) fn images_walk(root: impl AsRef<Path>) -> Vec<PathBuf> {
             .and_then(|m| m.modified())
             .unwrap_or(SystemTime::now())
     });
+    res.reverse();
     res
 }
 

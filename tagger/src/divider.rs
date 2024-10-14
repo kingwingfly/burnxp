@@ -6,7 +6,7 @@ use argmin::{
 };
 use argmin_observer_slog::SlogLogger;
 use nalgebra::{DMatrix, DVector};
-use rand::{seq::SliceRandom, thread_rng};
+use rand::{distributions::Uniform, seq::SliceRandom, thread_rng, Rng};
 use std::{collections::HashMap, path::PathBuf};
 
 #[derive(Debug)]
@@ -72,7 +72,10 @@ impl Divider {
         let target = m.column_sum().max() * DVector::from_element(num_classes, 1.);
         let max = map_t.values().map(Vec::len).max().unwrap_or_default() as f64;
         let problem = Problem::new(m.clone(), target, max);
-        let init = DVector::from_element(flags.len(), 0.);
+        let init = DVector::from_iterator(
+            flags.len(),
+            rng.sample_iter(Uniform::new(0., max)).take(flags.len()),
+        );
         let linesearch = HagerZhangLineSearch::new();
         let solver = SteepestDescent::new(linesearch);
         let res = Executor::new(problem, solver)

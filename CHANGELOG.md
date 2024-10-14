@@ -12,6 +12,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 ## [0.1.0-alpha47] - 2024-10-13
 
 - improve: picker now auto-removes bad symlinks
+- improve: random initialization for divider solver
 
 ## [0.1.0-alpha46] - 2024-10-13
 

@@ -6,6 +6,7 @@ use ratatui_image::protocol::StatefulProtocol;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::time::SystemTime;
 use std::{
     collections::HashMap,
     fs::File,
@@ -73,7 +74,11 @@ pub(crate) fn images_walk(root: impl AsRef<Path>) -> Vec<PathBuf> {
             _ => None,
         })
         .collect::<Vec<_>>();
-    res.sort();
+    res.sort_by_key(|p| {
+        p.metadata()
+            .and_then(|m| m.modified())
+            .unwrap_or(SystemTime::now())
+    });
     res
 }
 

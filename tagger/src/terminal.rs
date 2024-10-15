@@ -19,7 +19,7 @@ impl AutoDropTerminal {
         // setup terminal
         enable_raw_mode()?;
         let mut stderr = std::io::stderr();
-        #[cfg(target_os = "windows")]
+        #[cfg(windows)]
         execute!(stderr, EnableMouseCapture)?; // for Windows, enable first or it cannot disable
         execute!(stderr, EnterAlternateScreen, DisableMouseCapture)?;
         let backend = CrosstermBackend::new(stderr);

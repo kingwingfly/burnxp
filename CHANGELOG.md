@@ -9,7 +9,11 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
-## [0.1.0-alpha47] - 2024-10-13
+## [0.1.0-alpha48] - 2024-10-15
+
+- windows adaptation
+
+## [0.1.0-alpha47] - 2024-10-14
 
 - improve: picker now auto-removes bad symlinks
 - improve: random initialization for divider solver

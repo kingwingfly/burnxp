@@ -78,7 +78,8 @@ cargo build -p burnxp-xx --release
 
 The `tagger` works well in `kitty` `iTerm2` and `wezterm` while maybe not in other terminals (like `Warp`).
 
-For Windows, I tried my best but failed to make it work, maybe Windows is just a piece of \*\*;
+For Windows, I tried my best but failed to make it work perfectly.
+`wezterm` can be used and please just set font size to 18 to meet the preset.
 
 A `Tauri` version may be under development.
 

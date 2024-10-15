@@ -84,13 +84,13 @@ pub(crate) fn images_walk(root: impl AsRef<Path>) -> Vec<PathBuf> {
 }
 
 fn picker() -> ratatui_image::picker::Picker {
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(unix)]
     let mut picker = ratatui_image::picker::Picker::from_termios()
         .map_err(|_| anyhow::anyhow!("Failed to get the picker"))
         .unwrap();
-    #[cfg(target_os = "windows")]
+    #[cfg(windows)]
     let mut picker = {
-        let mut picker = ratatui_image::picker::Picker::new((12, 24));
+        let mut picker = ratatui_image::picker::Picker::new((18, 36));
         picker.protocol_type = ratatui_image::picker::ProtocolType::Iterm2;
         picker
     };

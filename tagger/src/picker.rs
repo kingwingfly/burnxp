@@ -161,9 +161,9 @@ impl Picker {
                                     match self.method {
                                         Method::Cp => fs::copy(from, to).map(|_| {})?,
                                         Method::SoftLink => {
-                                            #[cfg(target_family = "unix")]
+                                            #[cfg(unix)]
                                             std::os::unix::fs::symlink(from, to)?;
-                                            #[cfg(target_family = "windows")]
+                                            #[cfg(windows)]
                                             std::os::windows::fs::symlink_file(from, to)?;
                                         }
                                         Method::HardLink => fs::hard_link(from, to)?,

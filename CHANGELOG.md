@@ -9,6 +9,11 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha49] - 2024-10-15
+
+- inc ver
+- better default value
+
 ## [0.1.0-alpha48] - 2024-10-15
 
 - windows adaptation

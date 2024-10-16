@@ -675,14 +675,14 @@ dependencies = [
 
 [[package]]
 name = "burnxp"
-version = "0.1.0-alpha48"
+version = "0.1.0-alpha49"
 dependencies = [
  "burnxp-core",
 ]
 
 [[package]]
 name = "burnxp-core"
-version = "0.1.0-alpha48"
+version = "0.1.0-alpha49"
 dependencies = [
  "anyhow",
  "burn",
@@ -4131,7 +4131,7 @@ dependencies = [
 
 [[package]]
 name = "tagger"
-version = "0.1.0-alpha48"
+version = "0.1.0-alpha49"
 dependencies = [
  "anyhow",
  "argmin",

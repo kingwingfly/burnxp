@@ -27,7 +27,7 @@ enum SubCmd {
         /// Directory to save artifacts (The directory will be recreated if it exists)
         #[arg(short, long, default_value = "burnxp_artifact")]
         artifact_dir: PathBuf,
-        #[arg(short, long, default_value = "64")]
+        #[arg(short, long, default_value = "32")]
         num_epochs: usize,
         #[arg(short, long, default_value = "1")]
         batch_size: usize,
@@ -35,7 +35,7 @@ enum SubCmd {
         #[arg(short = 'w', long, default_value = "1")]
         num_workers: usize,
         /// Learning rate for the optimizer, decreasing to 1/10 of the given value
-        #[arg(short, long, default_value = "1.0e-3")]
+        #[arg(short, long, default_value = "1.0e-2")]
         learning_rate: f64,
         /// Number of epochs before allowing early stopping
         #[arg(short, long, default_value = "10")]
@@ -61,10 +61,10 @@ enum SubCmd {
         /// Method to output the scores
         #[arg(short, long, default_value = "tty")]
         output: Output,
-        #[arg(short, long, default_value = "32")]
+        #[arg(short, long, default_value = "1")]
         batch_size: usize,
         /// Number of workers for data loading
-        #[arg(short = 'w', long, default_value = "8")]
+        #[arg(short = 'w', long, default_value = "1")]
         num_workers: usize,
         /// Path to the file which contains the tags' weights
         #[arg(short, long, default_value = "tags.json")]

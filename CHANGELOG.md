@@ -13,6 +13,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - windows adaptation
 - improve: `tagger tag` will display tags in each image's title
+- bump deps
 
 ## [0.1.0-alpha47] - 2024-10-14
 

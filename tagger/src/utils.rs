@@ -306,6 +306,10 @@ where
             tags.retain(|x| x != tag);
         }
     }
+
+    pub(crate) fn get_tags(&self, item: &T) -> Option<&Vec<Name>> {
+        self.tagged.get(item)
+    }
 }
 
 impl<T, const N: usize> From<&TagRecord<T>> for Items<Tag, N>

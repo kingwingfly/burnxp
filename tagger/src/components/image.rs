@@ -40,14 +40,21 @@ pub(crate) struct Grid<'a, const R: usize, const C: usize, const S: usize> {
     cur: &'a [PathBuf],
     pre: &'a [PathBuf],
     heighlight: [bool; S],
+    titles: Option<[Option<String>; S]>,
 }
 
 impl<'a, const R: usize, const C: usize, const S: usize> Grid<'a, R, C, S> {
-    pub(crate) fn new(cur: &'a [PathBuf], pre: &'a [PathBuf], heighlight: [bool; S]) -> Self {
+    pub(crate) fn new(
+        cur: &'a [PathBuf],
+        pre: &'a [PathBuf],
+        heighlight: [bool; S],
+        titles: Option<[Option<String>; S]>,
+    ) -> Self {
         Self {
             cur,
             pre,
             heighlight,
+            titles,
         }
     }
 }
@@ -70,8 +77,13 @@ impl<'a, const R: usize, const C: usize, const S: usize> Widget for Grid<'a, R, 
             })
             .enumerate()
             .map(|(i, chunk)| {
+                let title = self.titles.as_ref().and_then(|titles| titles[i].as_deref());
                 let block = Block::default()
-                    .title(format!("{}", i + 1))
+                    .title(format!(
+                        "{}{}",
+                        i + 1,
+                        title.map_or(String::new(), |title| format!(": {}", title))
+                    ))
                     .borders(Borders::ALL)
                     .border_style(Style::default().fg(match self.heighlight[i] {
                         true => Color::Green,

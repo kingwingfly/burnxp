@@ -236,6 +236,30 @@ impl WidgetRef for Tagger {
                 )
                 .render(area, buf),
                 2 => TagGrid::<'_, Tag, 3, 3>::new(self.tags.current_items()).render(area, buf),
+                // 3 => {
+                //     let chunks = Layout::default()
+                //         .direction(Direction::Vertical)
+                //         .constraints([
+                //             Constraint::Length(3),
+                //             Constraint::Min(1),
+                //             Constraint::Length(3),
+                //         ])
+                //         .split(area);
+                //     TagGrid::<'_, String, 2, 2>::new(
+                //         &self
+                //             .items
+                //             .current_items()
+                //             .iter()
+                //             .map(|item| {
+                //                 self.cache
+                //                     .get_tags(item)
+                //                     .map(|tags| tags.join(", "))
+                //                     .unwrap_or_default()
+                //             })
+                //             .collect::<Vec<_>>(),
+                //     )
+                //     .render(chunks[1], buf)
+                // }
                 _ => unreachable!(),
             }
             return;
@@ -274,6 +298,18 @@ impl WidgetRef for Tagger {
                 self.items.current_items(),
                 self.items.preload_items(),
                 self.chosen,
+                (0..4)
+                    .map(|i| {
+                        self.items.current_items().get(i).map(|item| {
+                            self.cache
+                                .get_tags(item)
+                                .map(|tags| tags.join(","))
+                                .unwrap_or_default()
+                        })
+                    })
+                    .collect::<Vec<_>>()
+                    .try_into()
+                    .ok(),
             )
             .render(chunks[1], buf);
         } else {

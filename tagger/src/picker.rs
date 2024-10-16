@@ -214,6 +214,7 @@ impl WidgetRef for Picker {
                 self.items.current_items(),
                 self.items.preload_items(),
                 self.chosen,
+                None,
             )
             .render(chunks[1], buf)
         } else {

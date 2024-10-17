@@ -50,7 +50,11 @@ fn create_artifact_dir(artifact_dir: &PathBuf) {
     std::fs::create_dir_all(artifact_dir).ok();
 }
 
-pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, device: B::Device) {
+pub fn train<B: AutodiffBackend>(
+    artifact_dir: PathBuf,
+    config: TrainingConfig,
+    devices: Vec<B::Device>,
+) {
     create_artifact_dir(&artifact_dir);
     #[cfg(not(feature = "candle"))]
     B::seed(config.seed);
@@ -59,8 +63,8 @@ pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, 
         .save(artifact_dir.join("train_config.json"))
         .expect("Config should be saved successfully");
 
-    let batcher_train = ImageBatcher::<B>::new(device.clone());
-    let batcher_valid = ImageBatcher::<B::InnerBackend>::new(device.clone());
+    let batcher_train = ImageBatcher::<B>::new(devices[0].clone());
+    let batcher_valid = ImageBatcher::<B::InnerBackend>::new(devices[0].clone());
 
     let mut train_input: DataSetDesc = serde_json::from_reader(
         File::open(config.train_set).expect("Train set file should be accessible"),
@@ -102,16 +106,16 @@ pub fn train<B: AutodiffBackend>(artifact_dir: PathBuf, config: TrainingConfig, 
             StoppingCondition::NoImprovementSince { n_epochs: config.early_stopping },
         ))
         .with_file_checkpointer(CompactRecorder::new())
-        .devices(vec![device.clone()])
+        .devices(devices.clone())
         .num_epochs(config.num_epochs)
         .summary()
         .build(
             {
-                let mut model = config.model.with_weights(weights).init::<B>(&device, num_classes);
+                let mut model = config.model.with_weights(weights).init::<B>(&devices[0], num_classes);
                 if let Some(pretrain) = config.pretrained {
                     model = model.load_record(
                         CompactRecorder::new()
-                            .load(pretrain, &device)
+                            .load(pretrain, &devices[0])
                             .expect("Please offer a valid pretrained model. If it's in the artifact directory, it is removed when recreating the directory."),
                     )
                 }

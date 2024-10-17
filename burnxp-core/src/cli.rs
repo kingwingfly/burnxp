@@ -43,6 +43,10 @@ enum SubCmd {
         /// Path to the pretrained model checkpoint
         #[arg(short, long)]
         pretrained: Option<PathBuf>,
+        #[cfg(not(target_os = "macos"))]
+        /// CUDA device to use
+        #[arg(short, long, default_value = "0")]
+        devices: Vec<usize>,
         /// Random seed for reproducibility
         #[arg(short, long, default_value = "42")]
         seed: u64,
@@ -73,6 +77,10 @@ enum SubCmd {
         /// only tags with possibility greater than (1 - threshold) will be output
         #[arg(long = "threshold", default_value = "0.5")]
         confidence_threshold: f32,
+        #[cfg(not(all(feature = "tch", target_os = "macos")))]
+        /// CUDA device to use
+        #[arg(short, long, default_value = "0")]
+        devices: Vec<usize>,
         /// Root of images directory
         input: PathBuf,
     },
@@ -114,9 +122,30 @@ pub fn run() {
             learning_rate,
             early_stopping,
             pretrained,
+            #[cfg(not(all(feature = "tch", target_os = "macos")))]
+            devices,
             seed,
             confidence_threshold,
         } => {
+            #[cfg(all(feature = "tch", target_os = "macos"))]
+            let devices = vec![burn::backend::libtorch::LibTorchDevice::Mps];
+            #[cfg(all(feature = "tch", not(target_os = "macos")))]
+            let devices = devices
+                .into_iter()
+                .map(|i| burn::backend::libtorch::LibTorchDevice::Cuda(i))
+                .collect();
+
+            #[cfg(all(feature = "candle", target_os = "macos"))]
+            let devices = devices
+                .into_iter()
+                .map(|i| burn::backend::candle::CandleDevice::metal(i))
+                .collect();
+            #[cfg(all(feature = "candle", not(target_os = "macos")))]
+            let devices = devices
+                .into_iter()
+                .map(|i| burn::backend::candle::CandleDevice::cuda(i))
+                .collect();
+
             train::<MyAutodiffBackend>(
                 artifact_dir,
                 TrainingConfig::new(
@@ -133,7 +162,7 @@ pub fn run() {
                 .with_early_stopping(early_stopping)
                 .with_seed(seed)
                 .with_confidence_threshold(confidence_threshold),
-                device,
+                devices,
             );
         }
         SubCmd::Predict {
@@ -145,6 +174,8 @@ pub fn run() {
             num_workers,
             tags,
             confidence_threshold,
+            #[cfg(not(all(feature = "tch", target_os = "macos")))]
+            devices,
         } => predict::<MyBackend>(
             PredictConfig::new(model, checkpoint, input, output, tags)
                 .with_batch_size(batch_size)

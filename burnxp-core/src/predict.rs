@@ -61,7 +61,7 @@ impl fmt::Display for Tag {
     }
 }
 
-pub fn predict<B: Backend>(config: PredictConfig, device: B::Device) {
+pub fn predict<B: Backend>(config: PredictConfig, devices: Vec<B::Device>) {
     let all_tags: Tags = serde_json::from_reader(
         File::open(config.tags).expect("The file containing tags and weights should be accessible"),
     )
@@ -69,13 +69,13 @@ pub fn predict<B: Backend>(config: PredictConfig, device: B::Device) {
     let mut all_tags = all_tags.tags.into_iter().collect::<Vec<_>>();
     all_tags.sort_by_key(|(k, _)| k.clone());
     let model = ModelConfig::new(config.model)
-        .init::<B>(&device, all_tags.len())
+        .init::<B>(&devices[0], all_tags.len())
         .load_record(
             CompactRecorder::new()
-                .load(config.checkpoint, &device)
+                .load(config.checkpoint, &devices[0])
                 .expect("Failed to load checkpoint"),
         );
-    let batcher_predict = ImageBatcher::<B>::new(device.clone());
+    let batcher_predict = ImageBatcher::<B>::new(devices[0].clone());
     let dataloader_predict = DataLoaderBuilder::new(batcher_predict)
         .batch_size(config.batch_size)
         .num_workers(config.num_workers)

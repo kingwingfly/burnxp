@@ -44,7 +44,7 @@ enum SubCmd {
         #[arg(short, long)]
         pretrained: Option<PathBuf>,
         #[cfg(not(target_os = "macos"))]
-        /// CUDA device to use
+        /// CUDA device to use, empty for CPU
         #[arg(short, long, default_value = "0")]
         devices: Vec<usize>,
         /// Random seed for reproducibility
@@ -78,7 +78,7 @@ enum SubCmd {
         #[arg(long = "threshold", default_value = "0.5")]
         confidence_threshold: f32,
         #[cfg(not(all(feature = "tch", target_os = "macos")))]
-        /// CUDA device to use
+        /// CUDA device to use, empty for CPU
         #[arg(short, long, default_value = "0")]
         devices: Vec<usize>,
         /// Root of images directory
@@ -99,16 +99,6 @@ type MyBackend = burn::backend::Candle<f32, u8>;
 type MyAutodiffBackend = Autodiff<MyBackend>;
 
 pub fn run() {
-    #[cfg(all(feature = "tch", target_os = "macos"))]
-    let device = burn::backend::libtorch::LibTorchDevice::Mps;
-    #[cfg(all(feature = "tch", not(target_os = "macos")))]
-    let device = burn::backend::libtorch::LibTorchDevice::Cuda(0);
-
-    #[cfg(all(feature = "candle", target_os = "macos"))]
-    let device = burn::backend::candle::CandleDevice::metal(0);
-    #[cfg(all(feature = "candle", not(target_os = "macos")))]
-    let device = burn::backend::candle::CandleDevice::cuda(0);
-
     let args = Cli::parse();
     match args.subcmd {
         SubCmd::Train {
@@ -127,24 +117,10 @@ pub fn run() {
             seed,
             confidence_threshold,
         } => {
-            #[cfg(all(feature = "tch", target_os = "macos"))]
-            let devices = vec![burn::backend::libtorch::LibTorchDevice::Mps];
-            #[cfg(all(feature = "tch", not(target_os = "macos")))]
-            let devices = devices
-                .into_iter()
-                .map(|i| burn::backend::libtorch::LibTorchDevice::Cuda(i))
-                .collect();
-
-            #[cfg(all(feature = "candle", target_os = "macos"))]
-            let devices = devices
-                .into_iter()
-                .map(|i| burn::backend::candle::CandleDevice::metal(i))
-                .collect();
-            #[cfg(all(feature = "candle", not(target_os = "macos")))]
-            let devices = devices
-                .into_iter()
-                .map(|i| burn::backend::candle::CandleDevice::cuda(i))
-                .collect();
+            let devices = get_devices(
+                #[cfg(not(all(feature = "tch", target_os = "macos")))]
+                devices,
+            );
 
             train::<MyAutodiffBackend>(
                 artifact_dir,
@@ -176,15 +152,63 @@ pub fn run() {
             confidence_threshold,
             #[cfg(not(all(feature = "tch", target_os = "macos")))]
             devices,
-        } => predict::<MyBackend>(
-            PredictConfig::new(model, checkpoint, input, output, tags)
-                .with_batch_size(batch_size)
-                .with_num_workers(num_workers)
-                .with_confidence_threshold(confidence_threshold),
-            device,
-        ),
+        } => {
+            let devices = get_devices(
+                #[cfg(not(all(feature = "tch", target_os = "macos")))]
+                devices,
+            );
+
+            predict::<MyBackend>(
+                PredictConfig::new(model, checkpoint, input, output, tags)
+                    .with_batch_size(batch_size)
+                    .with_num_workers(num_workers)
+                    .with_confidence_threshold(confidence_threshold),
+                devices,
+            )
+        }
         SubCmd::GenCompletion { shell } => {
             generate(shell, &mut Cli::command(), "burnxp", &mut std::io::stdout());
         }
     }
+}
+
+#[cfg(feature = "tch")]
+fn get_devices(
+    #[cfg(not(all(feature = "tch", target_os = "macos")))] devices: Vec<usize>,
+) -> Vec<burn::backend::libtorch::LibTorchDevice> {
+    #[cfg(all(feature = "tch", target_os = "macos"))]
+    let devices = vec![burn::backend::libtorch::LibTorchDevice::Mps];
+    #[cfg(all(feature = "tch", not(target_os = "macos")))]
+    let devices = if devices.is_empty() {
+        vec![burn::backend::libtorch::LibTorchDevice::Cpu]
+    } else {
+        devices
+            .into_iter()
+            .map(burn::backend::libtorch::LibTorchDevice::Cuda)
+            .collect()
+    };
+    devices
+}
+
+#[cfg(feature = "candle")]
+fn get_devices(devices: Vec<usize>) -> Vec<burn::backend::libtorch::LibTorchDevice> {
+    let devices = if devices.is_empty() {
+        vec![burn::backend::libtorch::LibTorchDevice::Cpu]
+    } else {
+        #[cfg(all(feature = "candle", target_os = "macos"))]
+        {
+            devices
+                .into_iter()
+                .map(burn::backend::candle::CandleDevice::metal)
+                .collect()
+        }
+        #[cfg(all(feature = "candle", not(target_os = "macos")))]
+        {
+            devices
+                .into_iter()
+                .map(burn::backend::candle::CandleDevice::cuda)
+                .collect()
+        }
+    };
+    devices
 }

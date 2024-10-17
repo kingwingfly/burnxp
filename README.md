@@ -5,11 +5,13 @@ which aims to clone oneself to some extent.
 
 This component `burnxp` is for cloning one's `Aesthetics Preferences`, also known as `XP`(性癖) in Chinese.
 
-Based on [burn](https://github.com/tracel-ai/burn), `burnxp score` can train a ResNet model to score pictures
+Based on [burn](https://github.com/tracel-ai/burn), `burnxp` can train a ResNet model to score pictures
 according to owner's sesthetics preferences.
 
-Based on [ratatui](https://github.com/ratatui/ratatui), `burnxp tagger` can aid in tagging pictures by
+Based on [ratatui](https://github.com/ratatui/ratatui), `tagger` can aid in tagging pictures by
 iteractively comparing the degree of compliance with sesthetics preferences.
+
+Based on [argmin](https://crates.io/crates/argmin), `tagger divide` can help in dividing the dataset into label-balanced train-set and valid-set.
 
 ## Tagger
 

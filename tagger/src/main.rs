@@ -52,6 +52,9 @@ enum SubCmd {
         /// The output path of the validation set
         #[clap(long, default_value = "valid.json")]
         valid_path: PathBuf,
+        /// The max iter num to solve the optimization problem
+        #[clap(short, long, default_value = "2048")]
+        max_iters: u64,
         /// The path to the scores produced by the tagger tag/cmp subcommand
         path: PathBuf,
     },
@@ -101,9 +104,10 @@ fn main() -> Result<()> {
             valid,
             train_path,
             valid_path,
+            max_iters,
             path,
         } => {
-            let divider = Divider::new(path, train, valid, train_path, valid_path)?;
+            let divider = Divider::new(path, train, valid, train_path, valid_path, max_iters)?;
             divider.divide()?;
         }
         SubCmd::GenCompletion { shell } => {

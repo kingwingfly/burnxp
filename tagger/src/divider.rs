@@ -15,6 +15,7 @@ pub struct Divider {
     ratio: (u32, u32),
     train_path: PathBuf,
     valid_path: PathBuf,
+    max_iters: u64,
 }
 
 impl Divider {
@@ -24,6 +25,7 @@ impl Divider {
         valid: u32,
         train_path: PathBuf,
         valid_path: PathBuf,
+        max_iters: u64,
     ) -> Result<Self> {
         assert!(train + valid > 0, "expected train + valid > 0");
         Ok(Self {
@@ -31,6 +33,7 @@ impl Divider {
             ratio: (train, valid),
             train_path,
             valid_path,
+            max_iters,
         })
     }
 
@@ -82,7 +85,7 @@ impl Divider {
             .configure(|state| {
                 state
                     .param(init)
-                    .max_iters(1024)
+                    .max_iters(self.max_iters)
                     .target_cost((4 * all_tags.len()) as f64)
             })
             .add_observer(SlogLogger::term(), ObserverMode::Always)

@@ -3,7 +3,9 @@ use burn::{
     data::dataloader::{batcher::Batcher, Dataset},
     prelude::*,
 };
-use image::{imageops::FilterType, DynamicImage, ImageBuffer, Rgb};
+use image::{
+    imageops::colorops::brighten_in_place, imageops::FilterType, DynamicImage, ImageBuffer, Rgb,
+};
 use imageproc::geometric_transformations::{rotate_about_center, Interpolation};
 use mime_guess::MimeGuess;
 use rand::{seq::SliceRandom, thread_rng, Rng};
@@ -196,7 +198,9 @@ fn open_image_proc(path: impl AsRef<Path>) -> Option<Vec<f32>> {
     let theta = rng.gen_range(-1. / 6. ..1. / 6.);
     let buffer = img.to_rgb8().into_raw();
     let buffer = ImageBuffer::<Rgb<u8>, Vec<u8>>::from_vec(size, size, buffer)?;
-    let buffer = rotate_about_center(&buffer, theta * PI, Interpolation::Nearest, Rgb([0, 0, 0]));
+    let mut buffer =
+        rotate_about_center(&buffer, theta * PI, Interpolation::Nearest, Rgb([0, 0, 0]));
+    brighten_in_place(&mut buffer, rng.gen_range(-64..64));
     Some(
         buffer
             .into_raw()
@@ -237,4 +241,14 @@ fn open_image_resize(path: impl AsRef<Path>) -> Option<DynamicImage> {
         HALF - (nheight / 2) as i64,
     );
     Some(DynamicImage::ImageRgb8(background))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_open_image() {
+        let _ = open_image_proc("/Users/louis/rust/burnxp/test_images/1.jpg").unwrap();
+    }
 }

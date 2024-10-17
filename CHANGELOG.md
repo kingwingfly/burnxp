@@ -13,6 +13,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - improve: image data enhancement on color
 - improve: make divider solver's num_iters configurable
+- enhance: multi-cuda devices
 
 ## [0.1.0-alpha49] - 2024-10-15
 

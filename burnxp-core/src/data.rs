@@ -242,13 +242,3 @@ fn open_image_resize(path: impl AsRef<Path>) -> Option<DynamicImage> {
     );
     Some(DynamicImage::ImageRgb8(background))
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_open_image() {
-        let _ = open_image_proc("/Users/louis/rust/burnxp/test_images/1.jpg").unwrap();
-    }
-}

@@ -39,8 +39,13 @@ Features:
 
 ![train_screenshot](images/train_screenshot.png)
 
+multi-gpu training is supported.
+
+![multi-gpu](images/milti-gpu.png)
+
 ## Predictor
 
+(outdated screenshot, will update soon)
 ![predict_screenshot](images/predict_screenshot.png)
 
 # Usage
@@ -48,7 +53,8 @@ Features:
 **Cuda 12.x should be installed** for non-macOS users.
 
 Torch version (recommended) depends on `libtorch` to accelerate, please set it up with provided `dist/setup` scripts.
-Instead, candle version can work independently (known issue: 1. [cuda 12.6 unusable](https://github.com/huggingface/candle/issues/2410); 2. `max_pool` and `avg_pool` are not well-supported, which leads candle version actually unusable).
+Instead, candle version can work independently
+(known issue: 1. [cuda 12.6 unusable](https://github.com/huggingface/candle/issues/2410); 2. `max_pool` and `avg_pool` are not well-supported, which leads candle version actually unusable).
 
 ## 1. Use compiled release
 
@@ -87,9 +93,13 @@ A `Tauri` version may be under development.
 
 # Contributing
 
+If you are working with feature `tch`, do followings:
+
 Please setup all needed environment variables like `scripts/setup` before coding, or your IDE may not work well.
 
 For macOS users, you need also activate python venv before coding.
+
+If you are working with feature `candle` (ususable now), nothing to configure, just enjoy coding.
 
 # License
 

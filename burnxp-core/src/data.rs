@@ -24,6 +24,7 @@ pub(crate) struct ImageData {
     #[cfg(feature = "candle")]
     tags: Vec<u8>,
     path: PathBuf,
+    device_index: usize,
 }
 
 impl ImageData {
@@ -41,10 +42,12 @@ pub(crate) struct ImageDataSet {
     len: usize,
     up_sample: Option<Vec<(usize, BitFlags)>>,
     binary_encodings: HashMap<BitFlags, Vec<PathBuf>>,
+    device_num: usize,
+    batch_size: usize,
 }
 
 impl ImageDataSet {
-    pub(crate) fn train(desc: DataSetDesc) -> Result<Self> {
+    pub(crate) fn train(desc: DataSetDesc, device_num: usize, batch_size: usize) -> Result<Self> {
         for path in desc.binary_encodings.iter().flat_map(|(_, v)| v) {
             assert!(
                 path.canonicalize().is_ok(),
@@ -63,10 +66,12 @@ impl ImageDataSet {
                 acc
             })),
             binary_encodings: desc.binary_encodings,
+            device_num,
+            batch_size,
         })
     }
 
-    pub(crate) fn valid(desc: DataSetDesc) -> Result<Self> {
+    pub(crate) fn valid(desc: DataSetDesc, device_num: usize, batch_size: usize) -> Result<Self> {
         for path in desc.binary_encodings.iter().flat_map(|(_, v)| v) {
             assert!(
                 path.canonicalize().is_ok(),
@@ -79,10 +84,12 @@ impl ImageDataSet {
             len: desc.binary_encodings.values().map(|v| v.len()).sum(),
             up_sample: None,
             binary_encodings: desc.binary_encodings,
+            device_num,
+            batch_size,
         })
     }
 
-    pub(crate) fn predict(path: PathBuf) -> Result<Self> {
+    pub(crate) fn predict(path: PathBuf, device_num: usize, batch_size: usize) -> Result<Self> {
         let inner = walkdir::WalkDir::new(path)
             .into_iter()
             .filter_map(|res| res.ok())
@@ -96,6 +103,8 @@ impl ImageDataSet {
             len: inner.len(),
             up_sample: None,
             binary_encodings: [(0.into(), inner)].into(),
+            device_num,
+            batch_size,
         })
     }
 }
@@ -117,6 +126,7 @@ impl Dataset<ImageData> for ImageDataSet {
                         t
                     },
                     path: path.clone(),
+                    device_index: index / self.batch_size % self.device_num,
                 }),
             Some(ref up_sample) => {
                 let flags = up_sample
@@ -137,6 +147,7 @@ impl Dataset<ImageData> for ImageDataSet {
                         t
                     },
                     path: path.clone(),
+                    device_index: index / self.batch_size % self.device_num,
                 })
             }
         }
@@ -149,7 +160,7 @@ impl Dataset<ImageData> for ImageDataSet {
 
 #[derive(Clone)]
 pub(crate) struct ImageBatcher<B: Backend> {
-    device: B::Device,
+    devices: Vec<B::Device>,
 }
 
 #[derive(Debug, Clone)]
@@ -160,8 +171,8 @@ pub(crate) struct ImageBatch<B: Backend> {
 }
 
 impl<B: Backend> ImageBatcher<B> {
-    pub(crate) fn new(device: B::Device) -> Self {
-        Self { device }
+    pub(crate) fn new(devices: Vec<B::Device>) -> Self {
+        Self { devices }
     }
 }
 
@@ -176,8 +187,8 @@ impl<B: Backend> Batcher<ImageData, ImageBatch<B>> for ImageBatcher<B> {
             .map(|item| item.tags().reshape([1, -1]))
             .collect::<Vec<_>>();
 
-        let datas = Tensor::cat(datas, 0).to_device(&self.device);
-        let targets = Tensor::cat(targets, 0).to_device(&self.device);
+        let datas = Tensor::cat(datas, 0).to_device(&self.devices[items[0].device_index]);
+        let targets = Tensor::cat(targets, 0).to_device(&self.devices[items[0].device_index]);
         let paths = items.iter().map(|item| item.path.clone()).collect();
 
         ImageBatch {

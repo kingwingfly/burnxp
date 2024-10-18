@@ -75,11 +75,14 @@ pub fn predict<B: Backend>(config: PredictConfig, devices: Vec<B::Device>) {
                 .load(config.checkpoint, &devices[0])
                 .expect("Failed to load checkpoint"),
         );
-    let batcher_predict = ImageBatcher::<B>::new(devices[0].clone());
+    let batcher_predict = ImageBatcher::<B>::new(devices.clone());
     let dataloader_predict = DataLoaderBuilder::new(batcher_predict)
         .batch_size(config.batch_size)
         .num_workers(config.num_workers)
-        .build(ImageDataSet::predict(config.input).expect("Training set failed to be loaded"));
+        .build(
+            ImageDataSet::predict(config.input, devices.len(), config.batch_size)
+                .expect("Training set failed to be loaded"),
+        );
 
     match config.output {
         Output::Tui => {

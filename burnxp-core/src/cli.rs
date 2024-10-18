@@ -44,9 +44,9 @@ enum SubCmd {
         #[arg(short, long)]
         pretrained: Option<PathBuf>,
         #[cfg(not(target_os = "macos"))]
-        /// CUDA device to use, empty for CPU
+        /// CUDA device to use, -1 for CPU
         #[arg(short, long, default_value = "0")]
-        devices: Vec<usize>,
+        devices: Vec<isize>,
         /// Random seed for reproducibility
         #[arg(short, long, default_value = "42")]
         seed: u64,
@@ -78,9 +78,9 @@ enum SubCmd {
         #[arg(long = "threshold", default_value = "0.5")]
         confidence_threshold: f32,
         #[cfg(not(all(feature = "tch", target_os = "macos")))]
-        /// CUDA device to use, empty for CPU
+        /// CUDA device to use, -1 for CPU
         #[arg(short, long, default_value = "0")]
-        devices: Vec<usize>,
+        devices: Vec<isize>,
         /// Root of images directory
         input: PathBuf,
     },
@@ -174,7 +174,7 @@ pub fn run() {
 
 #[cfg(feature = "tch")]
 fn get_devices(
-    #[cfg(not(all(feature = "tch", target_os = "macos")))] devices: Vec<usize>,
+    #[cfg(not(all(feature = "tch", target_os = "macos")))] devices: Vec<isize>,
 ) -> Vec<burn::backend::libtorch::LibTorchDevice> {
     #[cfg(all(feature = "tch", target_os = "macos"))]
     let devices = vec![burn::backend::libtorch::LibTorchDevice::Mps];
@@ -184,7 +184,13 @@ fn get_devices(
     } else {
         devices
             .into_iter()
-            .map(burn::backend::libtorch::LibTorchDevice::Cuda)
+            .map(|i| {
+                if i == -1 {
+                    burn::backend::libtorch::LibTorchDevice::Cpu
+                } else {
+                    burn::backend::libtorch::LibTorchDevice::Cuda(i as usize)
+                }
+            })
             .collect()
     };
     devices

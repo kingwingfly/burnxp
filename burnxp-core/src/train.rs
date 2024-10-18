@@ -63,9 +63,6 @@ pub fn train<B: AutodiffBackend>(
         .save(artifact_dir.join("train_config.json"))
         .expect("Config should be saved successfully");
 
-    let batcher_train = ImageBatcher::<B>::new(devices.clone());
-    let batcher_valid = ImageBatcher::<B::InnerBackend>::new(devices.clone());
-
     let mut train_input: DataSetDesc = serde_json::from_reader(
         File::open(config.train_set).expect("Train set file should be accessible"),
     )
@@ -77,23 +74,19 @@ pub fn train<B: AutodiffBackend>(
     .expect("Validation set file should be illegal");
 
     let num_classes = train_input.num_classes;
-    let dataset_train = ImageDataSet::train(train_input, devices.len(), config.batch_size)
-        .expect("Training set failed to be loaded");
+    let dataset_train = ImageDataSet::train(train_input).expect("Training set failed to be loaded");
     let num_iters = dataset_train.len() / config.batch_size * config.early_stopping;
-    let dataloader_train = DataLoaderBuilder::new(batcher_train)
+    let dataloader_train = DataLoaderBuilder::new(ImageBatcher::new())
         .batch_size(config.batch_size)
         .shuffle(config.seed)
         .num_workers(config.num_workers)
         .build(dataset_train);
 
-    let dataloader_valid = DataLoaderBuilder::new(batcher_valid)
+    let dataloader_valid = DataLoaderBuilder::new(ImageBatcher::new())
         .batch_size(config.batch_size)
         .shuffle(config.seed)
         .num_workers(config.num_workers)
-        .build(
-            ImageDataSet::valid(valid_input, devices.len(), config.batch_size)
-                .expect("Validation set faild to be loaded"),
-        );
+        .build(ImageDataSet::valid(valid_input).expect("Validation set faild to be loaded"));
 
     let learner = LearnerBuilder::new(&artifact_dir)
         .metric_train_numeric(HammingScore::new().with_threshold(config.confidence_threshold))

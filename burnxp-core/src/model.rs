@@ -21,6 +21,7 @@ impl<B: Backend> Model<B> {
     ///   - Images [batch_size, 1024, 1024, 3]
     ///   - Output [batch_size, num_classes]
     pub fn forward(&self, datas: Tensor<B, 4>) -> Tensor<B, 2> {
+        let datas = datas.to_device(&self.devices()[0]);
         let x = self.resnet.forward(datas); // [batch_size, num_classes]
         self.sigmoid.forward(x)
     }
@@ -30,8 +31,9 @@ impl<B: Backend> Model<B> {
         batch: ImageBatch<B>,
     ) -> MultiLabelClassificationOutput<B> {
         let output = self.forward(batch.datas);
-        let loss = self.loss.forward(output.clone(), batch.targets.clone());
-        MultiLabelClassificationOutput::new(loss, output, batch.targets)
+        let taget = batch.targets.to_device(&self.devices()[0]);
+        let loss = self.loss.forward(output.clone(), taget.clone());
+        MultiLabelClassificationOutput::new(loss, output, taget)
     }
 }
 

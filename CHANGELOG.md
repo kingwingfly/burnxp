@@ -9,6 +9,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.1.0-alpha51] - 2024-10-19
+
+- improve: result display
+
 ## [0.1.0-alpha50] - 2024-10-18
 
 - improve: image data enhancement on color

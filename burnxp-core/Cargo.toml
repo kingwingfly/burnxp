@@ -21,6 +21,7 @@ walkdir = { workspace = true }
 mime_guess = { workspace = true }
 rand = { workspace = true }
 imageproc = "0.25.0"
+unicode-width = { workspace = true }
 
 [features]
 default = []

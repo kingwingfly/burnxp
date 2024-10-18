@@ -8,6 +8,7 @@ use argmin_observer_slog::SlogLogger;
 use nalgebra::{DMatrix, DVector};
 use rand::{distributions::Uniform, seq::SliceRandom, thread_rng, Rng};
 use std::{collections::HashMap, path::PathBuf};
+use unicode_width::UnicodeWidthStr;
 
 #[derive(Debug)]
 pub struct Divider {
@@ -102,9 +103,17 @@ impl Divider {
         let verify = &m * &ans_matrix;
         let weights = verify.len() as f64
             * (DVector::from_element(verify.len(), 1.).component_div(&verify)).normalize();
-        println!("{:<5}{:<8}Tag", "Num", "Weights");
+        println!("{:<16}{:<8}Weights\n{:-<30}", "Tag", "Num", "");
         for (i, tag) in all_tags.iter().enumerate() {
-            println!("{:<5}{:<8.2}{}", verify[i], weights[i], tag);
+            let width = UnicodeWidthStr::width_cjk(tag.as_str());
+            println!(
+                "{}{:<width$}{:<8.0}{:<5.2}",
+                tag,
+                "",
+                verify[i],
+                weights[i],
+                width = 16 - width
+            )
         }
 
         train_set.up_sample = all_flags.into_iter().zip(ans).collect();

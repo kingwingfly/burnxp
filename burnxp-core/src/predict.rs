@@ -11,6 +11,7 @@ use burn::{
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt, fs::File, path::PathBuf};
+use unicode_width::UnicodeWidthStr;
 
 #[derive(Debug, Clone, Default, ValueEnum, Serialize, Deserialize)]
 pub enum Output {
@@ -57,7 +58,16 @@ type JsonOutput = HashMap<PathBuf, ScoreResult>;
 
 impl fmt::Display for Tag {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}\t{}\t{}", self.name, self.weight, self.possibility)
+        let width = UnicodeWidthStr::width_cjk(self.name.as_str());
+        write!(
+            f,
+            "{}{:<width$}{:<5}{:<10.2}",
+            self.name,
+            "",
+            self.weight,
+            self.possibility,
+            width = 16 - width
+        )
     }
 }
 

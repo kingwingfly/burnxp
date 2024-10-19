@@ -115,6 +115,7 @@ pub fn predict<B: Backend>(config: PredictConfig, devices: Vec<B::Device>) {
                         .collect::<Vec<_>>();
                     let total_score = tags
                         .iter()
+                        .filter(|t| t.possibility > 1. - config.confidence_threshold)
                         .map(|t| t.possibility * t.weight as f32)
                         .sum::<f32>();
                     println!("{}: {}", path.display(), total_score);

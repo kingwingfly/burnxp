@@ -41,6 +41,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: setup rust
+        run: rustup toolchain install nightly
+
       - name: retrieve dist macOS
         if: ${{ matrix.os == 'macos-latest' }}
         run: mkdir run && ls dist | grep macOS | xargs -I {} sh -c 'cp dist/{} run/$(echo {} | sed s/_macOS//g)'

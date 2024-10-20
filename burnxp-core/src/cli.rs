@@ -91,10 +91,15 @@ enum SubCmd {
     },
 }
 
+#[cfg(feature = "f16")]
+type Precision = burn::tensor::f16;
+#[cfg(not(feature = "f16"))]
+type Precision = f32;
+
 #[cfg(feature = "tch")]
-type MyBackend = burn::backend::LibTorch<burn::tensor::f16, i8>;
+type MyBackend = burn::backend::LibTorch<Precision, i8>;
 #[cfg(feature = "candle")]
-type MyBackend = burn::backend::Candle<burn::tensor::f16, u8>;
+type MyBackend = burn::backend::Candle<Precision, u8>;
 
 type MyAutodiffBackend = Autodiff<MyBackend>;
 

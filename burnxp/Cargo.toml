@@ -9,7 +9,7 @@ license.workspace = true
 [dependencies]
 burnxp-core = { path = "../burnxp-core", features = ["tch"] }
 
-# upper steam is not ready
+# upper stream is not ready: 1. Candle pooling 2. CUDA 12.6
 # [target.'cfg(target_os = "macos")'.dependencies]
 # burnxp-core = { path = "../burnxp-core", features = ["candle-metal"] }
 

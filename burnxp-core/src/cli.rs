@@ -43,7 +43,7 @@ enum SubCmd {
         /// Path to the pretrained model checkpoint
         #[arg(short, long)]
         pretrained: Option<PathBuf>,
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(not(all(feature = "tch", target_os = "macos")))]
         /// CUDA device to use, -1 for CPU
         #[arg(short, long, default_value = "0")]
         devices: Vec<isize>,
@@ -92,9 +92,9 @@ enum SubCmd {
 }
 
 #[cfg(feature = "tch")]
-type MyBackend = burn::backend::LibTorch<f32, i8>;
+type MyBackend = burn::backend::LibTorch<burn::tensor::f16, i8>;
 #[cfg(feature = "candle")]
-type MyBackend = burn::backend::Candle<f32, u8>;
+type MyBackend = burn::backend::Candle<burn::tensor::f16, u8>;
 
 type MyAutodiffBackend = Autodiff<MyBackend>;
 

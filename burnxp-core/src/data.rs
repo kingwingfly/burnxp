@@ -102,7 +102,10 @@ impl<B: Backend> Dataset<ImageData<B>> for ImageDataSet {
                     data: open_image_normalize(path)
                         .unwrap_or_else(|| panic!("Failed to load image {}", path.display())),
                     tags: {
+                        #[cfg(feature = "tch")]
                         let mut t: Vec<i8> = Vec::from(*flags);
+                        #[cfg(feature = "candle")]
+                        let mut t: Vec<u8> = Vec::from(*flags);
                         t.truncate(self.num_classes);
                         Tensor::from_ints(&t[..], &B::Device::default())
                     },
@@ -122,7 +125,10 @@ impl<B: Backend> Dataset<ImageData<B>> for ImageDataSet {
                         panic!("Failed to load and process image {}", path.display())
                     }),
                     tags: {
+                        #[cfg(feature = "tch")]
                         let mut t: Vec<i8> = Vec::from(*flags);
+                        #[cfg(feature = "candle")]
+                        let mut t: Vec<u8> = Vec::from(*flags);
                         t.truncate(self.num_classes);
                         Tensor::from_ints(&t[..], &B::Device::default())
                     },

@@ -5,7 +5,7 @@ use clap_complete::{generate, Shell};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
-#[clap(author, version, about)]
+#[clap(name = "burnxp", author, version, about)]
 struct Cli {
     #[clap(subcommand)]
     subcmd: SubCmd,
@@ -172,7 +172,9 @@ pub fn run() {
             )
         }
         SubCmd::GenCompletion { shell } => {
-            generate(shell, &mut Cli::command(), "burnxp", &mut std::io::stdout());
+            let mut cmd = Cli::command();
+            let bin_name = cmd.get_name().to_owned();
+            generate(shell, &mut cmd, bin_name, &mut std::io::stdout());
         }
     }
 }

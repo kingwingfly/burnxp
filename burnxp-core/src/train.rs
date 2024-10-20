@@ -66,12 +66,12 @@ pub fn train<B: AutodiffBackend>(
     let mut train_input: DataSetDesc = serde_json::from_reader(
         File::open(config.train_set).expect("Train set file should be accessible"),
     )
-    .expect("Train set file should be illegal");
+    .expect("Train set file should be legal");
     let weights = train_input.weights.take();
     let valid_input: DataSetDesc = serde_json::from_reader(
         File::open(config.valid_set).expect("Validation set file should be accessible"),
     )
-    .expect("Validation set file should be illegal");
+    .expect("Validation set file should be legal");
 
     let num_classes = train_input.num_classes;
     let dataset_train = ImageDataSet::train(train_input).expect("Training set failed to be loaded");

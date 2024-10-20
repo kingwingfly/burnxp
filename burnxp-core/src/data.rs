@@ -17,28 +17,18 @@ const SIZE: usize = 720;
 const HALF: i64 = (SIZE / 2) as i64;
 
 #[derive(Debug, Clone)]
-pub(crate) struct ImageData {
-    data: Vec<f32>,
+pub(crate) struct ImageData<B: Backend> {
+    data: Tensor<B, 1>,
     #[cfg(feature = "tch")]
-    tags: Vec<i8>,
+    tags: Tensor<B, 1, Int>,
     #[cfg(feature = "candle")]
-    tags: Vec<u8>,
+    tags: Tensor<B, 1, Int>,
     path: PathBuf,
-}
-
-impl ImageData {
-    pub(crate) fn data<B: Backend>(&self) -> Tensor<B, 1> {
-        Tensor::from_data(&self.data[..], &B::Device::default())
-    }
-
-    pub(crate) fn tags<B: Backend>(&self) -> Tensor<B, 1, Int> {
-        Tensor::from_data(&self.tags[..], &B::Device::default())
-    }
 }
 
 pub(crate) struct ImageDataSet {
     num_classes: usize,
-    len: usize,
+    pub len: usize,
     up_sample: Option<Vec<(usize, BitFlags)>>,
     binary_encodings: HashMap<BitFlags, Vec<PathBuf>>,
 }
@@ -100,8 +90,8 @@ impl ImageDataSet {
     }
 }
 
-impl Dataset<ImageData> for ImageDataSet {
-    fn get(&self, index: usize) -> Option<ImageData> {
+impl<B: Backend> Dataset<ImageData<B>> for ImageDataSet {
+    fn get(&self, index: usize) -> Option<ImageData<B>> {
         match self.up_sample {
             None => self
                 .binary_encodings
@@ -112,9 +102,9 @@ impl Dataset<ImageData> for ImageDataSet {
                     data: open_image_normalize(path)
                         .unwrap_or_else(|| panic!("Failed to load image {}", path.display())),
                     tags: {
-                        let mut t = Vec::from(*flags);
+                        let mut t: Vec<i8> = Vec::from(*flags);
                         t.truncate(self.num_classes);
-                        t
+                        Tensor::from_ints(&t[..], &B::Device::default())
                     },
                     path: path.clone(),
                 }),
@@ -132,9 +122,9 @@ impl Dataset<ImageData> for ImageDataSet {
                         panic!("Failed to load and process image {}", path.display())
                     }),
                     tags: {
-                        let mut t = Vec::from(*flags);
+                        let mut t: Vec<i8> = Vec::from(*flags);
                         t.truncate(self.num_classes);
-                        t
+                        Tensor::from_ints(&t[..], &B::Device::default())
                     },
                     path: path.clone(),
                 })
@@ -163,20 +153,20 @@ impl ImageBatcher {
     }
 }
 
-impl<B: Backend> Batcher<ImageData, ImageBatch<B>> for ImageBatcher {
-    fn batch(&self, items: Vec<ImageData>) -> ImageBatch<B> {
-        let datas = items
-            .iter()
-            .map(|item| item.data().reshape([1, 3, SIZE, SIZE]))
-            .collect::<Vec<_>>();
-        let targets = items
-            .iter()
-            .map(|item| item.tags().reshape([1, -1]))
-            .collect::<Vec<_>>();
+impl<B: Backend> Batcher<ImageData<B>, ImageBatch<B>> for ImageBatcher {
+    fn batch(&self, items: Vec<ImageData<B>>) -> ImageBatch<B> {
+        let (paths, datas, targets) = items.into_iter().fold(
+            (vec![], vec![], vec![]),
+            |(mut paths, mut datas, mut targets), item| {
+                paths.push(item.path);
+                datas.push(item.data.reshape([1, 3, SIZE, SIZE]));
+                targets.push(item.tags.reshape([1, -1]));
+                (paths, datas, targets)
+            },
+        );
 
         let datas = Tensor::cat(datas, 0);
         let targets = Tensor::cat(targets, 0);
-        let paths = items.iter().map(|item| item.path.clone()).collect();
 
         ImageBatch {
             datas,
@@ -186,7 +176,7 @@ impl<B: Backend> Batcher<ImageData, ImageBatch<B>> for ImageBatcher {
     }
 }
 
-fn open_image_proc(path: impl AsRef<Path>) -> Option<Vec<f32>> {
+fn open_image_proc<B: Backend>(path: impl AsRef<Path>) -> Option<Tensor<B, 1>> {
     let size = SIZE as u32;
     let mut img = open_image_resize(path)?;
     let mut rng = thread_rng();
@@ -199,23 +189,15 @@ fn open_image_proc(path: impl AsRef<Path>) -> Option<Vec<f32>> {
     let mut buffer =
         rotate_about_center(&buffer, theta * PI, Interpolation::Nearest, Rgb([0, 0, 0]));
     brighten_in_place(&mut buffer, rng.gen_range(-64..64));
-    Some(
-        buffer
-            .into_raw()
-            .into_iter()
-            .map(|p| p as f32 / 255.0)
-            .collect(),
-    )
+    Some(Tensor::from_data(&buffer.into_raw()[..], &B::Device::default()) / 255.0)
 }
 
-fn open_image_normalize(path: impl AsRef<Path>) -> Option<Vec<f32>> {
+fn open_image_normalize<B: Backend>(path: impl AsRef<Path>) -> Option<Tensor<B, 1>> {
     Some(
-        open_image_resize(path)?
-            .to_rgb8()
-            .into_raw()
-            .into_iter()
-            .map(|p| p as f32 / 255.0)
-            .collect(),
+        Tensor::from_data(
+            &open_image_resize(path)?.to_rgb8().into_raw()[..],
+            &B::Device::default(),
+        ) / 255.0,
     )
 }
 

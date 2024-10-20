@@ -10,7 +10,9 @@ repository = "https://github.com/kingwingfly/burnxp"
 license = "MIT"
 
 [workspace.dependencies]
-burn = { version = "0.14", features = ["train"] }
+burn = { git = "https://github.com/kingwingfly/burn", branch = "dev", features = [
+    "train",
+] }
 ratatui = { version = "0.28" }
 ratatui-image = { version = "1.0.5", default-features = false, features = [
     "rustix",

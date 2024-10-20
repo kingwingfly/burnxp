@@ -1,5 +1,5 @@
 use burn::{
-    data::{dataloader::DataLoaderBuilder, dataset::Dataset},
+    data::dataloader::DataLoaderBuilder,
     lr_scheduler::linear::LinearLrSchedulerConfig,
     optim::AdamConfig,
     prelude::*,
@@ -75,7 +75,7 @@ pub fn train<B: AutodiffBackend>(
 
     let num_classes = train_input.num_classes;
     let dataset_train = ImageDataSet::train(train_input).expect("Training set failed to be loaded");
-    let num_iters = dataset_train.len() / config.batch_size * config.early_stopping;
+    let num_iters = dataset_train.len / config.batch_size * config.early_stopping;
     let dataloader_train = DataLoaderBuilder::new(ImageBatcher::new())
         .batch_size(config.batch_size)
         .shuffle(config.seed)

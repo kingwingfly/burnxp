@@ -116,3 +116,7 @@ need CUDA<=12.4.1, nothing else to configure, just enjoy coding.
 # License
 
 MIT LICENSE
+
+# Acknowledgement
+
+- [CUDA_COMPUTE_CAP](https://developer.nvidia.com/cuda-gpus#compute)

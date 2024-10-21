@@ -60,15 +60,28 @@ jobs:
           Copy-Item -Path $file -Destination $destinationPath
           }
 
-      - name: setup cuda
-        if: ${{ matrix.os == 'ubuntu-22.04' || matrix.os == 'windows-latest' }}
+      - name: setup cuda Linux
+        if: ${{ matrix.os == 'ubuntu-22.04' }}
         uses: Jimver/cuda-toolkit@master
         with:
           method: network
           cuda: "12.4.1"
-          sub-packages: '["nvcc"]'
+          sub-packages: '["nvcc", "libraries-dev"]'
+      - name: setup cuda Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        uses: Jimver/cuda-toolkit@master
+        with:
+          method: network
+          cuda: "12.4.1"
+          sub-packages: '["nvcc", "nvrtc_dev", "curand_dev", "cublas_dev", "cudart"]'
+      - name: setup msvc Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: mask unwanted link Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: mv "C:/Program Files/Git/usr/bin/link.exe" "C:/Program Files/Git/usr/bin/link_.exe"
 
-      - name: setup python
+      - name: setup python macOS
         if: ${{ matrix.os == 'macos-latest' }}
         uses: actions/setup-python@v5
         with:
@@ -156,6 +169,8 @@ jobs:
 
       - name: build and upload burnxp-candle-cuda
         if: ${{ matrix.os != 'macos-latest' }}
+        env:
+          CUDA_COMPUTE_CAP: "70"
         uses: taiki-e/upload-rust-binary-action@v1
         with:
           bin: burnxp-candle-cuda
@@ -170,6 +185,8 @@ jobs:
 
       - name: build and upload burnxp-candle-cuda-f16
         if: ${{ matrix.os != 'macos-latest' }}
+        env:
+          CUDA_COMPUTE_CAP: "70"
         uses: taiki-e/upload-rust-binary-action@v1
         with:
           bin: burnxp-candle-cuda-f16

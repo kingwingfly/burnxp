@@ -37,7 +37,7 @@ path = "src/burnxp.rs"
 required-features = ["candle-metal", "f16"]
 
 [dependencies]
-burnxp-core = { path = "../burnxp-core", optional = true }
+burnxp-core = { path = "../burnxp-core", optional = true, default-features = false }
 
 [features]
 default = []

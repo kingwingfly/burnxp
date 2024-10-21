@@ -24,7 +24,7 @@ imageproc = "0.25.0"
 unicode-width = { workspace = true }
 
 [features]
-default = []
+default = ["tch"]
 tch = ["burn/tch"]
 candle = ["burn/candle"]
 candle-cuda = ["candle", "burn/candle-cuda"]

@@ -5,7 +5,7 @@ use clap_complete::{generate, Shell};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
-#[clap(name = "burnxp", author, version, about)]
+#[clap(author, version, about)]
 struct Cli {
     #[clap(subcommand)]
     subcmd: SubCmd,
@@ -103,7 +103,7 @@ type MyBackend = burn::backend::Candle<Precision, u8>;
 
 type MyAutodiffBackend = Autodiff<MyBackend>;
 
-pub fn run() {
+pub fn run(name: &str) {
     let args = Cli::parse();
     match args.subcmd {
         SubCmd::Train {
@@ -172,9 +172,7 @@ pub fn run() {
             )
         }
         SubCmd::GenCompletion { shell } => {
-            let mut cmd = Cli::command();
-            let bin_name = cmd.get_name().to_owned();
-            generate(shell, &mut cmd, bin_name, &mut std::io::stdout());
+            generate(shell, &mut Cli::command(), name, &mut std::io::stdout());
         }
     }
 }

@@ -202,22 +202,34 @@ fn get_devices(
 }
 
 #[cfg(feature = "candle")]
-fn get_devices(devices: Vec<usize>) -> Vec<burn::backend::libtorch::LibTorchDevice> {
+fn get_devices(devices: Vec<isize>) -> Vec<burn::backend::candle::CandleDevice> {
     let devices = if devices.is_empty() {
-        vec![burn::backend::libtorch::LibTorchDevice::Cpu]
+        vec![burn::backend::candle::CandleDevice::Cpu]
     } else {
         #[cfg(all(feature = "candle", target_os = "macos"))]
         {
             devices
                 .into_iter()
-                .map(burn::backend::candle::CandleDevice::metal)
+                .map(|i| {
+                    if i == -1 {
+                        burn::backend::candle::CandleDevice::Cpu
+                    } else {
+                        burn::backend::candle::CandleDevice::metal(i as usize)
+                    }
+                })
                 .collect()
         }
         #[cfg(all(feature = "candle", not(target_os = "macos")))]
         {
             devices
                 .into_iter()
-                .map(burn::backend::candle::CandleDevice::cuda)
+                .map(|i| {
+                    if i == -1 {
+                        burn::backend::candle::CandleDevice::Cpu
+                    } else {
+                        burn::backend::candle::CandleDevice::cuda(i as usize)
+                    }
+                })
                 .collect()
         }
     };

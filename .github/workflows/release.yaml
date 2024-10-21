@@ -154,28 +154,58 @@ jobs:
           zip: windows
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: build and upload burnxp-candle
+      - name: build and upload burnxp-candle-cuda
+        if: ${{ matrix.os != 'macos-latest' }}
         uses: taiki-e/upload-rust-binary-action@v1
         with:
-          bin: burnxp-candle
+          bin: burnxp-candle-cuda
           target: ${{ matrix.target }}
-          features: candle,f16
+          features: candle-cuda
           include: run,LICENSE
           leading-dir: true
-          archive: burnxp-candle-$tag-$target
+          archive: burnxp-candle-cuda-$tag-$target
           tar: unix
           zip: windows
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: build and upload burnxp-candle-f16
+      - name: build and upload burnxp-candle-cuda-f16
+        if: ${{ matrix.os != 'macos-latest' }}
         uses: taiki-e/upload-rust-binary-action@v1
         with:
-          bin: burnxp-candle-f16
+          bin: burnxp-candle-cuda-f16
           target: ${{ matrix.target }}
-          features: candle,f16
+          features: candle-cuda,f16
           include: run,LICENSE
           leading-dir: true
-          archive: burnxp-candle-f16-$tag-$target
+          archive: burnxp-candle-cuda-f16-$tag-$target
+          tar: unix
+          zip: windows
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: build and upload burnxp-candle-metal
+        if: ${{ matrix.os == 'macos-latest' }}
+        uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: burnxp-candle-metal
+          target: ${{ matrix.target }}
+          features: candle-metal
+          include: run,LICENSE
+          leading-dir: true
+          archive: burnxp-candle-metal-$tag-$target
+          tar: unix
+          zip: windows
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: build and upload burnxp-candle-metal-f16
+        if: ${{ matrix.os == 'macos-latest' }}
+        uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: burnxp-candle-metal-f16
+          target: ${{ matrix.target }}
+          features: candle-metal,f16
+          include: run,LICENSE
+          leading-dir: true
+          archive: burnxp-candle-metal-f16-$tag-$target
           tar: unix
           zip: windows
           token: ${{ secrets.GITHUB_TOKEN }}

@@ -60,6 +60,8 @@ Instead, candle version can work independently
 
 You can download the `burnxp` and `tagger` in the [release page](https://github.com/kingwingfly/burnxp/releases).
 
+Note that `tagger` is released independently. `burnxp-xx` with `f16` is half-precision version. `Candle` version is currently not usable.
+
 ```sh
 # torch-version only, candle version can skip this setup
 # you can also setup manually like this script if you have libtorch else where

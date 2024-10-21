@@ -66,7 +66,7 @@ jobs:
         with:
           method: network
           cuda: "12.4.1"
-          sub-packages: '["nvcc"]'
+          sub-packages: '["nvcc", "cuda-libraries-dev"]'
 
       - name: setup python
         if: ${{ matrix.os == 'macos-latest' }}

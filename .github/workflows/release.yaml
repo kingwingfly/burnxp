@@ -38,8 +38,6 @@ jobs:
             target: x86_64-pc-windows-msvc
 
     runs-on: ${{ matrix.os }}
-    env:
-      CUDA_COMPUTE_CAP: "7.5"
     steps:
       - uses: actions/checkout@v4
 
@@ -158,6 +156,8 @@ jobs:
 
       - name: build and upload burnxp-candle-cuda
         if: ${{ matrix.os != 'macos-latest' }}
+        env:
+          CUDA_COMPUTE_CAP: "70"
         uses: taiki-e/upload-rust-binary-action@v1
         with:
           bin: burnxp-candle-cuda
@@ -172,6 +172,8 @@ jobs:
 
       - name: build and upload burnxp-candle-cuda-f16
         if: ${{ matrix.os != 'macos-latest' }}
+        env:
+          CUDA_COMPUTE_CAP: "70"
         uses: taiki-e/upload-rust-binary-action@v1
         with:
           bin: burnxp-candle-cuda-f16

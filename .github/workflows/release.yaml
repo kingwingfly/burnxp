@@ -38,6 +38,8 @@ jobs:
             target: x86_64-pc-windows-msvc
 
     runs-on: ${{ matrix.os }}
+    env:
+      CUDA_COMPUTE_CAP: "7.5"
     steps:
       - uses: actions/checkout@v4
 

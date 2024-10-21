@@ -12,7 +12,6 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 ## [0.2.0-alpha1] - 2024-10-19
 
 - allow half-precision training
-- switch to nightly Rust
 
 ## [0.1.0] - 2024-10-19
 

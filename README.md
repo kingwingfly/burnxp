@@ -95,6 +95,11 @@ For Windows, I tried my best but failed to make it work perfectly.
 
 A `Tauri` version may be under development.
 
+# TODO
+
+- [ ] CLIP model instead of ResNet model
+- [ ] Make `candle` version usable
+
 # Contributing
 
 If you are working with feature `tch`:

@@ -79,7 +79,9 @@ scripts/setup_<your_os>.xx
 source .venv/bin/activate
 
 cargo build -p tagger --release
-cargo build -p burnxp-xx --release
+cargo build -p burnxp --release
+# or half-precision version
+cargo build -p burnxp --release -F f16
 ```
 
 # Note
@@ -93,13 +95,16 @@ A `Tauri` version may be under development.
 
 # Contributing
 
-If you are working with feature `tch`, do followings:
+If you are working with feature `tch`:
 
 Please setup all needed environment variables like `scripts/setup` before coding, or your IDE may not work well.
 
 For macOS users, you need also activate python venv before coding.
 
-If you are working with feature `candle` (ususable now), nothing to configure, just enjoy coding.
+Do not use nightly version of Rust.
+
+If you are working with feature `candle` (ususable now due to pooling not supported well),
+need CUDA<=12.4.1, nothing else to configure, just enjoy coding.
 
 # License
 

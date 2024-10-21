@@ -6,16 +6,42 @@ authors.workspace = true
 repository.workspace = true
 license.workspace = true
 
+[[bin]]
+name = "burnxp-tch"
+path = "src/burnxp.rs"
+required-features = ["tch"]
+
+[[bin]]
+name = "burnxp-tch-f16"
+path = "src/burnxp.rs"
+required-features = ["tch", "f16"]
+
+[[bin]]
+name = "burnxp-candle-cuda"
+path = "src/burnxp.rs"
+required-features = ["candle-cuda"]
+
+[[bin]]
+name = "burnxp-candle-cuda-f16"
+path = "src/burnxp.rs"
+required-features = ["candle-cuda", "f16"]
+
+[[bin]]
+name = "burnxp-candle-metal"
+path = "src/burnxp.rs"
+required-features = ["candle-metal"]
+
+[[bin]]
+name = "burnxp-candle-metal-f16"
+path = "src/burnxp.rs"
+required-features = ["candle-metal", "f16"]
+
 [dependencies]
-burnxp-core = { path = "../burnxp-core", features = ["tch"] }
-
-# upper stream is not ready: 1. Candle pooling 2. CUDA 12.6
-# [target.'cfg(target_os = "macos")'.dependencies]
-# burnxp-core = { path = "../burnxp-core", features = ["candle-metal"] }
-
-# [target.'cfg(not(target_os = "macos"))'.dependencies]
-# burnxp-core = { path = "../burnxp-core", features = ["candle-cuda"] }
+burnxp-core = { path = "../burnxp-core", optional = true }
 
 [features]
 default = []
+tch = ["burnxp-core/tch"]
+candle-cuda = ["burnxp-core/candle-cuda"]
+candle-metal = ["burnxp-core/candle-metal"]
 f16 = ["burnxp-core/f16"]

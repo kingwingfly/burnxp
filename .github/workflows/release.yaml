@@ -68,6 +68,7 @@ jobs:
         uses: Jimver/cuda-toolkit@master
         with:
           method: network
+          cuda: "12.4.1"
           sub-packages: '["nvcc"]'
 
       - name: setup environment Linux
@@ -89,18 +90,20 @@ jobs:
         with:
           # (required) Comma-separated list of binary names (non-extension portion of filename) to build and upload.
           # Note that glob pattern is not supported yet.
-          bin: burnxp,tagger
+          bin: tagger
           # (optional) Target triple, default is host triple.
           # This is optional but it is recommended that this always be set to
           # clarify which target you are building for if macOS is included in
           # the matrix because GitHub Actions changed the default architecture
           # of macos-latest since macos-14.
           target: ${{ matrix.target }}
+          # Comma-separated list of cargo build features to enable
+          features:
           # (optional) Comma-separated list of additional files to be included to archive.
           # Note that glob pattern is not supported yet.
-          include: run,README.md
+          include:
           # (optional) Whether to create the leading directory in the archive or not. default to false.
-          leading-dir: true
+          leading-dir: false
           # (optional) Archive name (non-extension portion of filename) to be uploaded.
           # [default value: $bin-$target]
           # [possible values: the following variables and any string]
@@ -109,7 +112,7 @@ jobs:
           #     - $target - Target triple.
           #     - $tag    - Tag of this release.
           # When multiple binary names are specified, default archive name or $bin variable cannot be used.
-          archive: burnxp-$tag-$target
+          archive: tagger-$tag-$target
           # (optional) On which platform to distribute the `.tar.gz` file.
           # [default value: unix]
           # [possible values: all, unix, windows, none]
@@ -119,4 +122,52 @@ jobs:
           # [possible values: all, unix, windows, none]
           zip: windows
           # (required) GitHub token for uploading assets to GitHub Releases.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: burnxp-tch
+          target: ${{ matrix.target }}
+          features: tch
+          include: run,LICENSE
+          leading-dir: true
+          archive: burnxp-tch-$tag-$target
+          tar: unix
+          zip: windows
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: burnxp-tch-f16
+          target: ${{ matrix.target }}
+          features: tch,f16
+          include: run,LICENSE
+          leading-dir: true
+          archive: burnxp-tch-f16-$tag-$target
+          tar: unix
+          zip: windows
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: burnxp-candle
+          target: ${{ matrix.target }}
+          features: candle,f16
+          include: run,LICENSE
+          leading-dir: true
+          archive: burnxp-candle-$tag-$target
+          tar: unix
+          zip: windows
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: burnxp-candle-f16
+          target: ${{ matrix.target }}
+          features: candle,f16
+          include: run,LICENSE
+          leading-dir: true
+          archive: burnxp-candle-f16-$tag-$target
+          tar: unix
+          zip: windows
           token: ${{ secrets.GITHUB_TOKEN }}

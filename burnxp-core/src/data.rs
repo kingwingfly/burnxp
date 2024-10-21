@@ -93,24 +93,6 @@ impl ImageDataSet {
 impl<B: Backend> Dataset<ImageData<B>> for ImageDataSet {
     fn get(&self, index: usize) -> Option<ImageData<B>> {
         match self.up_sample {
-            None => self
-                .binary_encodings
-                .iter()
-                .flat_map(|(k, v)| v.iter().map(move |path| (path, k)))
-                .nth(index)
-                .map(|(path, flags)| ImageData {
-                    data: open_image_normalize(path)
-                        .unwrap_or_else(|| panic!("Failed to load image {}", path.display())),
-                    tags: {
-                        #[cfg(feature = "tch")]
-                        let mut t: Vec<i8> = Vec::from(*flags);
-                        #[cfg(feature = "candle")]
-                        let mut t: Vec<u8> = Vec::from(*flags);
-                        t.truncate(self.num_classes);
-                        Tensor::from_ints(&t[..], &B::Device::default())
-                    },
-                    path: path.clone(),
-                }),
             Some(ref up_sample) => {
                 let flags = up_sample
                     .iter()
@@ -135,6 +117,24 @@ impl<B: Backend> Dataset<ImageData<B>> for ImageDataSet {
                     path: path.clone(),
                 })
             }
+            None => self
+                .binary_encodings
+                .iter()
+                .flat_map(|(k, v)| v.iter().map(move |path| (path, k)))
+                .nth(index)
+                .map(|(path, flags)| ImageData {
+                    data: open_image_normalize(path)
+                        .unwrap_or_else(|| panic!("Failed to load image {}", path.display())),
+                    tags: {
+                        #[cfg(feature = "tch")]
+                        let mut t: Vec<i8> = Vec::from(*flags);
+                        #[cfg(feature = "candle")]
+                        let mut t: Vec<u8> = Vec::from(*flags);
+                        t.truncate(self.num_classes);
+                        Tensor::from_ints(&t[..], &B::Device::default())
+                    },
+                    path: path.clone(),
+                }),
         }
     }
 

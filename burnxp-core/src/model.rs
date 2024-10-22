@@ -18,7 +18,7 @@ pub(crate) struct Model<B: Backend> {
 
 impl<B: Backend> Model<B> {
     /// # Shapes
-    ///   - Images [batch_size, 1024, 1024, 3]
+    ///   - Images [batch_size, 3, SIZE, SIZE]
     ///   - Output [batch_size, num_classes]
     pub fn forward(&self, datas: Tensor<B, 4>) -> Tensor<B, 2> {
         let datas = datas.to_device(&self.devices()[0]);

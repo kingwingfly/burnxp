@@ -52,9 +52,9 @@ multi-gpu training is supported.
 
 **Cuda 12.x should be installed** for non-macOS users.
 
-Torch version (recommended) depends on `libtorch` to accelerate, please set it up with provided `dist/setup` scripts.
-Instead, candle version can work independently
-(known issue: 1. [cuda 12.6 unusable](https://github.com/huggingface/candle/issues/2410); 2. `max_pool` and `avg_pool` are not well-supported, which leads candle version actually unusable).
+`burnxp-tch` (recommended) depends on `libtorch` to accelerate, please set it up with provided `dist/setup` scripts.
+Instead, `burnxp-candle` can work independently
+(known issue: 1. [cuda 12.6 failed to compile](https://github.com/huggingface/candle/issues/2410); 2. `max_pool` and `avg_pool` are not well-supported, which leads candle version actually unusable).
 
 ## 1. Use compiled release
 
@@ -66,9 +66,9 @@ Note that `tagger` is released independently. `burnxp-xx` with `f16` is half-pre
 # torch-version only, candle version can skip this setup
 # you can also setup manually like this script if you have libtorch else where
 run/setup.xx
-run/burnxp.xx
 ./tagger.xx
 # xx is the suffix of executable file based on your OS
+./burnxp-xx
 ```
 
 ## 2. Compile yourself
@@ -81,9 +81,9 @@ scripts/setup_<your_os>.xx
 source .venv/bin/activate
 
 cargo build -p tagger --release
-cargo build -p burnxp --release
+cargo build -bin burnxp-tch --release -F tch
 # or half-precision version
-cargo build -p burnxp --release -F f16
+cargo build -bin burnxp-tch-f16 --release -F tch,f16
 ```
 
 # Note

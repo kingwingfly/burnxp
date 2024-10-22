@@ -116,10 +116,10 @@ jobs:
           # of macos-latest since macos-14.
           target: ${{ matrix.target }}
           # Comma-separated list of cargo build features to enable
-          features:
+          features: default
           # (optional) Comma-separated list of additional files to be included to archive.
           # Note that glob pattern is not supported yet.
-          include:
+          include: LICENSE,README.md
           # (optional) Whether to create the leading directory in the archive or not. default to false.
           leading-dir: false
           # (optional) Archive name (non-extension portion of filename) to be uploaded.
@@ -148,7 +148,7 @@ jobs:
           bin: burnxp-tch
           target: ${{ matrix.target }}
           features: tch
-          include: run,LICENSE
+          include: run,LICENSE,README.md
           leading-dir: true
           archive: burnxp-tch-$tag-$target
           tar: unix
@@ -161,7 +161,7 @@ jobs:
           bin: burnxp-tch-f16
           target: ${{ matrix.target }}
           features: tch,f16
-          include: run,LICENSE
+          include: run,LICENSE,README.md
           leading-dir: true
           archive: burnxp-tch-f16-$tag-$target
           tar: unix
@@ -177,7 +177,7 @@ jobs:
           bin: burnxp-candle-cuda
           target: ${{ matrix.target }}
           features: candle-cuda
-          include: run,LICENSE
+          include: LICENSE,README.md
           leading-dir: true
           archive: burnxp-candle-cuda-$tag-$target
           tar: unix
@@ -193,7 +193,7 @@ jobs:
           bin: burnxp-candle-cuda-f16
           target: ${{ matrix.target }}
           features: candle-cuda,f16
-          include: run,LICENSE
+          include: LICENSE,README.md
           leading-dir: true
           archive: burnxp-candle-cuda-f16-$tag-$target
           tar: unix
@@ -207,7 +207,7 @@ jobs:
           bin: burnxp-candle-metal
           target: ${{ matrix.target }}
           features: candle-metal
-          include: run,LICENSE
+          include: LICENSE,README.md
           leading-dir: true
           archive: burnxp-candle-metal-$tag-$target
           tar: unix
@@ -221,7 +221,7 @@ jobs:
           bin: burnxp-candle-metal-f16
           target: ${{ matrix.target }}
           features: candle-metal,f16
-          include: run,LICENSE
+          include: LICENSE,README.md
           leading-dir: true
           archive: burnxp-candle-metal-f16-$tag-$target
           tar: unix

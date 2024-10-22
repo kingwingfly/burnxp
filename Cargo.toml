@@ -14,7 +14,7 @@ burn = { git = "https://github.com/kingwingfly/burn", branch = "dev", features =
     "train",
 ] }
 ratatui = { version = "0.28" }
-ratatui-image = { version = "1.0.5", default-features = false, features = [
+ratatui-image = { version = "2.0", default-features = false, features = [
     "rustix",
 ] }
 crossterm = { version = "0.28" }

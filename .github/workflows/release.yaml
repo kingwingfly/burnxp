@@ -73,6 +73,7 @@ jobs:
         with:
           method: network
           cuda: "12.4.1"
+          # https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html#install-the-cuda-software
           sub-packages: '["nvcc", "nvrtc_dev", "curand_dev", "cublas_dev", "cudart"]'
       - name: setup msvc Windows
         if: ${{ matrix.os == 'windows-latest' }}

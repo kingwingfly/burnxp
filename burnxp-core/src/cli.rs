@@ -45,7 +45,6 @@ enum SubCmd {
         #[arg(short, long)]
         pretrained: Option<PathBuf>,
         /// Use pretrained model from the pytorch.org, download to `$HOME/.cache/resnet_burn`
-        #[cfg(feature = "tch")]
         #[arg(long)]
         download_pretrained: bool,
         #[cfg(not(all(feature = "tch", target_os = "macos")))]
@@ -122,7 +121,6 @@ pub fn run(name: &str) {
             learning_rate,
             early_stopping,
             pretrained,
-            #[cfg(feature = "tch")]
             download_pretrained,
             #[cfg(not(all(feature = "tch", target_os = "macos")))]
             devices,

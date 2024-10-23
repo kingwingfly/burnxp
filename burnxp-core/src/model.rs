@@ -6,7 +6,6 @@ use clap::builder::OsStr;
 use clap::ValueEnum;
 use nn::loss::{BinaryCrossEntropyLoss, BinaryCrossEntropyLossConfig};
 use nn::{Linear, LinearConfig, Relu, Sigmoid};
-#[cfg(feature = "tch")]
 use resnet_burn::weights::{ResNet101, ResNet152, ResNet18, ResNet34, ResNet50};
 use resnet_burn::ResNet;
 use serde::{Deserialize, Serialize};
@@ -66,7 +65,6 @@ pub struct ModelConfig {
 
 impl ModelConfig {
     pub(crate) fn init<B: Backend>(&self, device: &B::Device, num_classes: usize) -> Model<B> {
-        #[cfg(feature = "tch")]
         let resnet = if self.download {
             match self.rnn_type {
                 ResNetType::Layer18 => ResNet::resnet18_pretrained(ResNet18::ImageNet1kV1, device),
@@ -88,14 +86,6 @@ impl ModelConfig {
                 ResNetType::Layer101 => ResNet::resnet101(1000, device),
                 ResNetType::Layer152 => ResNet::resnet152(1000, device),
             }
-        };
-        #[cfg(not(feature = "tch"))]
-        let resnet = match self.rnn_type {
-            ResNetType::Layer18 => ResNet::resnet18(1000, device),
-            ResNetType::Layer34 => ResNet::resnet34(1000, device),
-            ResNetType::Layer50 => ResNet::resnet50(1000, device),
-            ResNetType::Layer101 => ResNet::resnet101(1000, device),
-            ResNetType::Layer152 => ResNet::resnet152(1000, device),
         };
         Model {
             resnet,

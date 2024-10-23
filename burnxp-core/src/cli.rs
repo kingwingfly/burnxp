@@ -44,7 +44,7 @@ enum SubCmd {
         /// Path to the pretrained model checkpoint
         #[arg(short, long)]
         pretrained: Option<PathBuf>,
-        /// Use pretrained model from the pytorch.org
+        /// Use pretrained model from the pytorch.org, download to `$HOME/.cache/resnet_burn`
         #[cfg(feature = "tch")]
         #[arg(long)]
         download_pretrained: bool,

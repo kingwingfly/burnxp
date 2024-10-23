@@ -6,10 +6,9 @@ use clap::builder::OsStr;
 use clap::ValueEnum;
 use nn::loss::{BinaryCrossEntropyLoss, BinaryCrossEntropyLossConfig};
 use nn::{Linear, LinearConfig, Relu, Sigmoid};
-use resnet_burn::{
-    weights::{ResNet101, ResNet152, ResNet18, ResNet34, ResNet50},
-    ResNet,
-};
+#[cfg(feature = "tch")]
+use resnet_burn::weights::{ResNet101, ResNet152, ResNet18, ResNet34, ResNet50};
+use resnet_burn::ResNet;
 use serde::{Deserialize, Serialize};
 
 #[derive(Module, Debug)]

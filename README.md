@@ -6,10 +6,9 @@ which aims to clone oneself to some extent.
 This component `burnxp` is for cloning one's `Aesthetics Preferences`, also known as `XP`(性癖) in Chinese.
 
 Based on [burn](https://github.com/tracel-ai/burn), `burnxp` can train a ResNet model to score pictures
-according to owner's sesthetics preferences.
+according to owner's sesthetics preferences through multi-labels classification.
 
-Based on [ratatui](https://github.com/ratatui/ratatui), `tagger` can aid in tagging pictures by
-iteractively comparing the degree of compliance with sesthetics preferences.
+Based on [ratatui](https://github.com/ratatui/ratatui), `tagger` can aid in tagging pictures.
 
 Based on [argmin](https://crates.io/crates/argmin), `tagger divide` can help in dividing the dataset into label-balanced train-set and valid-set.
 
@@ -60,7 +59,8 @@ Instead, `burnxp-candle` can work independently
 
 You can download the `burnxp` and `tagger` in the [release page](https://github.com/kingwingfly/burnxp/releases).
 
-Note that `tagger` is released independently. `burnxp-xx` with `f16` is half-precision version. `Candle` version is currently not usable.
+Note that `tagger` is released independently. `burnxp-xx` with `f16` is half-precision version.
+`burnxp-candle` version is currently not usable, use `burnxp-tch` instead.
 
 ```sh
 # torch-version only, candle version can skip this setup
@@ -81,9 +81,9 @@ scripts/setup_<your_os>.xx
 source .venv/bin/activate
 
 cargo build -p tagger --release
-cargo build -bin burnxp-tch --release -F tch
+cargo build --bin burnxp-tch --release -F tch
 # or half-precision version
-cargo build -bin burnxp-tch-f16 --release -F tch,f16
+cargo build --bin burnxp-tch-f16 --release -F tch,f16
 ```
 
 # Note
@@ -111,7 +111,7 @@ For macOS users, you need also activate python venv before coding.
 Do not use nightly version of Rust.
 
 If you are working with feature `candle` (ususable now due to pooling not supported well),
-need CUDA<=12.4.1, nothing else to configure, just enjoy coding.
+all needed are CUDA<=12.4.1, nothing else to configure, just enjoy coding.
 
 # License
 

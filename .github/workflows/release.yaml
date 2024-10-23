@@ -123,7 +123,7 @@ jobs:
           # Note that glob pattern is not supported yet.
           include: LICENSE,README.md
           # (optional) Whether to create the leading directory in the archive or not. default to false.
-          leading-dir: false
+          leading-dir: true
           # (optional) Archive name (non-extension portion of filename) to be uploaded.
           # [default value: $bin-$target]
           # [possible values: the following variables and any string]

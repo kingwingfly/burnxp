@@ -40,7 +40,7 @@ required-features = ["candle-metal", "f16"]
 burnxp-core = { path = "../burnxp-core", optional = true, default-features = false }
 
 [features]
-default = []
+default = ["tch", "f16"]
 tch = ["burnxp-core/tch"]
 candle-cuda = ["burnxp-core/candle-cuda"]
 candle-metal = ["burnxp-core/candle-metal"]

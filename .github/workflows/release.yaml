@@ -117,6 +117,8 @@ jobs:
           target: ${{ matrix.target }}
           # Comma-separated list of cargo build features to enable
           features: default
+          #Whether to disable cargo build default features
+          no-default-features: false
           # (optional) Comma-separated list of additional files to be included to archive.
           # Note that glob pattern is not supported yet.
           include: LICENSE,README.md
@@ -148,6 +150,7 @@ jobs:
           bin: burnxp-tch
           target: ${{ matrix.target }}
           features: tch
+          no-default-features: true
           include: run,LICENSE,README.md
           leading-dir: true
           archive: burnxp-tch-$tag-$target
@@ -161,6 +164,7 @@ jobs:
           bin: burnxp-tch-f16
           target: ${{ matrix.target }}
           features: tch,f16
+          no-default-features: true
           include: run,LICENSE,README.md
           leading-dir: true
           archive: burnxp-tch-f16-$tag-$target
@@ -171,12 +175,14 @@ jobs:
       - name: build and upload burnxp-candle-cuda
         if: ${{ matrix.os != 'macos-latest' }}
         env:
+          # V100 has CUDA compute capability 70
           CUDA_COMPUTE_CAP: "70"
         uses: taiki-e/upload-rust-binary-action@v1
         with:
           bin: burnxp-candle-cuda
           target: ${{ matrix.target }}
           features: candle-cuda
+          no-default-features: true
           include: LICENSE,README.md
           leading-dir: true
           archive: burnxp-candle-cuda-$tag-$target
@@ -193,6 +199,7 @@ jobs:
           bin: burnxp-candle-cuda-f16
           target: ${{ matrix.target }}
           features: candle-cuda,f16
+          no-default-features: true
           include: LICENSE,README.md
           leading-dir: true
           archive: burnxp-candle-cuda-f16-$tag-$target
@@ -207,6 +214,7 @@ jobs:
           bin: burnxp-candle-metal
           target: ${{ matrix.target }}
           features: candle-metal
+          no-default-features: true
           include: LICENSE,README.md
           leading-dir: true
           archive: burnxp-candle-metal-$tag-$target
@@ -221,6 +229,7 @@ jobs:
           bin: burnxp-candle-metal-f16
           target: ${{ matrix.target }}
           features: candle-metal,f16
+          no-default-features: true
           include: LICENSE,README.md
           leading-dir: true
           archive: burnxp-candle-metal-f16-$tag-$target

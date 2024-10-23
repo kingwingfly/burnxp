@@ -28,6 +28,8 @@ pub struct TrainingConfig {
     train_set: PathBuf,
     valid_set: PathBuf,
     pretrained: Option<PathBuf>,
+    #[config(default = false)]
+    download_pretrained: bool,
     #[config(default = 64)]
     num_epochs: usize,
     #[config(default = 1)]
@@ -36,7 +38,8 @@ pub struct TrainingConfig {
     num_workers: usize,
     #[config(default = 42)]
     seed: u64,
-    #[config(default = 1.0e-2)]
+    #[cfg_attr(feature = "f16", config(default = 1.0e-4))]
+    #[cfg_attr(not(feature = "f16"), config(default = 1.0e-2))]
     learning_rate: f64,
     #[config(default = 10)]
     early_stopping: usize,
@@ -67,7 +70,7 @@ pub fn train<B: AutodiffBackend>(
         File::open(config.train_set).expect("Train set file should be accessible"),
     )
     .expect("Train set file should be legal");
-    let weights = train_input.weights.take();
+    let loss_weights = train_input.loss_weights.take();
     let valid_input: DataSetDesc = serde_json::from_reader(
         File::open(config.valid_set).expect("Validation set file should be accessible"),
     )
@@ -108,7 +111,7 @@ pub fn train<B: AutodiffBackend>(
         .summary()
         .build(
             {
-                let mut model = config.model.with_weights(weights).init::<B>(&devices[0], num_classes);
+                let mut model = config.model.with_loss_weights(loss_weights).with_download(config.download_pretrained).init::<B>(&devices[0], num_classes);
                 if let Some(pretrain) = config.pretrained {
                     model = model.load_record(
                         CompactRecorder::new()

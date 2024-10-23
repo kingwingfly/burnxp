@@ -117,7 +117,7 @@ impl Divider {
         }
 
         train_set.up_sample = all_flags.into_iter().zip(ans).collect();
-        train_set.weights = Some(weights.into_iter().map(|x| *x as f32).collect());
+        train_set.loss_weights = Some(weights.into_iter().map(|x| *x as f32).collect());
         train_set.binary_encodings = map_t;
         valid_set.binary_encodings = map_v;
         json_into(&self.train_path, &train_set)?;

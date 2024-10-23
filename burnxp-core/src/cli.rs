@@ -35,7 +35,8 @@ enum SubCmd {
         #[arg(short = 'w', long, default_value = "1")]
         num_workers: usize,
         /// Learning rate for the optimizer, decreasing to 1/10 of the given value
-        #[arg(short, long, default_value = "1.0e-2")]
+        #[cfg_attr(feature = "f16", arg(short, long, default_value = "1.0e-4"))]
+        #[cfg_attr(not(feature = "f16"), arg(short, long, default_value = "1.0e-2"))]
         learning_rate: f64,
         /// Number of epochs before allowing early stopping
         #[arg(short, long, default_value = "10")]
@@ -43,6 +44,10 @@ enum SubCmd {
         /// Path to the pretrained model checkpoint
         #[arg(short, long)]
         pretrained: Option<PathBuf>,
+        /// Use pretrained model from the pytorch.org
+        #[cfg(feature = "tch")]
+        #[arg(long)]
+        download_pretrained: bool,
         #[cfg(not(all(feature = "tch", target_os = "macos")))]
         /// CUDA device to use, -1 for CPU
         #[arg(short, long, default_value = "0")]
@@ -51,7 +56,7 @@ enum SubCmd {
         #[arg(short, long, default_value = "42")]
         seed: u64,
         /// Confidence threshold for computing HammingScore
-        #[arg(short, long, default_value = "0.5")]
+        #[arg(short, long = "threshold", default_value = "0.5")]
         confidence_threshold: f32,
     },
     /// Predict using a ResNet model checkpoint
@@ -117,6 +122,8 @@ pub fn run(name: &str) {
             learning_rate,
             early_stopping,
             pretrained,
+            #[cfg(feature = "tch")]
+            download_pretrained,
             #[cfg(not(all(feature = "tch", target_os = "macos")))]
             devices,
             seed,
@@ -140,6 +147,7 @@ pub fn run(name: &str) {
                 .with_num_workers(num_workers)
                 .with_learning_rate(learning_rate)
                 .with_pretrained(pretrained)
+                .with_download_pretrained(download_pretrained)
                 .with_early_stopping(early_stopping)
                 .with_seed(seed)
                 .with_confidence_threshold(confidence_threshold),

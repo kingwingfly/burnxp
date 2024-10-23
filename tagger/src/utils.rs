@@ -421,7 +421,7 @@ impl<const N: usize> fmt::Display for InputBuffer<N> {
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct DataSetDesc {
     pub num_classes: usize,
-    pub weights: Option<Vec<f32>>,
+    pub loss_weights: Option<Vec<f32>>,
     pub up_sample: HashMap<BitFlags, usize>,
     pub binary_encodings: HashMap<BitFlags, Vec<PathBuf>>,
 }
@@ -430,7 +430,7 @@ impl DataSetDesc {
     pub fn new(num_classes: usize) -> Self {
         Self {
             num_classes,
-            weights: None,
+            loss_weights: None,
             up_sample: HashMap::new(),
             binary_encodings: HashMap::new(),
         }

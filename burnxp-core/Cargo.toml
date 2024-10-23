@@ -14,7 +14,9 @@ serde_json = { workspace = true }
 image = { workspace = true }
 clap = { workspace = true, features = ["string"] }
 clap_complete = { workspace = true }
-resnet-burn = { git = "https://github.com/kingwingfly/models", branch = "dev", package = "resnet-burn", default-features = false }
+resnet-burn = { git = "https://github.com/kingwingfly/models", branch = "dev", package = "resnet-burn", features = [
+    "pretrained",
+] }
 anyhow = { workspace = true }
 serde = { workspace = true }
 walkdir = { workspace = true }

@@ -165,7 +165,7 @@ impl<B: Backend> Batcher<ImageData<B>, ImageBatch<B>> for ImageBatcher {
             (vec![], vec![], vec![]),
             |(mut paths, mut datas, mut targets), item| {
                 paths.push(item.path);
-                datas.push(item.data.reshape([1, 3, SIZE, SIZE]));
+                datas.push(item.data.reshape([1, SIZE, SIZE, 3]).permute([0, 3, 1, 2]));
                 targets.push(item.tags.reshape([1, -1]));
                 (paths, datas, targets)
             },
@@ -194,8 +194,8 @@ fn open_image_proc<B: Backend>(path: impl AsRef<Path>) -> Option<Tensor<B, 1>> {
     let buffer = ImageBuffer::<Rgb<u8>, Vec<u8>>::from_vec(size, size, buffer)?;
     let mut buffer =
         rotate_about_center(&buffer, theta * PI, Interpolation::Nearest, Rgb([0, 0, 0]));
-    brighten_in_place(&mut buffer, rng.gen_range(-64..64));
-    Some(Tensor::from_data(&buffer.into_raw()[..], &B::Device::default()) / 255.0)
+    brighten_in_place(&mut buffer, rng.gen_range(-32..32));
+    Some(Tensor::from_data(&buffer.into_raw()[..], &B::Device::default()) * 2. / 255. - 1.)
 }
 
 fn open_image_normalize<B: Backend>(path: impl AsRef<Path>) -> Option<Tensor<B, 1>> {
@@ -203,7 +203,9 @@ fn open_image_normalize<B: Backend>(path: impl AsRef<Path>) -> Option<Tensor<B, 
         Tensor::from_data(
             &open_image_resize(path)?.to_rgb8().into_raw()[..],
             &B::Device::default(),
-        ) / 255.0,
+        ) * 2.
+            / 255.
+            - 1.,
     )
 }
 

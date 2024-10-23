@@ -9,6 +9,11 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.2.0-alpha2] - 2024-10-23
+
+- fix: correct way from image to tensor
+- download model from pytorch.org
+
 ## [0.2.0-alpha1] - 2024-10-19
 
 - allow half-precision training

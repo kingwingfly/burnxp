@@ -5,13 +5,18 @@ use burn::train::{MultiLabelClassificationOutput, TrainOutput, TrainStep, ValidS
 use clap::builder::OsStr;
 use clap::ValueEnum;
 use nn::loss::{BinaryCrossEntropyLoss, BinaryCrossEntropyLossConfig};
-use nn::Sigmoid;
-use resnet_burn::ResNet;
+use nn::{Linear, LinearConfig, Relu, Sigmoid};
+use resnet_burn::{
+    weights::{ResNet101, ResNet152, ResNet18, ResNet34, ResNet50},
+    ResNet,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Module, Debug)]
 pub(crate) struct Model<B: Backend> {
     resnet: ResNet<B>,
+    relu: Relu,
+    linear: Linear<B>,
     sigmoid: Sigmoid,
     loss: BinaryCrossEntropyLoss<B>,
 }
@@ -22,7 +27,9 @@ impl<B: Backend> Model<B> {
     ///   - Output [batch_size, num_classes]
     pub fn forward(&self, datas: Tensor<B, 4>) -> Tensor<B, 2> {
         let datas = datas.to_device(&self.devices()[0]);
-        let x = self.resnet.forward(datas); // [batch_size, num_classes]
+        let x = self.resnet.forward(datas); // [batch_size, 1000]
+        let x = self.relu.forward(x);
+        let x = self.linear.forward(x); // [batch_size, num_classes]
         self.sigmoid.forward(x)
     }
 
@@ -53,24 +60,52 @@ impl<B: Backend> ValidStep<ImageBatch<B>, MultiLabelClassificationOutput<B>> for
 #[derive(Config, Debug)]
 pub struct ModelConfig {
     rnn_type: ResNetType,
-    weights: Option<Vec<f32>>,
+    #[config(default = false)]
+    download: bool,
+    loss_weights: Option<Vec<f32>>,
 }
 
 impl ModelConfig {
     pub(crate) fn init<B: Backend>(&self, device: &B::Device, num_classes: usize) -> Model<B> {
+        #[cfg(feature = "tch")]
+        let resnet = if self.download {
+            match self.rnn_type {
+                ResNetType::Layer18 => ResNet::resnet18_pretrained(ResNet18::ImageNet1kV1, device),
+                ResNetType::Layer34 => ResNet::resnet34_pretrained(ResNet34::ImageNet1kV1, device),
+                ResNetType::Layer50 => ResNet::resnet50_pretrained(ResNet50::ImageNet1kV2, device),
+                ResNetType::Layer101 => {
+                    ResNet::resnet101_pretrained(ResNet101::ImageNet1kV2, device)
+                }
+                ResNetType::Layer152 => {
+                    ResNet::resnet152_pretrained(ResNet152::ImageNet1kV2, device)
+                }
+            }
+            .expect("Failed to download the model")
+        } else {
+            match self.rnn_type {
+                ResNetType::Layer18 => ResNet::resnet18(1000, device),
+                ResNetType::Layer34 => ResNet::resnet34(1000, device),
+                ResNetType::Layer50 => ResNet::resnet50(1000, device),
+                ResNetType::Layer101 => ResNet::resnet101(1000, device),
+                ResNetType::Layer152 => ResNet::resnet152(1000, device),
+            }
+        };
+        #[cfg(not(feature = "tch"))]
         let resnet = match self.rnn_type {
-            ResNetType::Layer18 => ResNet::resnet18(num_classes, device),
-            ResNetType::Layer34 => ResNet::resnet34(num_classes, device),
-            ResNetType::Layer50 => ResNet::resnet50(num_classes, device),
-            ResNetType::Layer101 => ResNet::resnet101(num_classes, device),
-            ResNetType::Layer152 => ResNet::resnet152(num_classes, device),
+            ResNetType::Layer18 => ResNet::resnet18(1000, device),
+            ResNetType::Layer34 => ResNet::resnet34(1000, device),
+            ResNetType::Layer50 => ResNet::resnet50(1000, device),
+            ResNetType::Layer101 => ResNet::resnet101(1000, device),
+            ResNetType::Layer152 => ResNet::resnet152(1000, device),
         };
         Model {
             resnet,
+            relu: Relu,
+            linear: LinearConfig::new(1000, num_classes).init(device),
             sigmoid: Sigmoid,
             loss: BinaryCrossEntropyLossConfig::new()
                 .with_smoothing(Some(0.1))
-                .with_weights(self.weights.clone())
+                .with_weights(self.loss_weights.clone())
                 .init(device),
         }
     }

@@ -35,8 +35,9 @@ enum SubCmd {
         #[arg(short = 'w', long, default_value = "1")]
         num_workers: usize,
         /// Learning rate for the optimizer, decreasing to 1/10 of the given value
-        #[cfg_attr(feature = "f16", arg(short, long, default_value = "1.0e-4"))]
-        #[cfg_attr(not(feature = "f16"), arg(short, long, default_value = "1.0e-2"))]
+        /// Preset value is suitable for finetuning on `--download-pretrained` enabled
+        #[cfg_attr(feature = "f16", arg(short, long, default_value = "1.0e-6"))]
+        #[cfg_attr(not(feature = "f16"), arg(short, long, default_value = "1.0e-4"))]
         learning_rate: f64,
         /// Number of epochs before allowing early stopping
         #[arg(short, long, default_value = "10")]
@@ -45,6 +46,7 @@ enum SubCmd {
         #[arg(short, long)]
         pretrained: Option<PathBuf>,
         /// Use pretrained model from the pytorch.org, download to `$HOME/.cache/resnet_burn`
+        /// Ensure you have network connection configured
         #[arg(long, default_value = "true")]
         download_pretrained: bool,
         #[cfg(not(all(feature = "tch", target_os = "macos")))]

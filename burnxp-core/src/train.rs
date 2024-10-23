@@ -38,8 +38,8 @@ pub struct TrainingConfig {
     num_workers: usize,
     #[config(default = 42)]
     seed: u64,
-    #[cfg_attr(feature = "f16", config(default = 1.0e-4))]
-    #[cfg_attr(not(feature = "f16"), config(default = 1.0e-2))]
+    #[cfg_attr(feature = "f16", config(default = 1.0e-6))]
+    #[cfg_attr(not(feature = "f16"), config(default = 1.0e-4))]
     learning_rate: f64,
     #[config(default = 10)]
     early_stopping: usize,

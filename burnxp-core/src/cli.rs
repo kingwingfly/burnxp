@@ -45,7 +45,7 @@ enum SubCmd {
         #[arg(short, long)]
         pretrained: Option<PathBuf>,
         /// Use pretrained model from the pytorch.org, download to `$HOME/.cache/resnet_burn`
-        #[arg(long)]
+        #[arg(long, default_value = "true")]
         download_pretrained: bool,
         #[cfg(not(all(feature = "tch", target_os = "macos")))]
         /// CUDA device to use, -1 for CPU

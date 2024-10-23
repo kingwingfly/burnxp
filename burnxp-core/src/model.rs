@@ -58,7 +58,7 @@ impl<B: Backend> ValidStep<ImageBatch<B>, MultiLabelClassificationOutput<B>> for
 #[derive(Config, Debug)]
 pub struct ModelConfig {
     rnn_type: ResNetType,
-    #[config(default = false)]
+    #[config(default = true)]
     download: bool,
     loss_weights: Option<Vec<f32>>,
 }

@@ -79,6 +79,7 @@ pub fn predict<B: Backend>(config: PredictConfig, devices: Vec<B::Device>) {
     let mut all_tags = all_tags.tags.into_iter().collect::<Vec<_>>();
     all_tags.sort_by_key(|(k, _)| k.clone());
     let model = ModelConfig::new(config.model)
+        .with_download(false)
         .init::<B>(&devices[0], all_tags.len())
         .load_record(
             CompactRecorder::new()

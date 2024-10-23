@@ -5,7 +5,7 @@ use burn::train::{MultiLabelClassificationOutput, TrainOutput, TrainStep, ValidS
 use clap::builder::OsStr;
 use clap::ValueEnum;
 use nn::loss::{BinaryCrossEntropyLoss, BinaryCrossEntropyLossConfig};
-use nn::{Linear, LinearConfig, Relu, Sigmoid};
+use nn::{LeakyRelu, LeakyReluConfig, Linear, LinearConfig, Sigmoid};
 use resnet_burn::weights::{ResNet101, ResNet152, ResNet18, ResNet34, ResNet50};
 use resnet_burn::ResNet;
 use serde::{Deserialize, Serialize};
@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Module, Debug)]
 pub(crate) struct Model<B: Backend> {
     resnet: ResNet<B>,
-    relu: Relu,
+    relu: LeakyRelu,
     linear: Linear<B>,
     sigmoid: Sigmoid,
     loss: BinaryCrossEntropyLoss<B>,
@@ -89,7 +89,7 @@ impl ModelConfig {
         };
         Model {
             resnet,
-            relu: Relu,
+            relu: LeakyReluConfig::new().init(),
             linear: LinearConfig::new(1000, num_classes).init(device),
             sigmoid: Sigmoid,
             loss: BinaryCrossEntropyLossConfig::new()

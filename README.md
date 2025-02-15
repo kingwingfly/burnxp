@@ -3,7 +3,7 @@
 This project is one of the components of `the digital me` (WIP),
 which aims to clone oneself to some extent.
 
-This component `burnxp` is for cloning one's `Aesthetics Preferences`, also known as `XP`(性癖) in Chinese.
+This component `burnxp` is for cloning one's `Aesthetics Preferences`, also known as `XP` in Chinese.
 
 Based on [burn](https://github.com/tracel-ai/burn), `burnxp` can train a ResNet model to score pictures
 according to owner's sesthetics preferences through multi-labels classification.

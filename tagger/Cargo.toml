@@ -22,9 +22,9 @@ walkdir = { workspace = true }
 mime_guess = { workspace = true }
 rand = { workspace = true }
 crossbeam = "0.8.4"
-lru = "0.12.4"
+lru = "0.13.0"
 # argmin-math only support nalgebra 0.32.6
-nalgebra = { version = "=0.32.6", default-features = false, features = ["std"] }
+nalgebra = { version = "=0.33.2", default-features = false, features = ["std"] }
 argmin-math = { version = "0.4.0", default-features = false, features = [
     "nalgebra_latest",
 ] }

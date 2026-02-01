@@ -22,7 +22,7 @@ serde = { workspace = true }
 walkdir = { workspace = true }
 mime_guess = { workspace = true }
 rand = { workspace = true }
-imageproc = "0.25.0"
+imageproc = "0.26.0"
 unicode-width = { workspace = true }
 
 [features]
